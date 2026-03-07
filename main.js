@@ -89,6 +89,7 @@ createApp({
       perChartDenominator: {},
       allDenominator: 'fiat',
       charts: {},
+      bitcoinRenderFrame: null,
       bitcoinStartYear: BITCOIN_SLIDER_MIN_YEAR,
       bitcoinMinYear: BITCOIN_SLIDER_MIN_YEAR,
       bitcoinMaxYear: BITCOIN_SLIDER_MAX_YEAR,
@@ -119,17 +120,32 @@ createApp({
       if (!this.items.length) return;
       const item = this.items.find((entry) => entry.key === itemKey);
       const denominator = this.perChartDenominator[itemKey];
+      if (!item || !denominator || !this.contextSeries[denominator]) return;
+
       const converted = this.convertSeries(item, denominator);
       const startIndex = denominator === 'bitcoin'
         ? this.years.findIndex((year) => year >= this.bitcoinStartYear)
         : 0;
       const visibleYears = startIndex >= 0 ? this.years.slice(startIndex) : this.years;
       const visibleData = startIndex >= 0 ? converted.slice(startIndex) : converted;
-      const existing = this.charts[itemKey];
-      if (existing) existing.destroy();
-
-      const canvas = document.getElementById(`chart-${itemKey}`);
       const index = this.items.findIndex((entry) => entry.key === itemKey);
+      const canvas = document.getElementById(`chart-${itemKey}`);
+      if (!canvas) return;
+
+      const existing = this.charts[itemKey];
+      if (existing) {
+        existing.data.labels = visibleYears;
+        existing.data.datasets[0].data = visibleData;
+        existing.options.plugins.tooltip.callbacks.label = (ctx) => formatValue(ctx.parsed.y, denominator, this.contextSeries);
+        existing.options.scales.y.ticks.callback = (value) => {
+          if (denominator === 'fiat') return `£${Number(value).toLocaleString()}`;
+          if (denominator === 'salary') return `${(Number(value) * 100).toFixed(1)}%`;
+          return Number(value).toFixed(3);
+        };
+        existing.update('none');
+        return;
+      }
+
       this.charts[itemKey] = new Chart(canvas, {
         type: 'line',
         data: {
@@ -145,6 +161,7 @@ createApp({
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: (ctx) => formatValue(ctx.parsed.y, denominator, this.contextSeries) } },
@@ -174,6 +191,13 @@ createApp({
       this.items
         .filter((item) => this.perChartDenominator[item.key] === 'bitcoin')
         .forEach((item) => this.renderChart(item.key));
+    },
+    scheduleBitcoinChartsRender() {
+      if (this.bitcoinRenderFrame) cancelAnimationFrame(this.bitcoinRenderFrame);
+      this.bitcoinRenderFrame = requestAnimationFrame(() => {
+        this.bitcoinRenderFrame = null;
+        this.renderBitcoinCharts();
+      });
     },
     async fetchPricingData() {
       this.isLoading = true;
