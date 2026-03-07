@@ -133,20 +133,16 @@ createApp({
       if (!canvas) return;
 
       const existing = this.charts[itemKey];
-      if (existing) {
+      if (existing && existing.pricedInDenominator === denominator) {
         existing.data.labels = visibleYears;
         existing.data.datasets[0].data = visibleData;
-        existing.options.plugins.tooltip.callbacks.label = (ctx) => formatValue(ctx.parsed.y, denominator, this.contextSeries);
-        existing.options.scales.y.ticks.callback = (value) => {
-          if (denominator === 'fiat') return `£${Number(value).toLocaleString()}`;
-          if (denominator === 'salary') return `${(Number(value) * 100).toFixed(1)}%`;
-          return Number(value).toFixed(3);
-        };
         existing.update('none');
         return;
       }
 
-      this.charts[itemKey] = new Chart(canvas, {
+      if (existing) existing.destroy();
+
+      const chart = new Chart(canvas, {
         type: 'line',
         data: {
           labels: visibleYears,
@@ -180,6 +176,9 @@ createApp({
           },
         },
       });
+
+      chart.pricedInDenominator = denominator;
+      this.charts[itemKey] = chart;
     },
     applyToAll() {
       this.items.forEach((item) => {
