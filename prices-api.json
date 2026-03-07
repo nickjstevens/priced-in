@@ -1,10 +1,40 @@
 {
-  "years": [2010, 2012, 2014, 2016, 2018, 2020, 2022, 2024],
+  "years": [
+    1950,
+    1960,
+    1970,
+    1980,
+    1990,
+    2000,
+    2010,
+    2012,
+    2014,
+    2016,
+    2018,
+    2020,
+    2022,
+    2024
+  ],
   "contextSeries": {
     "fiat": {
-      "label": "GBP (£)",
-      "unit": "£",
-      "values": [1, 1, 1, 1, 1, 1, 1, 1],
+      "label": "GBP (\u00a3)",
+      "unit": "\u00a3",
+      "values": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
       "sources": [
         {
           "name": "Pound Sterling Reference Unit",
@@ -15,7 +45,22 @@
     "gold": {
       "label": "Gold (oz)",
       "unit": "oz",
-      "values": [700, 1050, 800, 950, 980, 1400, 1500, 1650],
+      "values": [
+        14,
+        35,
+        36,
+        300,
+        383,
+        279,
+        700,
+        1050,
+        800,
+        950,
+        980,
+        1400,
+        1500,
+        1650
+      ],
       "sources": [
         {
           "name": "World Gold Council / LBMA historical prices",
@@ -26,7 +71,22 @@
     "salary": {
       "label": "Average Salary (annual)",
       "unit": "x annual salary",
-      "values": [26000, 27500, 28500, 30000, 31200, 32200, 33600, 35000],
+      "values": [
+        450,
+        850,
+        1600,
+        6000,
+        14000,
+        20000,
+        26000,
+        27500,
+        28500,
+        30000,
+        31200,
+        32200,
+        33600,
+        35000
+      ],
       "sources": [
         {
           "name": "ONS Annual Survey of Hours and Earnings",
@@ -37,7 +97,22 @@
     "bitcoin": {
       "label": "Bitcoin (BTC)",
       "unit": "BTC",
-      "values": [0.2, 7, 350, 550, 4900, 9000, 22000, 50000],
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        0.2,
+        7,
+        350,
+        550,
+        4900,
+        9000,
+        22000,
+        50000
+      ],
       "sources": [
         {
           "name": "CoinDesk Bitcoin Price Index",
@@ -50,7 +125,22 @@
     {
       "key": "house",
       "name": "Average House Price",
-      "values": [170000, 180000, 195000, 215000, 230000, 250000, 285000, 295000],
+      "values": [
+        1891,
+        2530,
+        4975,
+        23897,
+        58185,
+        84820,
+        170000,
+        180000,
+        195000,
+        215000,
+        230000,
+        250000,
+        285000,
+        295000
+      ],
       "sources": [
         {
           "name": "UK House Price Index (ONS/Land Registry)",
@@ -61,7 +151,22 @@
     {
       "key": "car",
       "name": "Average New Car Price",
-      "values": [18000, 19500, 21000, 22500, 24500, 28000, 33000, 37000],
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        18000,
+        19500,
+        21000,
+        22500,
+        24500,
+        28000,
+        33000,
+        37000
+      ],
       "sources": [
         {
           "name": "SMMT UK New Car Market",
@@ -72,7 +177,22 @@
     {
       "key": "stamp",
       "name": "Postage Stamp",
-      "values": [0.41, 0.6, 0.62, 0.64, 0.67, 0.76, 0.95, 1.35],
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        0.41,
+        0.6,
+        0.62,
+        0.64,
+        0.67,
+        0.76,
+        0.95,
+        1.35
+      ],
       "sources": [
         {
           "name": "Royal Mail stamp tariff history",
@@ -83,7 +203,22 @@
     {
       "key": "steak",
       "name": "Steak (per kg)",
-      "values": [14, 15.5, 17, 18, 19.5, 21, 25, 29],
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        14,
+        15.5,
+        17,
+        18,
+        19.5,
+        21,
+        25,
+        29
+      ],
       "sources": [
         {
           "name": "ONS CPI basket and item-level pricing",
@@ -94,7 +229,22 @@
     {
       "key": "coffee",
       "name": "Coffee (cup)",
-      "values": [2.1, 2.3, 2.5, 2.7, 2.9, 3, 3.3, 3.6],
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        2.1,
+        2.3,
+        2.5,
+        2.7,
+        2.9,
+        3,
+        3.3,
+        3.6
+      ],
       "sources": [
         {
           "name": "ONS consumer price inflation datasets",
@@ -105,7 +255,22 @@
     {
       "key": "eggs",
       "name": "Eggs (dozen)",
-      "values": [1.85, 2.0, 2.1, 2.2, 2.3, 2.45, 2.9, 3.2],
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1.85,
+        2.0,
+        2.1,
+        2.2,
+        2.3,
+        2.45,
+        2.9,
+        3.2
+      ],
       "sources": [
         {
           "name": "DEFRA food statistics / ONS food CPI",
@@ -116,7 +281,22 @@
     {
       "key": "butter",
       "name": "Butter (250g)",
-      "values": [1.2, 1.35, 1.45, 1.55, 1.65, 1.8, 2.15, 2.35],
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1.2,
+        1.35,
+        1.45,
+        1.55,
+        1.65,
+        1.8,
+        2.15,
+        2.35
+      ],
       "sources": [
         {
           "name": "ONS CPI basket and item-level pricing",
@@ -127,7 +307,22 @@
     {
       "key": "tuition",
       "name": "University Tuition (annual)",
-      "values": [3290, 3290, 9000, 9000, 9250, 9250, 9250, 9250],
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        3290,
+        3290,
+        9000,
+        9000,
+        9250,
+        9250,
+        9250,
+        9250
+      ],
       "sources": [
         {
           "name": "UK Government tuition fee regulations",

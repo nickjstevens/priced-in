@@ -33,7 +33,11 @@ createApp({
   },
   methods: {
     convertSeries(item, denominator) {
-      return item.values.map((price, idx) => price / this.contextSeries[denominator].values[idx]);
+      return item.values.map((price, idx) => {
+        const denominatorValue = this.contextSeries[denominator].values[idx];
+        if (price == null || denominatorValue == null || denominatorValue === 0) return null;
+        return price / denominatorValue;
+      });
     },
     sourceSet(itemKey) {
       const item = this.items.find((entry) => entry.key === itemKey);
