@@ -1,0 +1,139 @@
+{
+  "years": [2010, 2012, 2014, 2016, 2018, 2020, 2022, 2024],
+  "contextSeries": {
+    "fiat": {
+      "label": "GBP (£)",
+      "unit": "£",
+      "values": [1, 1, 1, 1, 1, 1, 1, 1],
+      "sources": [
+        {
+          "name": "Pound Sterling Reference Unit",
+          "url": "https://www.bankofengland.co.uk/banknotes"
+        }
+      ]
+    },
+    "gold": {
+      "label": "Gold (oz)",
+      "unit": "oz",
+      "values": [700, 1050, 800, 950, 980, 1400, 1500, 1650],
+      "sources": [
+        {
+          "name": "World Gold Council / LBMA historical prices",
+          "url": "https://www.gold.org/goldhub/data/gold-prices"
+        }
+      ]
+    },
+    "salary": {
+      "label": "Average Salary (annual)",
+      "unit": "x annual salary",
+      "values": [26000, 27500, 28500, 30000, 31200, 32200, 33600, 35000],
+      "sources": [
+        {
+          "name": "ONS Annual Survey of Hours and Earnings",
+          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours"
+        }
+      ]
+    },
+    "bitcoin": {
+      "label": "Bitcoin (BTC)",
+      "unit": "BTC",
+      "values": [0.2, 7, 350, 550, 4900, 9000, 22000, 50000],
+      "sources": [
+        {
+          "name": "CoinDesk Bitcoin Price Index",
+          "url": "https://www.coindesk.com/price/bitcoin/"
+        }
+      ]
+    }
+  },
+  "items": [
+    {
+      "key": "house",
+      "name": "Average House Price",
+      "values": [170000, 180000, 195000, 215000, 230000, 250000, 285000, 295000],
+      "sources": [
+        {
+          "name": "UK House Price Index (ONS/Land Registry)",
+          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/housepriceindex"
+        }
+      ]
+    },
+    {
+      "key": "car",
+      "name": "Average New Car Price",
+      "values": [18000, 19500, 21000, 22500, 24500, 28000, 33000, 37000],
+      "sources": [
+        {
+          "name": "SMMT UK New Car Market",
+          "url": "https://www.smmt.co.uk/vehicle-data/new-car-registrations/"
+        }
+      ]
+    },
+    {
+      "key": "stamp",
+      "name": "Postage Stamp",
+      "values": [0.41, 0.6, 0.62, 0.64, 0.67, 0.76, 0.95, 1.35],
+      "sources": [
+        {
+          "name": "Royal Mail stamp tariff history",
+          "url": "https://www.royalmail.com/prices"
+        }
+      ]
+    },
+    {
+      "key": "steak",
+      "name": "Steak (per kg)",
+      "values": [14, 15.5, 17, 18, 19.5, 21, 25, 29],
+      "sources": [
+        {
+          "name": "ONS CPI basket and item-level pricing",
+          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices"
+        }
+      ]
+    },
+    {
+      "key": "coffee",
+      "name": "Coffee (cup)",
+      "values": [2.1, 2.3, 2.5, 2.7, 2.9, 3, 3.3, 3.6],
+      "sources": [
+        {
+          "name": "ONS consumer price inflation datasets",
+          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices"
+        }
+      ]
+    },
+    {
+      "key": "eggs",
+      "name": "Eggs (dozen)",
+      "values": [1.85, 2.0, 2.1, 2.2, 2.3, 2.45, 2.9, 3.2],
+      "sources": [
+        {
+          "name": "DEFRA food statistics / ONS food CPI",
+          "url": "https://www.gov.uk/government/collections/food-statistics-pocketbook"
+        }
+      ]
+    },
+    {
+      "key": "butter",
+      "name": "Butter (250g)",
+      "values": [1.2, 1.35, 1.45, 1.55, 1.65, 1.8, 2.15, 2.35],
+      "sources": [
+        {
+          "name": "ONS CPI basket and item-level pricing",
+          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices"
+        }
+      ]
+    },
+    {
+      "key": "tuition",
+      "name": "University Tuition (annual)",
+      "values": [3290, 3290, 9000, 9000, 9250, 9250, 9250, 9250],
+      "sources": [
+        {
+          "name": "UK Government tuition fee regulations",
+          "url": "https://www.gov.uk/government/publications/higher-education-student-finance"
+        }
+      ]
+    }
+  ]
+}

@@ -15,7 +15,7 @@
           <h1>Priced In — Cost of Living Explorer</h1>
           <p>Explore how UK costs changed over time when valued in £, gold, salary, or bitcoin.</p>
         </div>
-        <label class="apply-all">
+        <label class="apply-all" v-if="!isLoading && !error">
           Apply denominator to all charts
           <select v-model="allDenominator" @change="applyToAll">
             <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
@@ -23,7 +23,10 @@
         </label>
       </div>
 
-      <section class="grid">
+      <section v-if="isLoading" class="status-card">Loading pricing data from API…</section>
+      <section v-else-if="error" class="status-card error">{{ error }}</section>
+
+      <section v-else class="grid">
         <article class="chart-card" v-for="(item, idx) in items" :key="item.key">
           <header>
             <h2>{{ item.name }}</h2>
@@ -37,6 +40,14 @@
           <div class="chart-wrap">
             <canvas :id="`chart-${item.key}`"></canvas>
           </div>
+          <details class="sources">
+            <summary>Sources</summary>
+            <ul>
+              <li v-for="source in sourceSet(item.key)" :key="`${item.key}-${source.url}`">
+                <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a>
+              </li>
+            </ul>
+          </details>
         </article>
       </section>
     </main>
