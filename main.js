@@ -1,6 +1,5 @@
 const PALETTE = ['#1f6feb', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444', '#7c3aed', '#0f766e', '#f97316'];
-const BITCOIN_SLIDER_MIN_YEAR = 2014;
-const BITCOIN_SLIDER_MAX_YEAR = 2021;
+const BITCOIN_START_YEAR = 2017;
 
 function formatValue(value, denominator, contextSeries) {
   if (denominator === 'fiat') return `£${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -89,18 +88,9 @@ createApp({
       perChartDenominator: {},
       allDenominator: 'fiat',
       charts: {},
-      bitcoinRenderFrame: null,
-      bitcoinStartYear: BITCOIN_SLIDER_MIN_YEAR,
-      bitcoinMinYear: BITCOIN_SLIDER_MIN_YEAR,
-      bitcoinMaxYear: BITCOIN_SLIDER_MAX_YEAR,
       isLoading: true,
       error: '',
     };
-  },
-  computed: {
-    hasBitcoinChart() {
-      return this.items.some((item) => this.perChartDenominator[item.key] === 'bitcoin');
-    },
   },
   methods: {
     convertSeries(item, denominator) {
@@ -124,7 +114,7 @@ createApp({
 
       const converted = this.convertSeries(item, denominator);
       const startIndex = denominator === 'bitcoin'
-        ? this.years.findIndex((year) => year >= this.bitcoinStartYear)
+        ? this.years.findIndex((year) => year >= BITCOIN_START_YEAR)
         : 0;
       const visibleYears = startIndex >= 0 ? this.years.slice(startIndex) : this.years;
       const visibleData = startIndex >= 0 ? converted.slice(startIndex) : converted;
@@ -184,18 +174,6 @@ createApp({
       this.items.forEach((item) => {
         this.perChartDenominator[item.key] = this.allDenominator;
         this.renderChart(item.key);
-      });
-    },
-    renderBitcoinCharts() {
-      this.items
-        .filter((item) => this.perChartDenominator[item.key] === 'bitcoin')
-        .forEach((item) => this.renderChart(item.key));
-    },
-    scheduleBitcoinChartsRender() {
-      if (this.bitcoinRenderFrame) cancelAnimationFrame(this.bitcoinRenderFrame);
-      this.bitcoinRenderFrame = requestAnimationFrame(() => {
-        this.bitcoinRenderFrame = null;
-        this.renderBitcoinCharts();
       });
     },
     async fetchPricingData() {
