@@ -1,39 +1,30 @@
-const YEARS = [1970, 1975, 1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2020, 2024];
+const YEARS = [2010, 2012, 2014, 2016, 2018, 2020, 2022, 2024];
 
 const CONTEXT_SERIES = {
   fiat: { label: 'GBP (£)', unit: '£', values: YEARS.map(() => 1) },
-  gold: {
-    label: 'Gold (oz)',
-    unit: 'oz',
-    values: [15, 65, 170, 180, 300, 250, 180, 240, 700, 760, 1400, 1650],
-  },
+  gold: { label: 'Gold (oz)', unit: 'oz', values: [700, 1050, 800, 950, 980, 1400, 1500, 1650] },
   salary: {
     label: 'Average Salary (annual)',
     unit: 'x annual salary',
-    values: [1500, 2600, 6100, 9000, 13500, 18000, 22000, 25000, 26000, 28500, 32200, 35000],
+    values: [26000, 27500, 28500, 30000, 31200, 32200, 33600, 35000],
   },
-  bitcoin: {
-    label: 'Bitcoin (BTC)',
-    unit: 'BTC',
-    values: [null, null, null, null, null, null, null, null, 0.2, 230, 9000, 50000],
-  },
+  bitcoin: { label: 'Bitcoin (BTC)', unit: 'BTC', values: [0.2, 7, 350, 550, 4900, 9000, 22000, 50000] },
 };
 
 const ITEM_SERIES_GBP = [
-  { key: 'house', name: 'Average House Price', values: [4000, 10000, 23000, 36000, 58000, 68000, 84000, 160000, 170000, 200000, 250000, 295000] },
-  { key: 'car', name: 'Average New Car Price', values: [900, 1500, 3500, 6000, 9000, 12000, 14000, 17000, 18000, 21500, 28000, 37000] },
-  { key: 'stamp', name: 'Postage Stamp', values: [0.05, 0.08, 0.14, 0.17, 0.22, 0.25, 0.27, 0.3, 0.41, 0.63, 0.76, 1.35] },
-  { key: 'steak', name: 'Steak (per kg)', values: [1.4, 2.0, 3.2, 4.5, 6.5, 8.2, 10.5, 12.5, 14.0, 17.5, 21.0, 29.0] },
-  { key: 'coffee', name: 'Coffee (cup)', values: [0.08, 0.15, 0.25, 0.4, 0.7, 1.0, 1.3, 1.8, 2.1, 2.6, 3.0, 3.6] },
-  { key: 'eggs', name: 'Eggs (dozen)', values: [0.18, 0.32, 0.55, 0.75, 1.0, 1.25, 1.5, 1.7, 1.85, 2.15, 2.45, 3.2] },
-  { key: 'butter', name: 'Butter (250g)', values: [0.09, 0.16, 0.32, 0.48, 0.75, 0.95, 1.1, 1.15, 1.2, 1.5, 1.8, 2.35] },
-  { key: 'tuition', name: 'University Tuition (annual)', values: [0, 0, 0, 0, 0, 1000, 1100, 1200, 3290, 9000, 9250, 9250] },
+  { key: 'house', name: 'Average House Price', values: [170000, 180000, 195000, 215000, 230000, 250000, 285000, 295000] },
+  { key: 'car', name: 'Average New Car Price', values: [18000, 19500, 21000, 22500, 24500, 28000, 33000, 37000] },
+  { key: 'stamp', name: 'Postage Stamp', values: [0.41, 0.6, 0.62, 0.64, 0.67, 0.76, 0.95, 1.35] },
+  { key: 'steak', name: 'Steak (per kg)', values: [14, 15.5, 17, 18, 19.5, 21, 25, 29] },
+  { key: 'coffee', name: 'Coffee (cup)', values: [2.1, 2.3, 2.5, 2.7, 2.9, 3, 3.3, 3.6] },
+  { key: 'eggs', name: 'Eggs (dozen)', values: [1.85, 2.0, 2.1, 2.2, 2.3, 2.45, 2.9, 3.2] },
+  { key: 'butter', name: 'Butter (250g)', values: [1.2, 1.35, 1.45, 1.55, 1.65, 1.8, 2.15, 2.35] },
+  { key: 'tuition', name: 'University Tuition (annual)', values: [3290, 3290, 9000, 9000, 9250, 9250, 9250, 9250] },
 ];
 
 const PALETTE = ['#1f6feb', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444', '#7c3aed', '#0f766e', '#f97316'];
 
 function formatValue(value, denominator) {
-  if (value == null) return 'No data for this year';
   if (denominator === 'fiat') return `£${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   if (denominator === 'salary') return `${(value * 100).toFixed(3)}% salary`;
   return `${value.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${CONTEXT_SERIES[denominator].unit}`;
@@ -53,11 +44,7 @@ createApp({
   },
   methods: {
     convertSeries(item, denominator) {
-      return item.values.map((price, idx) => {
-        const denom = CONTEXT_SERIES[denominator].values[idx];
-        if (denom == null) return null;
-        return price / denom;
-      });
+      return item.values.map((price, idx) => price / CONTEXT_SERIES[denominator].values[idx]);
     },
     renderChart(itemKey) {
       const item = this.items.find((entry) => entry.key === itemKey);
@@ -78,7 +65,6 @@ createApp({
             borderColor: PALETTE[index % PALETTE.length],
             backgroundColor: `${PALETTE[index % PALETTE.length]}33`,
             tension: 0.25,
-            spanGaps: false,
           }],
         },
         options: {
@@ -86,11 +72,7 @@ createApp({
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => formatValue(ctx.parsed.y, denominator),
-              },
-            },
+            tooltip: { callbacks: { label: (ctx) => formatValue(ctx.parsed.y, denominator) } },
           },
           scales: {
             y: {

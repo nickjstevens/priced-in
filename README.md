@@ -1,6 +1,6 @@
 # priced-in
 
-A minimal Vue + Chart.js web app for exploring UK cost-of-living trends (1970 to present where available) priced in different denominators:
+A minimal Vue + Chart.js web app for exploring UK cost-of-living trends priced in different denominators:
 
 - fiat (£)
 - gold (oz)
@@ -16,6 +16,3 @@ python3 -m http.server 4173
 ```
 
 Then open `http://localhost:4173`.
-
-
-Bitcoin-denominated charts are intentionally limited to years where BTC reference data exists (early years render as gaps).
