@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Priced In — Cost of Living Explorer</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <main id="app">
+      <div class="title-row">
+        <div>
+          <h1>Priced In — Cost of Living Explorer</h1>
+          <p>Explore UK costs from 1970 onward when valued in £, gold, salary, or bitcoin (BTC data starts later).</p>
+        </div>
+        <label class="apply-all">
+          Apply denominator to all charts
+          <select v-model="allDenominator" @change="applyToAll">
+            <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
+          </select>
+        </label>
+      </div>
+
+      <section class="grid">
+        <article class="chart-card" v-for="(item, idx) in items" :key="item.key">
+          <header>
+            <h2>{{ item.name }}</h2>
+            <label>
+              Priced in
+              <select v-model="perChartDenominator[item.key]" @change="renderChart(item.key)">
+                <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
+              </select>
+            </label>
+          </header>
+          <div class="chart-wrap">
+            <canvas :id="`chart-${item.key}`"></canvas>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script src="main.js"></script>
+  </body>
+</html>
