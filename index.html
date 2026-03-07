@@ -23,6 +23,20 @@
         </label>
       </div>
 
+      <section v-if="!isLoading && !error && hasBitcoinChart" class="bitcoin-filter">
+        <label>
+          Bitcoin chart start year: <strong>{{ bitcoinStartYear }}</strong>
+          <input
+            type="range"
+            :min="bitcoinMinYear"
+            :max="bitcoinMaxYear"
+            step="1"
+            v-model.number="bitcoinStartYear"
+            @input="renderBitcoinCharts"
+          />
+        </label>
+      </section>
+
       <section v-if="isLoading" class="status-card">Loading pricing data from API…</section>
       <section v-else-if="error" class="status-card error">{{ error }}</section>
 
