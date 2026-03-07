@@ -40,20 +40,6 @@ select {
 }
 
 
-.bitcoin-filter {
-  margin-bottom: 1rem;
-}
-
-.bitcoin-filter label {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.bitcoin-filter input[type="range"] {
-  width: min(360px, 100%);
-}
 
 .status-card {
   background: #ffffff;
