@@ -95,7 +95,7 @@ createApp({
       this.error = '';
 
       try {
-        const response = await fetch('./prices-api.json');
+        const response = await fetch('/api/prices');
         if (!response.ok) throw new Error(`API request failed (${response.status})`);
 
         const payload = await response.json();

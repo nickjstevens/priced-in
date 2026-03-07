@@ -7,14 +7,20 @@ A minimal Vue + Chart.js web app for exploring UK cost-of-living trends priced i
 - average salary (fraction of annual pay)
 - bitcoin (BTC)
 
-The chart data now loads from a local API-style JSON endpoint (`prices-api.json`) so data can be managed separately from app logic and each series can include source citations.
+The chart data is served by a Vercel serverless API endpoint (`/api/prices`) that reads from `prices-api.json`, so data can be managed separately from app logic and each series can include source citations.
 
-## Run locally
+## Deploy on Vercel
 
-Because this app uses CDN scripts, you can run it with any static file server:
+1. Push this repo to GitHub.
+2. Import the project in Vercel.
+3. Deploy with defaults (no build command required).
+
+Vercel will serve static files from the repository root and expose the serverless function in `api/prices.js` automatically.
+
+## Local development (optional)
+
+To mirror Vercel behavior locally:
 
 ```bash
-python3 -m http.server 4173
+npx vercel dev
 ```
-
-Then open `http://localhost:4173`.
