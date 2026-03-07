@@ -120,9 +120,11 @@ createApp({
       const item = this.items.find((entry) => entry.key === itemKey);
       const denominator = this.perChartDenominator[itemKey];
       const converted = this.convertSeries(item, denominator);
-      const visibleData = denominator === 'bitcoin'
-        ? this.years.map((year, idx) => (year >= this.bitcoinStartYear ? converted[idx] : null))
-        : converted;
+      const startIndex = denominator === 'bitcoin'
+        ? this.years.findIndex((year) => year >= this.bitcoinStartYear)
+        : 0;
+      const visibleYears = startIndex >= 0 ? this.years.slice(startIndex) : this.years;
+      const visibleData = startIndex >= 0 ? converted.slice(startIndex) : converted;
       const existing = this.charts[itemKey];
       if (existing) existing.destroy();
 
@@ -131,7 +133,7 @@ createApp({
       this.charts[itemKey] = new Chart(canvas, {
         type: 'line',
         data: {
-          labels: this.years,
+          labels: visibleYears,
           datasets: [{
             label: item.name,
             data: visibleData,
