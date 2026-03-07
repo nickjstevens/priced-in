@@ -39,6 +39,19 @@ select {
   margin-bottom: 1rem;
 }
 
+.status-card {
+  background: #ffffff;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.status-card.error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
@@ -67,6 +80,31 @@ select {
 }
 
 .chart-wrap { height: 210px; }
+
+.sources {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.sources summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.sources ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1rem;
+}
+
+.sources a {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.sources a:hover {
+  text-decoration: underline;
+}
 
 @media (max-width: 720px) {
   .title-row { flex-direction: column; align-items: start; }
