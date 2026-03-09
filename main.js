@@ -7,6 +7,18 @@ function formatValue(value, denominator, contextSeries) {
   return `${value.toLocaleString(undefined, { maximumFractionDigits: 6 })} ${contextSeries[denominator].unit}`;
 }
 
+function formatPercent(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(2)}%`;
+}
+
+function formatYearDelta(changePercent, year) {
+  if (changePercent == null || year == null) return '—';
+  const sign = changePercent > 0 ? '+' : '';
+  return `${year} (${sign}${changePercent.toFixed(2)}%)`;
+}
+
 function isValidDataset(payload) {
   return (
     payload
@@ -105,6 +117,93 @@ createApp({
       const denominator = this.perChartDenominator[itemKey] || 'fiat';
       const denominatorSources = this.contextSeries[denominator]?.sources || [];
       return [...(item?.sources || []), ...denominatorSources];
+    },
+    chartStats(itemKey) {
+      const item = this.items.find((entry) => entry.key === itemKey);
+      const denominator = this.perChartDenominator[itemKey] || 'fiat';
+      if (!item || !this.contextSeries[denominator]) {
+        return {
+          cagrFiat: '—',
+          cagrSelected: '—',
+          totalChange: '—',
+          bestYear: '—',
+          worstYear: '—',
+        };
+      }
+
+      const fiatSeries = this.convertSeries(item, 'fiat');
+      const selectedSeries = this.convertSeries(item, denominator);
+      const startIndex = denominator === 'bitcoin'
+        ? this.years.findIndex((year) => year >= BITCOIN_START_YEAR)
+        : 0;
+      const minIndex = Math.max(startIndex, 0);
+
+      const findBounds = (series) => {
+        let firstIndex = -1;
+        let lastIndex = -1;
+        for (let idx = minIndex; idx < series.length; idx += 1) {
+          if (series[idx] != null) {
+            if (firstIndex < 0) firstIndex = idx;
+            lastIndex = idx;
+          }
+        }
+        return { firstIndex, lastIndex };
+      };
+
+      const calculateCagr = (series) => {
+        const { firstIndex, lastIndex } = findBounds(series);
+        if (firstIndex < 0 || lastIndex < 0 || firstIndex === lastIndex) return null;
+        const firstValue = series[firstIndex];
+        const lastValue = series[lastIndex];
+        if (firstValue <= 0 || lastValue <= 0) return null;
+
+        const yearsElapsed = this.years[lastIndex] - this.years[firstIndex];
+        if (yearsElapsed <= 0) return null;
+
+        return ((lastValue / firstValue) ** (1 / yearsElapsed) - 1) * 100;
+      };
+
+      const { firstIndex, lastIndex } = findBounds(selectedSeries);
+      let totalChange = null;
+      if (firstIndex >= 0 && lastIndex > firstIndex) {
+        const firstValue = selectedSeries[firstIndex];
+        const lastValue = selectedSeries[lastIndex];
+        if (firstValue !== 0) {
+          totalChange = ((lastValue - firstValue) / firstValue) * 100;
+        }
+      }
+
+      let bestYear = null;
+      let bestYearChange = null;
+      let worstYear = null;
+      let worstYearChange = null;
+
+      for (let idx = minIndex + 1; idx < selectedSeries.length; idx += 1) {
+        const prior = selectedSeries[idx - 1];
+        const current = selectedSeries[idx];
+        if (prior == null || current == null || prior === 0) continue;
+
+        const yearChange = ((current - prior) / prior) * 100;
+        const year = this.years[idx];
+
+        if (bestYearChange == null || yearChange > bestYearChange) {
+          bestYearChange = yearChange;
+          bestYear = year;
+        }
+
+        if (worstYearChange == null || yearChange < worstYearChange) {
+          worstYearChange = yearChange;
+          worstYear = year;
+        }
+      }
+
+      return {
+        cagrFiat: formatPercent(calculateCagr(fiatSeries)),
+        cagrSelected: formatPercent(calculateCagr(selectedSeries)),
+        totalChange: formatPercent(totalChange),
+        bestYear: formatYearDelta(bestYearChange, bestYear),
+        worstYear: formatYearDelta(worstYearChange, worstYear),
+      };
     },
     renderChart(itemKey) {
       if (!this.items.length) return;

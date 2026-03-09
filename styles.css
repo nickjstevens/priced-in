@@ -81,6 +81,33 @@ select {
   margin: 0;
 }
 
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.stat {
+  background: #f8fafc;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  padding: 0.45rem 0.5rem;
+}
+
+.stat dt {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat dd {
+  margin: 0.2rem 0 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .chart-wrap { height: 210px; }
 
 .sources {
