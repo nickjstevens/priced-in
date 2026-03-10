@@ -27,5 +27,8 @@ npx vercel dev
 
 ## Data policy
 
-- Charts plot only explicit yearly source values in `prices-api.json` (no interpolation in app code).
-- The current dataset is annual for 2010-2024 across all series to preserve like-for-like year-over-year comparisons.
+- Charts plot only explicit yearly values from `prices-api.json` (the app does not interpolate).
+- The dataset now spans 1952-2025:
+  - `house` has continuous annual coverage using a blended method: historical anchors (1950s onward) + modern UK HPI annual averages, with interpolation performed in the data preparation step.
+  - Most non-house items and denominator series retain dense annual coverage from 2010 onward, and are `null` for earlier years where compatible historical series were not yet added.
+- 2025 entries are flagged as provisional in `prices-api.json` methodology notes.
