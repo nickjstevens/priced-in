@@ -1,44 +1,30 @@
 # priced-in
 
-A minimal Vue + Chart.js web app for exploring UK cost-of-living trends priced in different denominators:
+Vue + Chart.js app for exploring UK cost-of-living series in multiple denominators.
 
-- fiat (£)
-- gold (oz)
-- average salary (fraction of annual pay)
-- bitcoin (BTC)
+## Features
 
-The chart data is served by a Vercel serverless API endpoint (`/api/prices`) that reads from `prices-api.json`, so data can be managed separately from app logic and each series can include source citations.
+- Per-item cards and a **comparison mode** (multiple items on one chart)
+- Denominator switching: nominal GBP, real GBP (CPI-adjusted), gold, average salary, median salary, hours worked, bitcoin
+- Rebased/indexed mode (start of selected range = 100)
+- Global date ranges and shareable deep links via URL params
+- Bitcoin-specific UX for sparse early history + full-history toggle
+- CAGR/total-change stats and lightweight insight text
+- Category filter + search
+- CSV export for current view
+- Source quality badges, dates, notes, lineage, and item measurement metadata
+- Optional observed-only view to reduce interpolation ambiguity
+- Major macro event markers and improved loading/error/retry states
+- Assumptions & caveats page
 
-## Deploy on Vercel
-
-1. Push this repo to GitHub.
-2. Import the project in Vercel.
-3. Deploy with defaults (no build command required).
-
-Vercel will serve static files from the repository root and expose the serverless function in `api/prices.js` automatically.
-
-
-## Live denominator data
-
-The `/api/prices` endpoint now refreshes **gold** and **bitcoin** denominator series from Yahoo Finance on each request:
-
-- Gold: `XAUGBP=X`
-- Bitcoin: `BTC-GBP`
-
-Data is fetched at **monthly** resolution and then averaged into annual values so the existing yearly chart model remains compatible.
-
-## Local development (optional)
-
-To mirror Vercel behavior locally:
+## Run locally
 
 ```bash
 npx vercel dev
 ```
 
-## Data policy
+## Validate data
 
-- Charts plot only explicit yearly values from `prices-api.json` (the app does not interpolate).
-- The dataset now spans 1952-2025:
-  - `house` has continuous annual coverage using a blended method: historical anchors (1950s onward) + modern UK HPI annual averages, with interpolation performed in the data preparation step.
-  - Most non-house items and denominator series retain dense annual coverage from 2010 onward, and are `null` for earlier years where compatible historical series were not yet added.
-- 2025 entries are flagged as provisional in `prices-api.json` methodology notes.
+```bash
+node tests/validate-data.js
+```

@@ -13,66 +13,97 @@
       <div class="title-row">
         <div>
           <h1>Priced In — Cost of Living Explorer</h1>
-          <p>Explore how UK costs changed over time when valued in £, gold, salary, or bitcoin.</p>
+          <p>Compare UK costs priced in nominal £, real £, gold, salary, median salary, hours worked, and bitcoin.</p>
         </div>
-        <label class="apply-all" v-if="!isLoading && !error">
-          Apply denominator to all charts
-          <select v-model="allDenominator" @change="applyToAll">
+        <a class="assumptions-link" href="assumptions.html">Assumptions & caveats</a>
+      </div>
+
+      <section class="controls" v-if="!isLoading && !error">
+        <label>Mode
+          <select v-model="viewMode" @change="syncUrlAndRender" aria-label="View mode">
+            <option value="cards">One chart per item</option>
+            <option value="compare">Compare items on one chart</option>
+          </select>
+        </label>
+        <label>Denominator
+          <select v-model="allDenominator" @change="applyToAll" aria-label="Denominator selector">
             <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
           </select>
         </label>
-      </div>
-      <section v-if="isLoading" class="status-card">Loading pricing data from API…</section>
+        <label>Range
+          <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Date range selector">
+            <option value="full">Full history</option>
+            <option value="last10">Last 10 years</option>
+            <option value="2000-2010">2000–2010</option>
+            <option value="2015-2025">2015–2025</option>
+          </select>
+        </label>
+        <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100 at range start</label>
+        <label><input type="checkbox" v-model="showObservedOnly" @change="syncUrlAndRender" /> Show observed years only</label>
+        <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
+          {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
+        </button>
+        <button @click="downloadCsv">Download CSV</button>
+        <button @click="fetchPricingData">Retry</button>
+        <label>Category
+          <select v-model="categoryFilter" @change="syncUrlAndRender"><option value="all">All</option><option value="housing">Housing</option><option value="food">Food</option><option value="energy">Energy</option><option value="transport">Transport</option><option value="education">Education</option><option value="leisure">Leisure</option></select>
+        </label>
+        <label class="search">Search
+          <input v-model="search" @input="syncUrlAndRender" placeholder="house, tuition, eggs…" aria-label="Search items" />
+        </label>
+      </section>
+
+      <section v-if="isLoading" class="status-card">Loading pricing data from API… <span class="skeleton"></span></section>
       <section v-else-if="error" class="status-card error">{{ error }}</section>
 
-      <section v-else class="grid">
-        <article class="chart-card" v-for="(item, idx) in items" :key="item.key">
-          <header>
-            <h2>{{ item.name }}</h2>
-            <label>
-              Priced in
-              <select v-model="perChartDenominator[item.key]" @change="renderChart(item.key)">
-                <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
-              </select>
-            </label>
-          </header>
-          <dl class="stats-strip">
-            <div class="stat">
-              <dt>CAGR (fiat)</dt>
-              <dd>{{ chartStats(item.key).cagrFiat }}</dd>
-            </div>
-            <div class="stat">
-              <dt>CAGR (selected)</dt>
-              <dd>{{ chartStats(item.key).cagrSelected }}</dd>
-            </div>
-            <div class="stat">
-              <dt>Total change</dt>
-              <dd>{{ chartStats(item.key).totalChange }}</dd>
-            </div>
-            <div class="stat">
-              <dt>Best year</dt>
-              <dd>{{ chartStats(item.key).bestYear }}</dd>
-            </div>
-            <div class="stat">
-              <dt>Worst year</dt>
-              <dd>{{ chartStats(item.key).worstYear }}</dd>
-            </div>
-          </dl>
-          <div class="chart-wrap">
-            <canvas :id="`chart-${item.key}`"></canvas>
+      <section v-else>
+        <p v-if="allDenominator==='bitcoin' && !showFullBitcoin" class="notice">Bitcoin is hidden before 2017 by default because early annual averages are sparse and highly volatile. Use “Show full available history” to include all years.</p>
+
+        <article class="chart-card" v-if="viewMode==='compare'">
+          <header><h2>Comparison chart</h2></header>
+          <div class="chips">
+            <label v-for="item in filteredItems" :key="item.key"><input type="checkbox" :checked="compareKeys.includes(item.key)" @change="toggleCompare(item.key)" /> {{ item.name }}</label>
           </div>
-          <details class="sources">
-            <summary>Sources</summary>
-            <ul>
-              <li v-for="source in sourceSet(item.key)" :key="`${item.key}-${source.url}`">
-                <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a>
-              </li>
-            </ul>
-          </details>
+          <div class="chart-wrap"><canvas id="chart-compare"></canvas></div>
         </article>
+
+        <section v-else class="grid">
+          <article class="chart-card" v-for="item in filteredItems" :key="item.key">
+            <header>
+              <h2>{{ item.name }} <small>({{ item.category }})</small></h2>
+              <label>Priced in
+                <select v-model="perChartDenominator[item.key]" @change="renderChart(item.key)">
+                  <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
+                </select>
+              </label>
+            </header>
+            <dl class="stats-strip">
+              <div class="stat"><dt>CAGR (selected)</dt><dd>{{ chartStats(item.key).cagrSelected }}</dd></div>
+              <div class="stat"><dt>Total change</dt><dd>{{ chartStats(item.key).totalChange }}</dd></div>
+              <div class="stat"><dt>Best year</dt><dd>{{ chartStats(item.key).bestYear }}</dd></div>
+            </dl>
+            <div class="chart-wrap"><canvas :id="`chart-${item.key}`"></canvas></div>
+            <details class="meta"><summary>What is being measured?</summary>
+              <ul>
+                <li>Unit basis: {{ item.metadata?.unit_basis }}</li>
+                <li>Geography: {{ item.metadata?.geography }}</li>
+                <li>Nominal/real: {{ item.metadata?.price_basis }}</li>
+                <li>Frequency: {{ item.metadata?.frequency }}</li>
+                <li>Last updated: {{ item.metadata?.last_updated }}</li>
+                <li>Confidence: {{ item.metadata?.source_confidence }}</li>
+              </ul>
+            </details>
+            <p class="lineage">{{ insightText(item.key) }}</p>
+            <details class="sources"><summary>Sources & lineage</summary>
+              <ul>
+                <li v-for="source in sourceSet(item.key)" :key="`${item.key}-${source.url}`"><span class="badge">{{ source.type || 'source' }}</span> <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a> ({{ source.date }}) — {{ source.note }}</li>
+              </ul>
+              <p class="lineage">{{ dataLineage(item.key) }}</p>
+            </details>
+          </article>
+        </section>
       </section>
     </main>
-
     <script src="main.js"></script>
   </body>
 </html>
