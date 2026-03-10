@@ -158,7 +158,10 @@
       "sources": [
         {
           "name": "Pound Sterling Reference Unit",
-          "url": "https://www.bankofengland.co.uk/banknotes"
+          "url": "https://www.bankofengland.co.uk/banknotes",
+          "type": "market",
+          "date": "2025-01-01",
+          "note": "Primary denominator reference source."
         }
       ]
     },
@@ -244,7 +247,10 @@
       "sources": [
         {
           "name": "World Gold Council / LBMA historical prices",
-          "url": "https://www.gold.org/goldhub/data/gold-prices"
+          "url": "https://www.gold.org/goldhub/data/gold-prices",
+          "type": "market",
+          "date": "2025-01-01",
+          "note": "Primary denominator reference source."
         }
       ]
     },
@@ -330,7 +336,10 @@
       "sources": [
         {
           "name": "ONS Annual Survey of Hours and Earnings",
-          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours"
+          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours",
+          "type": "official",
+          "date": "2025-01-01",
+          "note": "Primary denominator reference source."
         }
       ]
     },
@@ -416,8 +425,289 @@
       "sources": [
         {
           "name": "CoinDesk Bitcoin Price Index",
-          "url": "https://www.coindesk.com/price/bitcoin/"
+          "url": "https://www.coindesk.com/price/bitcoin/",
+          "type": "market",
+          "date": "2025-01-01",
+          "note": "Primary denominator reference source."
         }
+      ]
+    },
+    "real_fiat": {
+      "label": "Real GBP (CPI-adjusted)",
+      "unit": "real \u00a3 (2025)",
+      "values": [
+        0.1457,
+        0.1495,
+        0.1534,
+        0.1573,
+        0.1614,
+        0.1656,
+        0.1699,
+        0.1744,
+        0.1789,
+        0.1835,
+        0.1883,
+        0.1932,
+        0.1982,
+        0.2034,
+        0.2087,
+        0.2141,
+        0.2197,
+        0.2254,
+        0.2312,
+        0.2373,
+        0.2434,
+        0.2498,
+        0.2562,
+        0.2629,
+        0.2697,
+        0.2768,
+        0.284,
+        0.2913,
+        0.2989,
+        0.3067,
+        0.3147,
+        0.3228,
+        0.3312,
+        0.3398,
+        0.3487,
+        0.3577,
+        0.3671,
+        0.3766,
+        0.3864,
+        0.3964,
+        0.4067,
+        0.4173,
+        0.4282,
+        0.4393,
+        0.4507,
+        0.4624,
+        0.4745,
+        0.4868,
+        0.4995,
+        0.5124,
+        0.5258,
+        0.5394,
+        0.5535,
+        0.5678,
+        0.5826,
+        0.5978,
+        0.6133,
+        0.6292,
+        0.6355,
+        0.6419,
+        0.6586,
+        0.6757,
+        0.6933,
+        0.7113,
+        0.7298,
+        0.7488,
+        0.7682,
+        0.7882,
+        0.8087,
+        0.8297,
+        0.8513,
+        0.9109,
+        0.9747,
+        1.0
+      ],
+      "sources": [
+        {
+          "name": "UK CPI (synthetic annual factor, rebased to 2025=100)",
+          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices/cpi",
+          "type": "derived",
+          "date": "2025-01-01",
+          "note": "Nominal prices are divided by CPI factor to express values in 2025 pounds."
+        }
+      ],
+      "lineage": [
+        "CPI index rebased to 2025=100",
+        "Real GBP = nominal GBP / (CPI/100)"
+      ]
+    },
+    "median_salary": {
+      "label": "Median Salary (annual)",
+      "unit": "x median annual salary",
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        22620.0,
+        22794.0,
+        23055.0,
+        23316.0,
+        23664.0,
+        24012.0,
+        24360.0,
+        24882.0,
+        25404.0,
+        26100.0,
+        27057.0,
+        27579.0,
+        28710.0,
+        30276.0,
+        30885.0,
+        32364.0
+      ],
+      "sources": [
+        {
+          "name": "ONS Annual Survey of Hours and Earnings (median pay proxy)",
+          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours",
+          "type": "official",
+          "date": "2025-01-01",
+          "note": "Estimated median annual salary as 87% of average salary series."
+        }
+      ],
+      "lineage": [
+        "Median salary proxy = 0.87 \u00d7 average salary"
+      ]
+    },
+    "hours_worked": {
+      "label": "Hours at Median Wage",
+      "unit": "hours of work",
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        12.7797,
+        12.8911,
+        13.052,
+        13.2132,
+        13.4241,
+        13.6354,
+        13.8472,
+        14.1584,
+        14.4703,
+        14.882,
+        15.4435,
+        15.7576,
+        16.4207,
+        17.3342,
+        17.7012,
+        18.568
+      ],
+      "sources": [
+        {
+          "name": "ONS ASHE annual hours and earnings (derived hourly pay)",
+          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours",
+          "type": "derived",
+          "date": "2025-01-01",
+          "note": "Hourly earnings estimated from median annual salary divided by annual hours worked."
+        }
+      ],
+      "lineage": [
+        "Median hourly pay = median annual salary / annual hours",
+        "Hours required = item price / median hourly pay"
       ]
     }
   },
@@ -504,17 +794,36 @@
       "sources": [
         {
           "name": "Nationwide UK House Price Index (historical series from 1952)",
-          "url": "https://www.nationwidehousepriceindex.co.uk/"
+          "url": "https://www.nationwidehousepriceindex.co.uk/",
+          "type": "official",
+          "date": "2025-01-01",
+          "note": "Item-level source used in annual series."
         },
         {
           "name": "UK House Price Index (ONS/Land Registry annual average)",
-          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/housepriceindex"
+          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/housepriceindex",
+          "type": "official",
+          "date": "2025-01-01",
+          "note": "Item-level source used in annual series."
         },
         {
           "name": "Aggregation method: annual geometric interpolation between historical anchor points",
-          "url": "https://en.wikipedia.org/wiki/Interpolation"
+          "url": "https://en.wikipedia.org/wiki/Interpolation",
+          "type": "market",
+          "date": "2025-01-01",
+          "note": "Item-level source used in annual series."
         }
-      ]
+      ],
+      "category": "housing",
+      "metadata": {
+        "unit_basis": "Average House Price",
+        "geography": "United Kingdom",
+        "price_basis": "Nominal GBP",
+        "frequency": "Annual",
+        "last_updated": "2025-01-01",
+        "source_confidence": "high",
+        "notes": "Historical series may include interpolated values between anchor observations."
+      }
     },
     {
       "key": "car",
@@ -598,9 +907,22 @@
       "sources": [
         {
           "name": "SMMT UK New Car Market",
-          "url": "https://www.smmt.co.uk/vehicle-data/new-car-registrations/"
+          "url": "https://www.smmt.co.uk/vehicle-data/new-car-registrations/",
+          "type": "market",
+          "date": "2025-01-01",
+          "note": "Item-level source used in annual series."
         }
-      ]
+      ],
+      "category": "transport",
+      "metadata": {
+        "unit_basis": "Average New Car Price",
+        "geography": "United Kingdom",
+        "price_basis": "Nominal GBP",
+        "frequency": "Annual",
+        "last_updated": "2025-01-01",
+        "source_confidence": "medium",
+        "notes": "Annual proxy compiled from cited sources."
+      }
     },
     {
       "key": "stamp",
@@ -684,9 +1006,22 @@
       "sources": [
         {
           "name": "Royal Mail stamp tariff history",
-          "url": "https://www.royalmail.com/prices"
+          "url": "https://www.royalmail.com/prices",
+          "type": "official",
+          "date": "2025-01-01",
+          "note": "Item-level source used in annual series."
         }
-      ]
+      ],
+      "category": "leisure",
+      "metadata": {
+        "unit_basis": "Postage Stamp",
+        "geography": "United Kingdom",
+        "price_basis": "Nominal GBP",
+        "frequency": "Annual",
+        "last_updated": "2025-01-01",
+        "source_confidence": "medium",
+        "notes": "Annual proxy compiled from cited sources."
+      }
     },
     {
       "key": "steak",
@@ -770,9 +1105,22 @@
       "sources": [
         {
           "name": "ONS CPI basket and item-level pricing",
-          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices"
+          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices",
+          "type": "official",
+          "date": "2025-01-01",
+          "note": "Item-level source used in annual series."
         }
-      ]
+      ],
+      "category": "food",
+      "metadata": {
+        "unit_basis": "Steak (per kg)",
+        "geography": "United Kingdom",
+        "price_basis": "Nominal GBP",
+        "frequency": "Annual",
+        "last_updated": "2025-01-01",
+        "source_confidence": "medium",
+        "notes": "Annual proxy compiled from cited sources."
+      }
     },
     {
       "key": "coffee",
@@ -856,9 +1204,22 @@
       "sources": [
         {
           "name": "ONS consumer price inflation datasets",
-          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices"
+          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices",
+          "type": "official",
+          "date": "2025-01-01",
+          "note": "Item-level source used in annual series."
         }
-      ]
+      ],
+      "category": "food",
+      "metadata": {
+        "unit_basis": "Coffee (cup)",
+        "geography": "United Kingdom",
+        "price_basis": "Nominal GBP",
+        "frequency": "Annual",
+        "last_updated": "2025-01-01",
+        "source_confidence": "medium",
+        "notes": "Annual proxy compiled from cited sources."
+      }
     },
     {
       "key": "eggs",
@@ -942,9 +1303,22 @@
       "sources": [
         {
           "name": "DEFRA food statistics / ONS food CPI",
-          "url": "https://www.gov.uk/government/collections/food-statistics-pocketbook"
+          "url": "https://www.gov.uk/government/collections/food-statistics-pocketbook",
+          "type": "official",
+          "date": "2025-01-01",
+          "note": "Item-level source used in annual series."
         }
-      ]
+      ],
+      "category": "food",
+      "metadata": {
+        "unit_basis": "Eggs (dozen)",
+        "geography": "United Kingdom",
+        "price_basis": "Nominal GBP",
+        "frequency": "Annual",
+        "last_updated": "2025-01-01",
+        "source_confidence": "medium",
+        "notes": "Annual proxy compiled from cited sources."
+      }
     },
     {
       "key": "butter",
@@ -1028,9 +1402,22 @@
       "sources": [
         {
           "name": "ONS CPI basket and item-level pricing",
-          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices"
+          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices",
+          "type": "official",
+          "date": "2025-01-01",
+          "note": "Item-level source used in annual series."
         }
-      ]
+      ],
+      "category": "food",
+      "metadata": {
+        "unit_basis": "Butter (250g)",
+        "geography": "United Kingdom",
+        "price_basis": "Nominal GBP",
+        "frequency": "Annual",
+        "last_updated": "2025-01-01",
+        "source_confidence": "medium",
+        "notes": "Annual proxy compiled from cited sources."
+      }
     },
     {
       "key": "tuition",
@@ -1114,13 +1501,31 @@
       "sources": [
         {
           "name": "UK Government tuition fee regulations",
-          "url": "https://www.gov.uk/government/publications/higher-education-student-finance"
+          "url": "https://www.gov.uk/government/publications/higher-education-student-finance",
+          "type": "official",
+          "date": "2025-01-01",
+          "note": "Item-level source used in annual series."
         }
-      ]
+      ],
+      "category": "education",
+      "metadata": {
+        "unit_basis": "University Tuition (annual)",
+        "geography": "United Kingdom",
+        "price_basis": "Nominal GBP",
+        "frequency": "Annual",
+        "last_updated": "2025-01-01",
+        "source_confidence": "medium",
+        "notes": "Annual proxy compiled from cited sources."
+      }
     }
   ],
   "methodology": {
     "2025": "2025 values are provisional annual estimates based on year-to-date published market and official releases where full-year figures are not yet finalized.",
     "house": "House-price series combines long-run historical anchor points (1950s onward) with modern UK HPI annual averages. For missing annual points between historical anchors, geometric interpolation is used to create a continuous annual series."
+  },
+  "schema": {
+    "version": "2.0.0",
+    "series_split_recommendation": "Move to one file per category/series as dataset grows",
+    "interpolation_policy": "Explicitly flagged in each item metadata and methodology section"
   }
 }
