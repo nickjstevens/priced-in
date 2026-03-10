@@ -28,66 +28,6 @@ function isValidDataset(payload) {
   );
 }
 
-function interpolateSeriesValue(values, sourceYears, year) {
-  const exactIndex = sourceYears.indexOf(year);
-  if (exactIndex >= 0) return values[exactIndex];
-
-  let leftIndex = -1;
-  for (let idx = sourceYears.length - 1; idx >= 0; idx -= 1) {
-    if (sourceYears[idx] < year) {
-      leftIndex = idx;
-      break;
-    }
-  }
-
-  let rightIndex = -1;
-  for (let idx = 0; idx < sourceYears.length; idx += 1) {
-    if (sourceYears[idx] > year) {
-      rightIndex = idx;
-      break;
-    }
-  }
-
-  if (leftIndex < 0 || rightIndex < 0) return null;
-
-  const leftValue = values[leftIndex];
-  const rightValue = values[rightIndex];
-  if (leftValue == null || rightValue == null) return null;
-
-  const leftYear = sourceYears[leftIndex];
-  const rightYear = sourceYears[rightIndex];
-  const progress = (year - leftYear) / (rightYear - leftYear);
-  return leftValue + ((rightValue - leftValue) * progress);
-}
-
-function expandDatasetToAnnual(payload) {
-  const startYear = Math.min(...payload.years);
-  const endYear = Math.max(...payload.years);
-  const expandedYears = Array.from({ length: endYear - startYear + 1 }, (_, idx) => startYear + idx);
-
-  const expandedContextSeries = Object.fromEntries(
-    Object.entries(payload.contextSeries).map(([key, series]) => [
-      key,
-      {
-        ...series,
-        values: expandedYears.map((year) => interpolateSeriesValue(series.values, payload.years, year)),
-      },
-    ]),
-  );
-
-  const expandedItems = payload.items.map((item) => ({
-    ...item,
-    values: expandedYears.map((year) => interpolateSeriesValue(item.values, payload.years, year)),
-  }));
-
-  return {
-    ...payload,
-    years: expandedYears,
-    contextSeries: expandedContextSeries,
-    items: expandedItems,
-  };
-}
-
 const { createApp, nextTick } = Vue;
 
 createApp({
@@ -286,11 +226,9 @@ createApp({
         const payload = await response.json();
         if (!isValidDataset(payload)) throw new Error('API payload is missing required fields');
 
-        const annualizedPayload = expandDatasetToAnnual(payload);
-
-        this.years = annualizedPayload.years;
-        this.contextSeries = annualizedPayload.contextSeries;
-        this.items = annualizedPayload.items;
+        this.years = payload.years;
+        this.contextSeries = payload.contextSeries;
+        this.items = payload.items;
         this.denominators = Object.entries(this.contextSeries)
           .map(([value, details]) => ({ value, label: details.label }));
         this.perChartDenominator = Object.fromEntries(this.items.map((item) => [item.key, 'fiat']));

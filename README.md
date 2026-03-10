@@ -24,3 +24,8 @@ To mirror Vercel behavior locally:
 ```bash
 npx vercel dev
 ```
+
+## Data policy
+
+- Charts plot only explicit yearly source values in `prices-api.json` (no interpolation in app code).
+- The current dataset is annual for 2010-2024 across all series to preserve like-for-like year-over-year comparisons.
