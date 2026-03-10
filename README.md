@@ -17,6 +17,16 @@ The chart data is served by a Vercel serverless API endpoint (`/api/prices`) tha
 
 Vercel will serve static files from the repository root and expose the serverless function in `api/prices.js` automatically.
 
+
+## Live denominator data
+
+The `/api/prices` endpoint now refreshes **gold** and **bitcoin** denominator series from Yahoo Finance on each request:
+
+- Gold: `XAUGBP=X`
+- Bitcoin: `BTC-GBP`
+
+Data is fetched at **monthly** resolution and then averaged into annual values so the existing yearly chart model remains compatible.
+
 ## Local development (optional)
 
 To mirror Vercel behavior locally:
