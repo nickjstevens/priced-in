@@ -46,7 +46,7 @@
         <button @click="downloadCsv">Download CSV</button>
         <button @click="fetchPricingData">Retry</button>
         <label>Category
-          <select v-model="categoryFilter" @change="syncUrlAndRender"><option value="all">All</option><option value="housing">Housing</option><option value="food">Food</option><option value="energy">Energy</option><option value="transport">Transport</option><option value="education">Education</option><option value="leisure">Leisure</option></select>
+          <select v-model="categoryFilter" @change="syncUrlAndRender"><option value="all">All</option><option value="housing">Housing</option><option value="food">Food</option><option value="energy">Energy</option><option value="transport">Transport</option><option value="education">Education</option><option value="leisure">Leisure</option><option value="finance">Finance</option><option value="taxes">Taxes</option><option value="utilities">Utilities</option><option value="income">Income</option></select>
         </label>
         <label class="search">Search
           <input v-model="search" @input="syncUrlAndRender" placeholder="house, tuition, eggs…" aria-label="Search items" />
