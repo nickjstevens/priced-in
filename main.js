@@ -145,8 +145,10 @@ createApp({
       const denominator = this.spreadSeriesOptions.find((x) => x.key === this.spreadDenominatorItemKey);
       if (!numerator || !denominator) return [];
       const [from, to] = this.rangeBounds();
+      const bitcoinInPair = [this.spreadNumeratorItemKey, this.spreadDenominatorItemKey].includes('context:bitcoin');
       return this.years.map((year, idx) => {
         if (year < from || year > to) return null;
+        if (bitcoinInPair && !this.showFullBitcoin && year < 2017) return null;
         const numeratorObserved = numerator.observed?.[idx] ?? true;
         const denominatorObserved = denominator.observed?.[idx] ?? true;
         if (!numeratorObserved || !denominatorObserved) return null;
