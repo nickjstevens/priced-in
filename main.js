@@ -1,15 +1,65 @@
 const PALETTE = ['#1f6feb', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444', '#7c3aed', '#0f766e', '#f97316'];
 const EVENT_MARKERS = [
-  { year: 2008, label: 'Financial crisis' },
-  { year: 2016, label: 'Brexit vote' },
-  { year: 2020, label: 'COVID shock' },
-  { year: 2022, label: 'Inflation spike' },
-  { year: 2013, label: 'BTC peak' },
-  { year: 2015, label: 'BTC trough' },
-  { year: 2017, label: 'BTC peak' },
-  { year: 2018, label: 'BTC trough' },
-  { year: 2021, label: 'BTC peak' },
-  { year: 2022, label: 'BTC trough' },
+  {
+    start: 2008,
+    end: 2009,
+    label: 'Global financial crisis',
+    palette: { light: 'rgba(239, 68, 68, 0.16)', dark: 'rgba(248, 113, 113, 0.24)' },
+  },
+  {
+    start: 2016,
+    end: 2017,
+    label: 'Brexit shock',
+    palette: { light: 'rgba(245, 158, 11, 0.16)', dark: 'rgba(251, 191, 36, 0.24)' },
+  },
+  {
+    start: 2020,
+    end: 2021,
+    label: 'COVID shock',
+    palette: { light: 'rgba(14, 165, 233, 0.16)', dark: 'rgba(56, 189, 248, 0.24)' },
+  },
+  {
+    start: 2022,
+    end: 2023,
+    label: 'Inflation spike',
+    palette: { light: 'rgba(139, 92, 246, 0.15)', dark: 'rgba(167, 139, 250, 0.24)' },
+  },
+  {
+    start: 2013 - 0.35,
+    end: 2013 + 0.35,
+    label: 'BTC peak',
+    palette: { light: 'rgba(16, 185, 129, 0.14)', dark: 'rgba(52, 211, 153, 0.22)' },
+  },
+  {
+    start: 2015 - 0.35,
+    end: 2015 + 0.35,
+    label: 'BTC trough',
+    palette: { light: 'rgba(244, 63, 94, 0.14)', dark: 'rgba(251, 113, 133, 0.22)' },
+  },
+  {
+    start: 2017 - 0.35,
+    end: 2017 + 0.35,
+    label: 'BTC peak',
+    palette: { light: 'rgba(16, 185, 129, 0.14)', dark: 'rgba(52, 211, 153, 0.22)' },
+  },
+  {
+    start: 2018 - 0.35,
+    end: 2018 + 0.35,
+    label: 'BTC trough',
+    palette: { light: 'rgba(244, 63, 94, 0.14)', dark: 'rgba(251, 113, 133, 0.22)' },
+  },
+  {
+    start: 2021 - 0.35,
+    end: 2021 + 0.35,
+    label: 'BTC peak',
+    palette: { light: 'rgba(16, 185, 129, 0.14)', dark: 'rgba(52, 211, 153, 0.22)' },
+  },
+  {
+    start: 2022 - 0.35,
+    end: 2022 + 0.35,
+    label: 'BTC trough',
+    palette: { light: 'rgba(244, 63, 94, 0.14)', dark: 'rgba(251, 113, 133, 0.22)' },
+  },
 ];
 const STORAGE_KEYS = {
   theme: 'priced-in-theme',
@@ -294,19 +344,34 @@ createApp({
           const minYear = Math.min(...years);
           const maxYear = Math.max(...years);
           ctx.save();
-          ctx.strokeStyle = this.isDarkMode ? 'rgba(148,163,184,0.35)' : 'rgba(51,65,85,0.3)';
           ctx.fillStyle = this.isDarkMode ? '#cbd5e1' : '#334155';
-          ctx.setLineDash([4, 3]);
           ctx.font = '11px system-ui, -apple-system, Segoe UI, sans-serif';
-          EVENT_MARKERS.forEach((event) => {
-            if (event.year < minYear || event.year > maxYear) return;
-            const xPos = scales.x.getPixelForValue(event.year);
-            if (xPos < chartArea.left || xPos > chartArea.right) return;
-            ctx.beginPath();
-            ctx.moveTo(xPos, chartArea.top);
-            ctx.lineTo(xPos, chartArea.bottom);
-            ctx.stroke();
-            ctx.fillText(event.label, xPos + 4, chartArea.top + 12);
+          const visibleMarkers = EVENT_MARKERS.filter((event) => event.end >= minYear && event.start <= maxYear);
+          visibleMarkers.forEach((event, idx) => {
+            const start = Math.max(event.start, minYear);
+            const end = Math.min(event.end, maxYear);
+            let xStart = scales.x.getPixelForValue(start);
+            let xEnd = scales.x.getPixelForValue(end);
+            if (Number.isNaN(xStart) || Number.isNaN(xEnd)) return;
+            if (xEnd < xStart) [xStart, xEnd] = [xEnd, xStart];
+            const width = Math.max(4, xEnd - xStart);
+            const clampedX = Math.max(chartArea.left, xStart);
+            const clampedWidth = Math.min(chartArea.right, clampedX + width) - clampedX;
+            if (clampedWidth <= 0) return;
+
+            ctx.fillStyle = this.isDarkMode ? event.palette.dark : event.palette.light;
+            ctx.fillRect(clampedX, chartArea.top, clampedWidth, chartArea.bottom - chartArea.top);
+
+            ctx.strokeStyle = this.isDarkMode ? 'rgba(148,163,184,0.45)' : 'rgba(51,65,85,0.3)';
+            ctx.strokeRect(clampedX, chartArea.top, clampedWidth, chartArea.bottom - chartArea.top);
+
+            const labelX = Math.min(chartArea.right - 8, clampedX + 4);
+            const labelY = chartArea.top + 14 + ((idx % 3) * 14);
+            const textWidth = ctx.measureText(event.label).width;
+            ctx.fillStyle = this.isDarkMode ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255, 255, 255, 0.76)';
+            ctx.fillRect(labelX - 2, labelY - 10, textWidth + 4, 12);
+            ctx.fillStyle = this.isDarkMode ? '#e2e8f0' : '#1e293b';
+            ctx.fillText(event.label, labelX, labelY);
           });
           ctx.restore();
         },
