@@ -3,6 +3,7 @@ const EVENT_MARKERS = [{ year: 2008, label: 'GFC' }, { year: 2016, label: 'Brexi
 const STORAGE_KEYS = {
   basketWeights: 'priced-in-basket-weights',
   alerts: 'priced-in-alerts',
+  theme: 'priced-in-theme',
 };
 
 function isValidDataset(payload) {
@@ -46,6 +47,7 @@ createApp({
       showMethodologyOverlay: true, showForecast: false,
       alertDraft: { itemKey: '', denominator: 'fiat', operator: 'gt', threshold: 1 },
       alerts: [],
+      isDarkMode: false,
     };
   },
   computed: {
@@ -144,6 +146,8 @@ createApp({
       this.compareKeys = (p.get('items') || '').split(',').filter(Boolean);
       this.showForecast = p.get('forecast') === '1';
       this.showMethodologyOverlay = p.get('method') !== '0';
+      const theme = p.get('theme');
+      if (theme === 'dark' || theme === 'light') this.isDarkMode = theme === 'dark';
     },
     syncUrlAndRender() {
       const p = new URLSearchParams();
@@ -155,6 +159,7 @@ createApp({
       if (this.compareKeys.length) p.set('items', this.compareKeys.join(','));
       if (this.showForecast) p.set('forecast', '1');
       if (!this.showMethodologyOverlay) p.set('method', '0');
+      p.set('theme', this.isDarkMode ? 'dark' : 'light');
       history.replaceState({}, '', `${location.pathname}?${p.toString()}`);
       this.persistLocalState();
       this.renderAll();
@@ -162,11 +167,14 @@ createApp({
     persistLocalState() {
       localStorage.setItem(STORAGE_KEYS.basketWeights, JSON.stringify(this.basketWeights));
       localStorage.setItem(STORAGE_KEYS.alerts, JSON.stringify(this.alerts));
+      localStorage.setItem(STORAGE_KEYS.theme, this.isDarkMode ? 'dark' : 'light');
     },
     loadLocalState() {
       try {
         this.basketWeights = JSON.parse(localStorage.getItem(STORAGE_KEYS.basketWeights) || '{}');
         this.alerts = JSON.parse(localStorage.getItem(STORAGE_KEYS.alerts) || '[]');
+        const savedTheme = localStorage.getItem(STORAGE_KEYS.theme);
+        if (savedTheme === 'dark' || savedTheme === 'light') this.isDarkMode = savedTheme === 'dark';
       } catch {
         this.basketWeights = {};
         this.alerts = [];
@@ -298,6 +306,14 @@ createApp({
         lower: p.value * (1 - (vol * Math.sqrt(idx + 1))),
       }));
     },
+    applyTheme() {
+      document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
+    },
+    toggleTheme() {
+      this.isDarkMode = !this.isDarkMode;
+      this.applyTheme();
+      this.syncUrlAndRender();
+    },
     confidenceColor(item) {
       const confidence = item?.metadata?.source_confidence || 'medium';
       if (confidence === 'high') return 'rgba(16, 185, 129, 0.6)';
@@ -305,22 +321,25 @@ createApp({
       return 'rgba(245, 158, 11, 0.6)';
     },
     chartOptions() {
+      const axisColor = this.isDarkMode ? '#cbd5e1' : '#334155';
+      const gridColor = this.isDarkMode ? 'rgba(148,163,184,0.22)' : 'rgba(51,65,85,0.16)';
       return {
         responsive: true, maintainAspectRatio: false, animation: false,
         plugins: {
-          legend: { display: true },
+          legend: { display: true, labels: { color: axisColor } },
           tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(3) ?? '—'}` } },
         },
         scales: {
           x: {
-            ticks: { autoSkip: true, maxTicksLimit: 8 },
+            ticks: { autoSkip: true, maxTicksLimit: 8, color: axisColor },
+            grid: { color: gridColor },
             afterBuildTicks: (axis) => {
               EVENT_MARKERS.forEach((evt) => {
                 if (axis.min <= evt.year && axis.max >= evt.year) axis.ticks.push({ value: evt.year, label: `| ${evt.label}` });
               });
             },
           },
-          y: { beginAtZero: true },
+          y: { beginAtZero: true, ticks: { color: axisColor }, grid: { color: gridColor } },
         },
       };
     },
@@ -393,7 +412,7 @@ createApp({
           ...this.chartOptions(),
           scales: {
             ...this.chartOptions().scales,
-            y1: { position: 'right', min: -1, max: 1, grid: { drawOnChartArea: false } },
+            y1: { position: 'right', min: -1, max: 1, grid: { drawOnChartArea: false }, ticks: { color: this.isDarkMode ? '#f1f5f9' : '#111827' } },
           },
         },
       });
@@ -502,8 +521,9 @@ createApp({
     },
   },
   async mounted() {
-    this.readUrlState();
     this.loadLocalState();
+    this.readUrlState();
+    this.applyTheme();
     await this.fetchPricingData();
     await nextTick();
     this.renderAll();
