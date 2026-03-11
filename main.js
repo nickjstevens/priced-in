@@ -1,5 +1,16 @@
 const PALETTE = ['#1f6feb', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444', '#7c3aed', '#0f766e', '#f97316'];
-const EVENT_MARKERS = [{ year: 2008, label: 'GFC' }, { year: 2016, label: 'Brexit vote' }, { year: 2020, label: 'COVID' }, { year: 2022, label: 'Inflation spike' }];
+const EVENT_MARKERS = [
+  { year: 2008, label: 'Financial crisis' },
+  { year: 2016, label: 'Brexit vote' },
+  { year: 2020, label: 'COVID shock' },
+  { year: 2022, label: 'Inflation spike' },
+  { year: 2013, label: 'BTC peak' },
+  { year: 2015, label: 'BTC trough' },
+  { year: 2017, label: 'BTC peak' },
+  { year: 2018, label: 'BTC trough' },
+  { year: 2021, label: 'BTC peak' },
+  { year: 2022, label: 'BTC trough' },
+];
 const STORAGE_KEYS = {
   theme: 'priced-in-theme',
 };
@@ -36,8 +47,8 @@ createApp({
       viewMode: 'cards', selectedRange: 'full', rebased: false, showObservedOnly: false,
       showFullBitcoin: false, compareKeys: [], search: '', categoryFilter: 'all',
       isLoading: true, error: '',
-      spreadItemKey: '', spreadDenominatorA: 'fiat', spreadDenominatorB: 'real_fiat',
-      showMethodologyOverlay: true, showForecast: false,
+      spreadNumeratorItemKey: '', spreadDenominatorItemKey: '',
+      showMethodologyOverlay: true, showForecast: false, showEventAnnotations: false,
       isDarkMode: false,
     };
   },
@@ -71,15 +82,19 @@ createApp({
       };
     },
     spreadSeries() {
-      const item = this.items.find((x) => x.key === this.spreadItemKey);
-      if (!item) return [];
-      const a = this.convertSeries(item, this.spreadDenominatorA);
-      const b = this.convertSeries(item, this.spreadDenominatorB);
+      const numerator = this.items.find((x) => x.key === this.spreadNumeratorItemKey);
+      const denominator = this.items.find((x) => x.key === this.spreadDenominatorItemKey);
+      if (!numerator || !denominator) return [];
       const [from, to] = this.rangeBounds();
       return this.years.map((year, idx) => {
         if (year < from || year > to) return null;
-        if (a[idx] == null || b[idx] == null || b[idx] === 0) return { year, value: null };
-        return { year, value: a[idx] / b[idx] };
+        const numeratorObserved = numerator.observed?.[idx] ?? true;
+        const denominatorObserved = denominator.observed?.[idx] ?? true;
+        if (this.showObservedOnly && (!numeratorObserved || !denominatorObserved)) return null;
+        const a = numerator.values?.[idx];
+        const b = denominator.values?.[idx];
+        if (a == null || b == null || b === 0) return { year, value: null };
+        return { year, value: a / b };
       }).filter(Boolean);
     },
   },
@@ -94,6 +109,7 @@ createApp({
       this.compareKeys = (p.get('items') || '').split(',').filter(Boolean);
       this.showForecast = p.get('forecast') === '1';
       this.showMethodologyOverlay = p.get('method') !== '0';
+      this.showEventAnnotations = p.get('events') === '1';
       const theme = p.get('theme');
       if (theme === 'dark' || theme === 'light') this.isDarkMode = theme === 'dark';
     },
@@ -107,6 +123,7 @@ createApp({
       if (this.compareKeys.length) p.set('items', this.compareKeys.join(','));
       if (this.showForecast) p.set('forecast', '1');
       if (!this.showMethodologyOverlay) p.set('method', '0');
+      if (this.showEventAnnotations) p.set('events', '1');
       p.set('theme', this.isDarkMode ? 'dark' : 'light');
       history.replaceState({}, '', `${location.pathname}?${p.toString()}`);
       this.persistLocalState();
@@ -237,9 +254,9 @@ createApp({
         ? Math.sqrt(historyReturns.reduce((acc, r) => acc + (r ** 2), 0) / historyReturns.length)
         : 0.05;
       const lastYear = observed[observed.length - 1].year;
-      const meanForecast = [1, 2].map((step) => {
+      const meanForecast = [0, 1, 2].map((step) => {
         const year = lastYear + step;
-        const trend = (slope * year) + intercept;
+        const trend = step === 0 ? observed[observed.length - 1].value : (slope * year) + intercept;
         return { year, value: Math.max(trend, 0.0001) };
       });
       return meanForecast.map((p, idx) => ({
@@ -265,8 +282,38 @@ createApp({
     chartOptions() {
       const axisColor = this.isDarkMode ? '#cbd5e1' : '#334155';
       const gridColor = this.isDarkMode ? 'rgba(148,163,184,0.22)' : 'rgba(51,65,85,0.16)';
+      const eventAnnotationsPlugin = {
+        id: 'eventAnnotations',
+        afterDatasetsDraw: (chart) => {
+          if (!this.showEventAnnotations) return;
+          const { ctx, chartArea, scales } = chart;
+          if (!chartArea || !scales.x) return;
+          const labels = chart.data.labels || [];
+          const years = labels.map((x) => Number(x)).filter((x) => !Number.isNaN(x));
+          if (!years.length) return;
+          const minYear = Math.min(...years);
+          const maxYear = Math.max(...years);
+          ctx.save();
+          ctx.strokeStyle = this.isDarkMode ? 'rgba(148,163,184,0.35)' : 'rgba(51,65,85,0.3)';
+          ctx.fillStyle = this.isDarkMode ? '#cbd5e1' : '#334155';
+          ctx.setLineDash([4, 3]);
+          ctx.font = '11px system-ui, -apple-system, Segoe UI, sans-serif';
+          EVENT_MARKERS.forEach((event) => {
+            if (event.year < minYear || event.year > maxYear) return;
+            const xPos = scales.x.getPixelForValue(event.year);
+            if (xPos < chartArea.left || xPos > chartArea.right) return;
+            ctx.beginPath();
+            ctx.moveTo(xPos, chartArea.top);
+            ctx.lineTo(xPos, chartArea.bottom);
+            ctx.stroke();
+            ctx.fillText(event.label, xPos + 4, chartArea.top + 12);
+          });
+          ctx.restore();
+        },
+      };
       return {
         responsive: true, maintainAspectRatio: false, animation: false,
+        eventAnnotationsPlugin,
         plugins: {
           legend: { display: true, labels: { color: axisColor } },
           tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(3) ?? '—'}` } },
@@ -275,11 +322,6 @@ createApp({
           x: {
             ticks: { autoSkip: true, maxTicksLimit: 8, color: axisColor },
             grid: { color: gridColor },
-            afterBuildTicks: (axis) => {
-              EVENT_MARKERS.forEach((evt) => {
-                if (axis.min <= evt.year && axis.max >= evt.year) axis.ticks.push({ value: evt.year, label: `| ${evt.label}` });
-              });
-            },
           },
           y: { beginAtZero: true, ticks: { color: axisColor }, grid: { color: gridColor } },
         },
@@ -299,9 +341,9 @@ createApp({
         borderColor: PALETTE[0],
         backgroundColor: 'rgba(31, 111, 235, 0.1)',
         tension: 0.2,
-        pointRadius: pts.map((p) => (p.observed ? 3 : 0)),
+        pointRadius: this.showMethodologyOverlay ? pts.map((p) => (p.observed ? 3 : 2)) : 0,
         pointBackgroundColor: this.showMethodologyOverlay ? pts.map((p) => (p.observed ? this.confidenceColor(item) : 'rgba(100,116,139,0.5)')) : PALETTE[0],
-        segment: { borderDash: (ctx) => (ctx.p0?.raw == null || ctx.p1?.raw == null ? [5, 5] : []) },
+        segment: { borderDash: (ctx) => (this.showMethodologyOverlay && (ctx.p0?.raw == null || ctx.p1?.raw == null || !pts[ctx.p0DataIndex]?.observed || !pts[ctx.p1DataIndex]?.observed) ? [5, 5] : []) },
       }];
       const forecast = this.showForecast ? this.getForecastSeries(pts) : [];
       if (forecast.length) {
@@ -328,10 +370,12 @@ createApp({
             tension: 0.2,
           });
       }
+      const options = this.chartOptions();
       this.charts[itemKey] = new Chart(canvas, {
         type: 'line',
         data: { labels: [...pts.map((p) => p.year), ...forecast.map((f) => f.year)], datasets },
-        options: this.chartOptions(),
+        options,
+        plugins: [options.eventAnnotationsPlugin],
       });
     },
     renderCompareChart() {
@@ -347,13 +391,15 @@ createApp({
       const canvas = document.getElementById('chart-compare');
       if (!canvas) return;
       if (this.charts.compare) this.charts.compare.destroy();
+      const options = this.chartOptions();
       this.charts.compare = new Chart(canvas, {
         type: 'line',
         data: { labels, datasets },
+        plugins: [options.eventAnnotationsPlugin],
         options: {
-          ...this.chartOptions(),
+          ...options,
           scales: {
-            ...this.chartOptions().scales,
+            ...options.scales,
             y1: { position: 'right', min: -1, max: 1, grid: { drawOnChartArea: false }, ticks: { color: this.isDarkMode ? '#f1f5f9' : '#111827' } },
           },
         },
@@ -364,13 +410,20 @@ createApp({
       if (!canvas) return;
       if (this.charts.spread) this.charts.spread.destroy();
       const pts = this.spreadSeries;
+      const options = this.chartOptions();
       this.charts.spread = new Chart(canvas, {
         type: 'line',
         data: {
           labels: pts.map((p) => p.year),
-          datasets: [{ label: `Spread ${this.spreadDenominatorA}/${this.spreadDenominatorB}`, data: pts.map((p) => p.value), borderColor: '#7c3aed', tension: 0.2 }],
+          datasets: [{
+            label: `${this.items.find((x) => x.key === this.spreadNumeratorItemKey)?.name || 'Item A'} / ${this.items.find((x) => x.key === this.spreadDenominatorItemKey)?.name || 'Item B'}`,
+            data: pts.map((p) => p.value),
+            borderColor: '#7c3aed',
+            tension: 0.2,
+          }],
         },
-        options: this.chartOptions(),
+        options,
+        plugins: [options.eventAnnotationsPlugin],
       });
     },
     currentRegime() {
@@ -424,7 +477,8 @@ createApp({
         this.denominators = Object.entries(this.contextSeries).map(([value, d]) => ({ value, label: d.label }));
         this.perChartDenominator = Object.fromEntries(this.items.map((item) => [item.key, this.allDenominator]));
         if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);
-        if (!this.spreadItemKey) this.spreadItemKey = this.items[0]?.key || '';
+        if (!this.spreadNumeratorItemKey) this.spreadNumeratorItemKey = this.items[0]?.key || '';
+        if (!this.spreadDenominatorItemKey) this.spreadDenominatorItemKey = this.items[1]?.key || this.items[0]?.key || '';
       } catch (err) {
         this.error = `Unable to load pricing data: ${err.message}`;
       } finally { this.isLoading = false; }

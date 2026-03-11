@@ -46,7 +46,8 @@
         <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100 at range start</label>
         <label><input type="checkbox" v-model="showObservedOnly" @change="syncUrlAndRender" /> Show observed years only</label>
         <label><input type="checkbox" v-model="showForecast" @change="syncUrlAndRender" /> Show 2Y forecast band</label>
-        <label><input type="checkbox" v-model="showMethodologyOverlay" @change="syncUrlAndRender" /> Show methodology overlay</label>
+        <label><input type="checkbox" v-model="showMethodologyOverlay" @change="syncUrlAndRender" /> Show methodology overlay (observed vs estimated)</label>
+        <label><input type="checkbox" v-model="showEventAnnotations" @change="syncUrlAndRender" /> Show macro event annotations</label>
         <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
           {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
         </button>
@@ -114,33 +115,27 @@
         </section>
 
         <article class="chart-card tool-card">
-          <header><h2>Denominator spread view</h2></header>
+          <header><h2>Relative price ratio view (A / B)</h2></header>
           <p>
-            This chart compares the same item under two denominator choices by plotting
-            <strong>(Item ÷ Denominator A) ÷ (Item ÷ Denominator B)</strong> over time.
-            A value of <strong>1.00</strong> means both denominator perspectives tell the same story for that year.
+            This chart now plots one item directly against another as <strong>A ÷ B</strong> over time
+            (for example, <em>gold priced in bitcoin = gold ÷ bitcoin</em>).
           </p>
           <ul>
-            <li><strong>Above 1.00:</strong> denominator A makes the item look relatively more expensive than denominator B.</li>
-            <li><strong>Below 1.00:</strong> denominator A makes the item look relatively cheaper than denominator B.</li>
-            <li><strong>Rising line:</strong> the gap between the two denominator views is widening in favor of denominator A.</li>
-            <li><strong>Falling line:</strong> denominator B is catching up or overtaking denominator A as the framing lens.</li>
+            <li><strong>Above 1.00:</strong> one unit of A costs more than one unit of B.</li>
+            <li><strong>Below 1.00:</strong> one unit of A costs less than one unit of B.</li>
+            <li><strong>Rising line:</strong> A is appreciating versus B.</li>
+            <li><strong>Falling line:</strong> A is weakening versus B.</li>
           </ul>
-          <p class="lineage">Use this to understand whether your conclusion depends heavily on the unit you measure "affordability" in (cash, real cash, salary, gold, bitcoin, etc.).</p>
+          <p class="lineage">Use this as a clean cross-asset lens when denominator framing would otherwise cancel out.</p>
           <div class="spread-controls">
-            <label>Item
-              <select v-model="spreadItemKey" @change="syncUrlAndRender">
-                <option v-for="item in filteredItems" :key="`spread-item-${item.key}`" :value="item.key">{{ item.name }}</option>
+            <label>Item A (numerator)
+              <select v-model="spreadNumeratorItemKey" @change="syncUrlAndRender">
+                <option v-for="item in filteredItems" :key="`spread-a-item-${item.key}`" :value="item.key">{{ item.name }}</option>
               </select>
             </label>
-            <label>Denominator A
-              <select v-model="spreadDenominatorA" @change="syncUrlAndRender">
-                <option v-for="denom in denominators" :key="`spread-a-${denom.value}`" :value="denom.value">{{ denom.label }}</option>
-              </select>
-            </label>
-            <label>Denominator B
-              <select v-model="spreadDenominatorB" @change="syncUrlAndRender">
-                <option v-for="denom in denominators" :key="`spread-b-${denom.value}`" :value="denom.value">{{ denom.label }}</option>
+            <label>Item B (denominator)
+              <select v-model="spreadDenominatorItemKey" @change="syncUrlAndRender">
+                <option v-for="item in filteredItems" :key="`spread-b-item-${item.key}`" :value="item.key">{{ item.name }}</option>
               </select>
             </label>
           </div>
