@@ -40,6 +40,8 @@
         </label>
         <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100 at range start</label>
         <label><input type="checkbox" v-model="showObservedOnly" @change="syncUrlAndRender" /> Show observed years only</label>
+        <label><input type="checkbox" v-model="showForecast" @change="syncUrlAndRender" /> Show 2Y forecast band</label>
+        <label><input type="checkbox" v-model="showMethodologyOverlay" @change="syncUrlAndRender" /> Show methodology overlay</label>
         <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
           {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
         </button>
@@ -59,8 +61,71 @@
       <section v-else>
         <p v-if="allDenominator==='bitcoin' && !showFullBitcoin" class="notice">Bitcoin is hidden before 2017 by default because early annual averages are sparse and highly volatile. Use “Show full available history” to include all years.</p>
 
+        <article class="chart-card tool-card">
+          <header><h2>Custom basket index</h2></header>
+          <p>Create a weighted household basket. Weights are relative and normalized automatically.</p>
+          <div class="basket-controls">
+            <label v-for="item in filteredItems" :key="`basket-${item.key}`">{{ item.name }}
+              <input type="number" min="0" step="0.1" :value="basketWeights[item.key] || 0" @input="setBasketWeight(item.key, $event.target.value)" />
+            </label>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-basket"></canvas></div>
+        </article>
+
+        <article class="chart-card tool-card">
+          <header><h2>Denominator spread view</h2></header>
+          <div class="spread-controls">
+            <label>Item
+              <select v-model="spreadItemKey" @change="syncUrlAndRender">
+                <option v-for="item in filteredItems" :key="`spread-item-${item.key}`" :value="item.key">{{ item.name }}</option>
+              </select>
+            </label>
+            <label>Denominator A
+              <select v-model="spreadDenominatorA" @change="syncUrlAndRender">
+                <option v-for="denom in denominators" :key="`spread-a-${denom.value}`" :value="denom.value">{{ denom.label }}</option>
+              </select>
+            </label>
+            <label>Denominator B
+              <select v-model="spreadDenominatorB" @change="syncUrlAndRender">
+                <option v-for="denom in denominators" :key="`spread-b-${denom.value}`" :value="denom.value">{{ denom.label }}</option>
+              </select>
+            </label>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-spread"></canvas></div>
+        </article>
+
+        <article class="chart-card tool-card">
+          <header><h2>Alerts watchlist</h2></header>
+          <div class="alert-builder">
+            <label>Item
+              <select v-model="alertDraft.itemKey">
+                <option v-for="item in filteredItems" :key="`alert-item-${item.key}`" :value="item.key">{{ item.name }}</option>
+              </select>
+            </label>
+            <label>Denominator
+              <select v-model="alertDraft.denominator">
+                <option v-for="denom in denominators" :key="`alert-den-${denom.value}`" :value="denom.value">{{ denom.label }}</option>
+              </select>
+            </label>
+            <label>Rule
+              <select v-model="alertDraft.operator"><option value="gt">&gt;</option><option value="lt">&lt;</option></select>
+            </label>
+            <label>Threshold
+              <input type="number" step="0.01" v-model.number="alertDraft.threshold" />
+            </label>
+            <button @click="addAlert">Add alert</button>
+          </div>
+          <ul class="alert-list">
+            <li v-for="(alert, idx) in activeAlerts" :key="`alert-${idx}`" :class="`alert-${alert.status}`">
+              {{ alert.message }}
+              <button @click="removeAlert(idx)">Remove</button>
+            </li>
+          </ul>
+        </article>
+
         <article class="chart-card" v-if="viewMode==='compare'">
           <header><h2>Comparison chart</h2></header>
+          <p class="lineage">5Y avg correlation (first two series): {{ compareAnalytics.averageCorrelation == null ? '—' : compareAnalytics.averageCorrelation.toFixed(2) }} · Regime: {{ compareAnalytics.regime }}</p>
           <div class="chips">
             <label v-for="item in filteredItems" :key="item.key"><input type="checkbox" :checked="compareKeys.includes(item.key)" @change="toggleCompare(item.key)" /> {{ item.name }}</label>
           </div>
@@ -82,6 +147,7 @@
               <div class="stat"><dt>Total change</dt><dd>{{ chartStats(item.key).totalChange }}</dd></div>
               <div class="stat"><dt>Best year</dt><dd>{{ chartStats(item.key).bestYear }}</dd></div>
               <div class="stat"><dt>Worst year</dt><dd>{{ chartStats(item.key).worstYear }}</dd></div>
+              <div class="stat"><dt>Volatility (5Y log-return)</dt><dd>{{ chartStats(item.key).vol5y }}</dd></div>
             </dl>
             <div class="chart-wrap"><canvas :id="`chart-${item.key}`"></canvas></div>
             <details class="meta"><summary>What is being measured?</summary>
