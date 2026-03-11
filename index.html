@@ -81,6 +81,7 @@
               <div class="stat"><dt>CAGR (selected)</dt><dd>{{ chartStats(item.key).cagrSelected }}</dd></div>
               <div class="stat"><dt>Total change</dt><dd>{{ chartStats(item.key).totalChange }}</dd></div>
               <div class="stat"><dt>Best year</dt><dd>{{ chartStats(item.key).bestYear }}</dd></div>
+              <div class="stat"><dt>Worst year</dt><dd>{{ chartStats(item.key).worstYear }}</dd></div>
             </dl>
             <div class="chart-wrap"><canvas :id="`chart-${item.key}`"></canvas></div>
             <details class="meta"><summary>What is being measured?</summary>
