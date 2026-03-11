@@ -16,8 +16,7 @@ Vue + Chart.js app for exploring UK cost-of-living series in multiple denominato
 - Optional observed-only view to reduce interpolation ambiguity
 - Major macro event markers and improved loading/error/retry states
 - Rolling 5-year volatility of log returns on each item card
-- Custom weighted basket index chart
-- Denominator spread chart, 2-year forecast bands, alerts watchlist, and compare-mode rolling correlation/regime hints
+- Denominator spread chart, 2-year forecast bands, and compare-mode rolling correlation/regime hints
 - Assumptions & caveats page
 
 ## Run locally

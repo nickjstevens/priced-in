@@ -1,8 +1,6 @@
 const PALETTE = ['#1f6feb', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444', '#7c3aed', '#0f766e', '#f97316'];
 const EVENT_MARKERS = [{ year: 2008, label: 'GFC' }, { year: 2016, label: 'Brexit vote' }, { year: 2020, label: 'COVID' }, { year: 2022, label: 'Inflation spike' }];
 const STORAGE_KEYS = {
-  basketWeights: 'priced-in-basket-weights',
-  alerts: 'priced-in-alerts',
   theme: 'priced-in-theme',
 };
 
@@ -16,10 +14,6 @@ function formatPercent(value) {
   return `${sign}${value.toFixed(2)}%`;
 }
 
-function formatNumber(value, digits = 3) {
-  if (value == null || Number.isNaN(value)) return '—';
-  return value.toFixed(digits);
-}
 
 function correlation(xs, ys) {
   if (!xs.length || xs.length !== ys.length) return null;
@@ -42,11 +36,8 @@ createApp({
       viewMode: 'cards', selectedRange: 'full', rebased: false, showObservedOnly: false,
       showFullBitcoin: false, compareKeys: [], search: '', categoryFilter: 'all',
       isLoading: true, error: '',
-      basketWeights: {},
       spreadItemKey: '', spreadDenominatorA: 'fiat', spreadDenominatorB: 'real_fiat',
       showMethodologyOverlay: true, showForecast: false,
-      alertDraft: { itemKey: '', denominator: 'fiat', operator: 'gt', threshold: 1 },
-      alerts: [],
       isDarkMode: false,
     };
   },
@@ -55,49 +46,6 @@ createApp({
       const q = this.search.trim().toLowerCase();
       return this.items.filter((item) => (this.categoryFilter === 'all' || item.category === this.categoryFilter)
         && (!q || item.name.toLowerCase().includes(q) || item.category?.includes(q)));
-    },
-    activeAlerts() {
-      return this.alerts.map((alert) => {
-        const item = this.items.find((x) => x.key === alert.itemKey);
-        if (!item) return { ...alert, status: 'invalid', message: 'Item missing' };
-        const pts = this.visibleSeries(item, alert.denominator).filter((p) => p.value != null);
-        const latest = pts[pts.length - 1]?.value;
-        if (latest == null) return { ...alert, status: 'pending', message: 'No latest value' };
-        const triggered = alert.operator === 'gt' ? latest > alert.threshold : latest < alert.threshold;
-        return {
-          ...alert,
-          status: triggered ? 'triggered' : 'ok',
-          latest,
-          itemName: item.name,
-          message: `${item.name} (${alert.denominator}) is ${formatNumber(latest)} vs threshold ${alert.operator === 'gt' ? '>' : '<'} ${alert.threshold}`,
-        };
-      });
-    },
-    basketSeries() {
-      const keys = Object.keys(this.basketWeights).filter((k) => Number(this.basketWeights[k]) > 0);
-      if (!keys.length) return [];
-      const totalWeight = keys.reduce((acc, k) => acc + Number(this.basketWeights[k]), 0);
-      if (!totalWeight) return [];
-      const [from, to] = this.rangeBounds();
-      return this.years
-        .map((year, idx) => {
-          if (year < from || year > to) return null;
-          const values = keys.map((key) => {
-            const item = this.items.find((x) => x.key === key);
-            if (!item) return null;
-            return this.convertSeries(item, this.allDenominator)[idx];
-          }).filter((v) => v != null);
-          if (!values.length) return { year, value: null };
-          const weighted = keys.reduce((acc, key) => {
-            const item = this.items.find((x) => x.key === key);
-            if (!item) return acc;
-            const value = this.convertSeries(item, this.allDenominator)[idx];
-            if (value == null) return acc;
-            return acc + (value * (Number(this.basketWeights[key]) / totalWeight));
-          }, 0);
-          return { year, value: weighted };
-        })
-        .filter(Boolean);
     },
     compareAnalytics() {
       const keys = this.compareKeys.length ? this.compareKeys : this.filteredItems.slice(0, 3).map((x) => x.key);
@@ -165,19 +113,13 @@ createApp({
       this.renderAll();
     },
     persistLocalState() {
-      localStorage.setItem(STORAGE_KEYS.basketWeights, JSON.stringify(this.basketWeights));
-      localStorage.setItem(STORAGE_KEYS.alerts, JSON.stringify(this.alerts));
       localStorage.setItem(STORAGE_KEYS.theme, this.isDarkMode ? 'dark' : 'light');
     },
     loadLocalState() {
       try {
-        this.basketWeights = JSON.parse(localStorage.getItem(STORAGE_KEYS.basketWeights) || '{}');
-        this.alerts = JSON.parse(localStorage.getItem(STORAGE_KEYS.alerts) || '[]');
         const savedTheme = localStorage.getItem(STORAGE_KEYS.theme);
         if (savedTheme === 'dark' || savedTheme === 'light') this.isDarkMode = savedTheme === 'dark';
       } catch {
-        this.basketWeights = {};
-        this.alerts = [];
       }
     },
     rangeBounds() {
@@ -417,20 +359,6 @@ createApp({
         },
       });
     },
-    renderBasketChart() {
-      const canvas = document.getElementById('chart-basket');
-      if (!canvas) return;
-      if (this.charts.basket) this.charts.basket.destroy();
-      const pts = this.basketSeries;
-      this.charts.basket = new Chart(canvas, {
-        type: 'line',
-        data: {
-          labels: pts.map((p) => p.year),
-          datasets: [{ label: `Custom basket (${this.allDenominator})`, data: pts.map((p) => p.value), borderColor: '#0f766e', tension: 0.2 }],
-        },
-        options: this.chartOptions(),
-      });
-    },
     renderSpreadChart() {
       const canvas = document.getElementById('chart-spread');
       if (!canvas) return;
@@ -461,7 +389,6 @@ createApp({
     renderAll() {
       if (this.viewMode === 'compare') this.renderCompareChart();
       else this.filteredItems.forEach((item) => this.renderChart(item.key));
-      this.renderBasketChart();
       this.renderSpreadChart();
     },
     applyToAll() {
@@ -471,19 +398,6 @@ createApp({
     toggleCompare(key) {
       this.compareKeys = this.compareKeys.includes(key) ? this.compareKeys.filter((x) => x !== key) : [...this.compareKeys, key];
       this.syncUrlAndRender();
-    },
-    setBasketWeight(key, value) {
-      this.basketWeights[key] = Number(value) || 0;
-      this.syncUrlAndRender();
-    },
-    addAlert() {
-      if (!this.alertDraft.itemKey) return;
-      this.alerts.push({ ...this.alertDraft, threshold: Number(this.alertDraft.threshold) });
-      this.persistLocalState();
-    },
-    removeAlert(idx) {
-      this.alerts.splice(idx, 1);
-      this.persistLocalState();
     },
     downloadCsv() {
       const keys = this.viewMode === 'compare' ? (this.compareKeys.length ? this.compareKeys : this.filteredItems.slice(0, 3).map((x) => x.key)) : this.filteredItems.map((x) => x.key);
@@ -511,10 +425,6 @@ createApp({
         this.perChartDenominator = Object.fromEntries(this.items.map((item) => [item.key, this.allDenominator]));
         if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);
         if (!this.spreadItemKey) this.spreadItemKey = this.items[0]?.key || '';
-        if (!this.alertDraft.itemKey) this.alertDraft.itemKey = this.items[0]?.key || '';
-        if (!Object.keys(this.basketWeights).length) {
-          this.basketWeights = Object.fromEntries(this.items.slice(0, 3).map((item) => [item.key, 1]));
-        }
       } catch (err) {
         this.error = `Unable to load pricing data: ${err.message}`;
       } finally { this.isLoading = false; }
