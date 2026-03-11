@@ -15,7 +15,12 @@
           <h1>Priced In — Cost of Living Explorer</h1>
           <p>Compare UK costs priced in nominal £, real £, gold, salary, median salary, hours worked, and bitcoin.</p>
         </div>
-        <a class="assumptions-link" href="assumptions.html">Assumptions & caveats</a>
+        <div class="title-actions">
+          <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
+            {{ isDarkMode ? '☀️ Light mode' : '🌙 Dark mode' }}
+          </button>
+          <a class="assumptions-link" href="assumptions.html">Assumptions & caveats</a>
+        </div>
       </div>
 
       <section class="controls" v-if="!isLoading && !error">
