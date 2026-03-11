@@ -94,11 +94,10 @@ createApp({
     return {
       years: [], contextSeries: {}, items: [], denominators: [], charts: {},
       perChartDenominator: {}, allDenominator: 'fiat',
-      viewMode: 'cards', selectedRange: 'full', rebased: false, showObservedOnly: false,
+      viewMode: 'cards', selectedRange: 'full', rebased: false,
       showFullBitcoin: false, compareKeys: [], search: '', categoryFilter: 'all',
       isLoading: true, error: '',
       spreadNumeratorItemKey: '', spreadDenominatorItemKey: '',
-      showMethodologyOverlay: true, showForecast: false, showEventAnnotations: false,
       isDarkMode: false,
     };
   },
@@ -107,6 +106,16 @@ createApp({
       const q = this.search.trim().toLowerCase();
       return this.items.filter((item) => (this.categoryFilter === 'all' || item.category === this.categoryFilter)
         && (!q || item.name.toLowerCase().includes(q) || item.category?.includes(q)));
+    },
+    spreadSeriesOptions() {
+      const itemSeries = this.items.map((item) => ({ key: item.key, name: item.name, values: item.values, observed: item.observed }));
+      const denominatorSeries = this.denominators.map((denom) => ({
+        key: `context:${denom.value}`,
+        name: denom.label,
+        values: this.contextSeries[denom.value]?.values || [],
+        observed: this.contextSeries[denom.value]?.values?.map((v) => v != null) || [],
+      }));
+      return [...itemSeries, ...denominatorSeries];
     },
     compareAnalytics() {
       const keys = this.compareKeys.length ? this.compareKeys : this.filteredItems.slice(0, 3).map((x) => x.key);
@@ -132,15 +141,15 @@ createApp({
       };
     },
     spreadSeries() {
-      const numerator = this.items.find((x) => x.key === this.spreadNumeratorItemKey);
-      const denominator = this.items.find((x) => x.key === this.spreadDenominatorItemKey);
+      const numerator = this.spreadSeriesOptions.find((x) => x.key === this.spreadNumeratorItemKey);
+      const denominator = this.spreadSeriesOptions.find((x) => x.key === this.spreadDenominatorItemKey);
       if (!numerator || !denominator) return [];
       const [from, to] = this.rangeBounds();
       return this.years.map((year, idx) => {
         if (year < from || year > to) return null;
         const numeratorObserved = numerator.observed?.[idx] ?? true;
         const denominatorObserved = denominator.observed?.[idx] ?? true;
-        if (this.showObservedOnly && (!numeratorObserved || !denominatorObserved)) return null;
+        if (!numeratorObserved || !denominatorObserved) return null;
         const a = numerator.values?.[idx];
         const b = denominator.values?.[idx];
         if (a == null || b == null || b === 0) return { year, value: null };
@@ -157,9 +166,6 @@ createApp({
       this.rebased = p.get('rebased') === '1';
       this.showFullBitcoin = p.get('btcFull') === '1';
       this.compareKeys = (p.get('items') || '').split(',').filter(Boolean);
-      this.showForecast = p.get('forecast') === '1';
-      this.showMethodologyOverlay = p.get('method') !== '0';
-      this.showEventAnnotations = p.get('events') === '1';
       const theme = p.get('theme');
       if (theme === 'dark' || theme === 'light') this.isDarkMode = theme === 'dark';
     },
@@ -171,9 +177,6 @@ createApp({
       if (this.rebased) p.set('rebased', '1');
       if (this.showFullBitcoin) p.set('btcFull', '1');
       if (this.compareKeys.length) p.set('items', this.compareKeys.join(','));
-      if (this.showForecast) p.set('forecast', '1');
-      if (!this.showMethodologyOverlay) p.set('method', '0');
-      if (this.showEventAnnotations) p.set('events', '1');
       p.set('theme', this.isDarkMode ? 'dark' : 'light');
       history.replaceState({}, '', `${location.pathname}?${p.toString()}`);
       this.persistLocalState();
@@ -190,9 +193,7 @@ createApp({
       }
     },
     rangeBounds() {
-      if (this.selectedRange === 'last10') return [this.years[this.years.length - 10], this.years[this.years.length - 1]];
-      if (this.selectedRange === '2000-2010') return [2000, 2010];
-      if (this.selectedRange === '2015-2025') return [2015, 2025];
+      if (this.selectedRange === 'last10') return [this.years[Math.max(0, this.years.length - 10)], this.years[this.years.length - 1]];
       return [this.years[0], this.years[this.years.length - 1]];
     },
     convertSeries(item, denominator) {
@@ -209,7 +210,7 @@ createApp({
       let points = this.years.map((year, idx) => ({ year, value: raw[idx], observed: item.values[idx] != null && this.contextSeries[denominator]?.values?.[idx] != null }))
         .filter((p) => p.year >= from && p.year <= to);
       if (denominator === 'bitcoin' && !this.showFullBitcoin) points = points.filter((p) => p.year >= 2017);
-      if (this.showObservedOnly) points = points.filter((p) => p.observed);
+      points = points.filter((p) => p.observed);
       if (this.rebased) {
         const first = points.find((p) => p.value != null)?.value;
         if (first) points = points.map((p) => ({ ...p, value: p.value == null ? null : (p.value / first) * 100 }));
@@ -335,7 +336,6 @@ createApp({
       const eventAnnotationsPlugin = {
         id: 'eventAnnotations',
         afterDatasetsDraw: (chart) => {
-          if (!this.showEventAnnotations) return;
           const { ctx, chartArea, scales } = chart;
           if (!chartArea || !scales.x) return;
           const labels = chart.data.labels || [];
@@ -406,11 +406,11 @@ createApp({
         borderColor: PALETTE[0],
         backgroundColor: 'rgba(31, 111, 235, 0.1)',
         tension: 0.2,
-        pointRadius: this.showMethodologyOverlay ? pts.map((p) => (p.observed ? 3 : 2)) : 0,
-        pointBackgroundColor: this.showMethodologyOverlay ? pts.map((p) => (p.observed ? this.confidenceColor(item) : 'rgba(100,116,139,0.5)')) : PALETTE[0],
-        segment: { borderDash: (ctx) => (this.showMethodologyOverlay && (ctx.p0?.raw == null || ctx.p1?.raw == null || !pts[ctx.p0DataIndex]?.observed || !pts[ctx.p1DataIndex]?.observed) ? [5, 5] : []) },
+        pointRadius: pts.map((p) => (p.observed ? 3 : 2)),
+        pointBackgroundColor: pts.map((p) => (p.observed ? this.confidenceColor(item) : 'rgba(100,116,139,0.5)')),
+        segment: { borderDash: (ctx) => ((ctx.p0?.raw == null || ctx.p1?.raw == null || !pts[ctx.p0DataIndex]?.observed || !pts[ctx.p1DataIndex]?.observed) ? [5, 5] : []) },
       }];
-      const forecast = this.showForecast ? this.getForecastSeries(pts) : [];
+      const forecast = [];
       if (forecast.length) {
           datasets.push({
             label: `${item.name} forecast`,
@@ -481,7 +481,7 @@ createApp({
         data: {
           labels: pts.map((p) => p.year),
           datasets: [{
-            label: `${this.items.find((x) => x.key === this.spreadNumeratorItemKey)?.name || 'Item A'} / ${this.items.find((x) => x.key === this.spreadDenominatorItemKey)?.name || 'Item B'}`,
+            label: `${this.spreadSeriesOptions.find((x) => x.key === this.spreadNumeratorItemKey)?.name || 'Item A'} / ${this.spreadSeriesOptions.find((x) => x.key === this.spreadDenominatorItemKey)?.name || 'Item B'}`,
             data: pts.map((p) => p.value),
             borderColor: '#7c3aed',
             tension: 0.2,
@@ -543,7 +543,7 @@ createApp({
         this.perChartDenominator = Object.fromEntries(this.items.map((item) => [item.key, this.allDenominator]));
         if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);
         if (!this.spreadNumeratorItemKey) this.spreadNumeratorItemKey = this.items[0]?.key || '';
-        if (!this.spreadDenominatorItemKey) this.spreadDenominatorItemKey = this.items[1]?.key || this.items[0]?.key || '';
+        if (!this.spreadDenominatorItemKey) this.spreadDenominatorItemKey = this.denominators[0] ? `context:${this.denominators[0].value}` : (this.items[1]?.key || this.items[0]?.key || '');
       } catch (err) {
         this.error = `Unable to load pricing data: ${err.message}`;
       } finally { this.isLoading = false; }

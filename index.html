@@ -37,22 +37,15 @@
         </label>
         <label>Range
           <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Date range selector">
-            <option value="full">Full history</option>
             <option value="last10">Last 10 years</option>
-            <option value="2000-2010">2000–2010</option>
-            <option value="2015-2025">2015–2025</option>
+            <option value="full">Full history</option>
           </select>
         </label>
         <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100 at range start</label>
-        <label><input type="checkbox" v-model="showObservedOnly" @change="syncUrlAndRender" /> Show observed years only</label>
-        <label><input type="checkbox" v-model="showForecast" @change="syncUrlAndRender" /> Show 2Y forecast band</label>
-        <label><input type="checkbox" v-model="showMethodologyOverlay" @change="syncUrlAndRender" /> Show methodology overlay (observed vs estimated)</label>
-        <label><input type="checkbox" v-model="showEventAnnotations" @change="syncUrlAndRender" /> Show macro event annotations</label>
         <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
           {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
         </button>
         <button @click="downloadCsv">Download CSV</button>
-        <button @click="fetchPricingData">Retry</button>
         <label>Category
           <select v-model="categoryFilter" @change="syncUrlAndRender"><option value="all">All</option><option value="housing">Housing</option><option value="food">Food</option><option value="energy">Energy</option><option value="transport">Transport</option><option value="education">Education</option><option value="leisure">Leisure</option><option value="finance">Finance</option><option value="taxes">Taxes</option><option value="utilities">Utilities</option><option value="income">Income</option></select>
         </label>
@@ -130,12 +123,12 @@
           <div class="spread-controls">
             <label>Item A (numerator)
               <select v-model="spreadNumeratorItemKey" @change="syncUrlAndRender">
-                <option v-for="item in filteredItems" :key="`spread-a-item-${item.key}`" :value="item.key">{{ item.name }}</option>
+                <option v-for="series in spreadSeriesOptions" :key="`spread-a-item-${series.key}`" :value="series.key">{{ series.name }}</option>
               </select>
             </label>
             <label>Item B (denominator)
               <select v-model="spreadDenominatorItemKey" @change="syncUrlAndRender">
-                <option v-for="item in filteredItems" :key="`spread-b-item-${item.key}`" :value="item.key">{{ item.name }}</option>
+                <option v-for="series in spreadSeriesOptions" :key="`spread-b-item-${series.key}`" :value="series.key">{{ series.name }}</option>
               </select>
             </label>
           </div>
