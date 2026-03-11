@@ -80,19 +80,30 @@ createApp({
     chartStats(itemKey) {
       const item = this.items.find((x) => x.key === itemKey);
       const d = this.perChartDenominator[itemKey] || this.allDenominator;
-      if (!item) return { cagrSelected: '—', totalChange: '—', bestYear: '—' };
+      if (!item) return {
+        cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—',
+      };
       const pts = this.visibleSeries(item, d).filter((p) => p.value != null);
-      if (pts.length < 2) return { cagrSelected: '—', totalChange: '—', bestYear: '—' };
+      if (pts.length < 2) return {
+        cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—',
+      };
       const first = pts[0]; const last = pts[pts.length - 1];
       const years = last.year - first.year;
       const cagr = years > 0 ? (((last.value / first.value) ** (1 / years) - 1) * 100) : null;
       const total = ((last.value - first.value) / first.value) * 100;
       let best = { y: null, c: -Infinity };
+      let worst = { y: null, c: Infinity };
       for (let i = 1; i < pts.length; i += 1) {
         const c = ((pts[i].value - pts[i - 1].value) / pts[i - 1].value) * 100;
         if (c > best.c) best = { y: pts[i].year, c };
+        if (c < worst.c) worst = { y: pts[i].year, c };
       }
-      return { cagrSelected: formatPercent(cagr), totalChange: formatPercent(total), bestYear: `${best.y} (${formatPercent(best.c)})` };
+      return {
+        cagrSelected: formatPercent(cagr),
+        totalChange: formatPercent(total),
+        bestYear: `${best.y} (${formatPercent(best.c)})`,
+        worstYear: `${worst.y} (${formatPercent(worst.c)})`,
+      };
     },
 
     insightText(itemKey) {
