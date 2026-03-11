@@ -57,6 +57,13 @@ function annualAveragesFromMonthly(points, years) {
   });
 }
 
+function mergeSeries(baseValues, refreshedValues) {
+  return refreshedValues.map((value, idx) => {
+    if (value == null) return baseValues?.[idx] ?? null;
+    return value;
+  });
+}
+
 async function refreshDenominatorSeries(payload) {
   const years = payload?.years;
   if (!Array.isArray(years) || years.length === 0) return payload;
@@ -73,7 +80,10 @@ async function refreshDenominatorSeries(payload) {
     ]);
 
     const nextPayload = structuredClone(payload);
-    nextPayload.contextSeries.gold.values = annualAveragesFromMonthly(goldMonthly, years);
+    nextPayload.contextSeries.gold.values = mergeSeries(
+      payload.contextSeries?.gold?.values,
+      annualAveragesFromMonthly(goldMonthly, years),
+    );
     nextPayload.contextSeries.bitcoin.values = annualAveragesFromMonthly(bitcoinMonthly, years);
 
     nextPayload.contextSeries.gold.sources = [
@@ -81,6 +91,7 @@ async function refreshDenominatorSeries(payload) {
         name: 'Yahoo Finance XAUGBP=X monthly closes (annual average)',
         url: 'https://finance.yahoo.com/quote/XAUGBP%3DX/history',
       },
+      ...(payload.contextSeries?.gold?.sources || []),
     ];
 
     nextPayload.contextSeries.bitcoin.sources = [
