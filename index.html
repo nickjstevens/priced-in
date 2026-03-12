@@ -88,6 +88,9 @@
               <div class="stat"><dt>Best year</dt><dd>{{ chartStats(item.key).bestYear }}</dd></div>
               <div class="stat"><dt>Worst year</dt><dd>{{ chartStats(item.key).worstYear }}</dd></div>
               <div class="stat"><dt>Volatility (5Y log-return)</dt><dd>{{ chartStats(item.key).vol5y }}</dd></div>
+              <div class="stat"><dt>Max drawdown</dt><dd>{{ chartStats(item.key).maxDrawdown }}</dd></div>
+              <div class="stat"><dt>From historical peak</dt><dd>{{ chartStats(item.key).fromPeak }}</dd></div>
+              <div class="stat"><dt>Corr. vs priced-in asset</dt><dd>{{ chartStats(item.key).correlationToDenominator }}</dd></div>
             </dl>
             <div class="chart-wrap"><canvas :id="`chart-${item.key}`"></canvas></div>
             <details class="meta"><summary>What is being measured?</summary>
@@ -123,6 +126,11 @@
             <li><strong>Falling line:</strong> A is weakening versus B.</li>
           </ul>
           <p class="lineage">Use this as a clean cross-asset lens when denominator framing would otherwise cancel out.</p>
+          <div class="ratio-stats">
+            <div class="stat"><dt>Pair correlation (A vs B)</dt><dd>{{ spreadCorrelation == null ? '—' : spreadCorrelation.toFixed(2) }}</dd></div>
+            <div class="stat"><dt>Ratio max drawdown</dt><dd>{{ formatPercent(maxDrawdown(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
+            <div class="stat"><dt>Ratio from historical peak</dt><dd>{{ formatPercent(distanceFromPeak(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
+          </div>
           <div class="spread-controls">
             <label>Item A (numerator)
               <select v-model="spreadNumeratorItemKey" @change="syncUrlAndRender">

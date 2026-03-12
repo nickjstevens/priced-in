@@ -87,12 +87,35 @@ function correlation(xs, ys) {
   return cov / Math.sqrt(xVar * yVar);
 }
 
+
+function maxDrawdown(points) {
+  if (!points.length) return null;
+  let peak = points[0].value;
+  let worst = 0;
+  points.forEach((point) => {
+    if (point.value > peak) peak = point.value;
+    if (peak > 0) {
+      const drawdown = ((point.value - peak) / peak) * 100;
+      if (drawdown < worst) worst = drawdown;
+    }
+  });
+  return worst;
+}
+
+function distanceFromPeak(points) {
+  if (!points.length) return null;
+  const peak = points.reduce((m, p) => (p.value > m ? p.value : m), points[0].value);
+  const latest = points[points.length - 1].value;
+  if (!peak) return null;
+  return ((latest - peak) / peak) * 100;
+}
+
 const { createApp, nextTick } = Vue;
 
 createApp({
   data() {
     return {
-      years: [], contextSeries: {}, items: [], denominators: [], charts: {},
+      years: [], contextSeries: {}, items: [], monthlySeries: {}, denominators: [], charts: {},
       perChartDenominator: {}, allDenominator: 'fiat',
       viewMode: 'cards', selectedRange: 'full', rebased: false,
       showFullBitcoin: false, compareKeys: [], search: '', categoryFilter: 'all',
@@ -141,25 +164,18 @@ createApp({
       };
     },
     spreadSeries() {
-      const numerator = this.spreadSeriesOptions.find((x) => x.key === this.spreadNumeratorItemKey);
-      const denominator = this.spreadSeriesOptions.find((x) => x.key === this.spreadDenominatorItemKey);
-      if (!numerator || !denominator) return [];
-      const [from, to] = this.rangeBounds();
-      const bitcoinInPair = [this.spreadNumeratorItemKey, this.spreadDenominatorItemKey].includes('context:bitcoin');
-      return this.years.map((year, idx) => {
-        if (year < from || year > to) return null;
-        if (bitcoinInPair && !this.showFullBitcoin && year < 2017) return null;
-        const numeratorObserved = numerator.observed?.[idx] ?? true;
-        const denominatorObserved = denominator.observed?.[idx] ?? true;
-        if (!numeratorObserved || !denominatorObserved) return null;
-        const a = numerator.values?.[idx];
-        const b = denominator.values?.[idx];
-        if (a == null || b == null || b === 0) return { year, value: null };
-        return { year, value: a / b };
-      }).filter(Boolean);
+      return this.visiblePairSeries(this.spreadNumeratorItemKey, this.spreadDenominatorItemKey);
+    },
+    spreadCorrelation() {
+      const numerator = this.visiblePairSeries(this.spreadNumeratorItemKey, 'context:fiat').filter((p) => p.value != null);
+      const denominator = this.visiblePairSeries(this.spreadDenominatorItemKey, 'context:fiat').filter((p) => p.value != null);
+      return this.pairCorrelation(numerator, denominator);
     },
   },
   methods: {
+    formatPercent,
+    maxDrawdown,
+    distanceFromPeak,
     readUrlState() {
       const p = new URLSearchParams(location.search);
       this.allDenominator = p.get('denom') || 'fiat';
@@ -194,6 +210,67 @@ createApp({
       } catch {
       }
     },
+    monthlySeriesForKey(seriesKey) {
+      if (!seriesKey) return [];
+      const key = seriesKey.startsWith('context:') ? seriesKey.replace('context:', '') : seriesKey;
+      return this.monthlySeries[key] || [];
+    },
+    shouldUseMonthly() {
+      return this.selectedRange === 'last10';
+    },
+    visiblePairSeries(numeratorKey, denominatorKey) {
+      if (!numeratorKey || !denominatorKey) return [];
+      if (this.shouldUseMonthly()) {
+        const numeratorMonthly = this.monthlySeriesForKey(numeratorKey);
+        const denominatorMonthly = this.monthlySeriesForKey(denominatorKey);
+        if (numeratorMonthly.length && denominatorMonthly.length) {
+          const [fromYear, toYear] = this.rangeBounds();
+          const fromDate = `${fromYear}-01`;
+          const toDate = `${toYear}-12`;
+          const denomByDate = new Map(denominatorMonthly.map((point) => [point.date, point.value]));
+          let monthlyPoints = numeratorMonthly
+            .filter((point) => point.date >= fromDate && point.date <= toDate)
+            .map((point) => {
+              const d = denomByDate.get(point.date);
+              if (point.value == null || d == null || d === 0) return null;
+              return { year: point.date, value: point.value / d, observed: true };
+            })
+            .filter(Boolean);
+          if (denominatorKey === 'context:bitcoin' && !this.showFullBitcoin) {
+            monthlyPoints = monthlyPoints.filter((point) => Number(point.year.slice(0, 4)) >= 2017);
+          }
+          if (this.rebased) {
+            const first = monthlyPoints.find((point) => point.value != null)?.value;
+            if (first) monthlyPoints = monthlyPoints.map((point) => ({ ...point, value: (point.value / first) * 100 }));
+          }
+          return monthlyPoints;
+        }
+      }
+      if (numeratorKey.startsWith('context:')) {
+        const contextKey = numeratorKey.replace('context:', '');
+        const synthetic = {
+          key: numeratorKey,
+          values: this.contextSeries[contextKey]?.values || [],
+        };
+        return this.visibleSeries(synthetic, denominatorKey.replace('context:', ''));
+      }
+      const item = this.items.find((x) => x.key === numeratorKey);
+      return this.visibleSeries(item, denominatorKey.replace('context:', ''));
+    },
+    pairCorrelation(aPoints, bPoints) {
+      const bByYear = new Map(bPoints.map((point) => [point.year, point.value]));
+      const x = [];
+      const y = [];
+      aPoints.forEach((point) => {
+        const bValue = bByYear.get(point.year);
+        if (point.value != null && bValue != null) {
+          x.push(point.value);
+          y.push(bValue);
+        }
+      });
+      if (x.length < 5) return null;
+      return correlation(x, y);
+    },
     rangeBounds() {
       if (this.selectedRange === 'last10') return [this.years[Math.max(0, this.years.length - 10)], this.years[this.years.length - 1]];
       if (this.selectedRange === 'last20') return [this.years[Math.max(0, this.years.length - 20)], this.years[this.years.length - 1]];
@@ -226,7 +303,7 @@ createApp({
       const item = this.items.find((x) => x.key === itemKey);
       const d = this.perChartDenominator[itemKey] || this.allDenominator;
       if (!item) return { latest: null, series: [] };
-      const pts = this.visibleSeries(item, d).filter((p) => p.value != null);
+      const pts = this.visiblePairSeries(itemKey, `context:${d}`).filter((p) => p.value != null);
       if (pts.length < 6) return { latest: null, series: [] };
       const returns = [];
       for (let i = 1; i < pts.length; i += 1) {
@@ -246,11 +323,11 @@ createApp({
       const item = this.items.find((x) => x.key === itemKey);
       const d = this.perChartDenominator[itemKey] || this.allDenominator;
       if (!item) return {
-        cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—',
+        cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—', correlationToDenominator: '—',
       };
-      const pts = this.visibleSeries(item, d).filter((p) => p.value != null);
+      const pts = this.visiblePairSeries(itemKey, `context:${d}`).filter((p) => p.value != null);
       if (pts.length < 2) return {
-        cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—',
+        cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—', correlationToDenominator: '—',
       };
       const first = pts[0]; const last = pts[pts.length - 1];
       const years = last.year - first.year;
@@ -264,12 +341,19 @@ createApp({
         if (c < worst.c) worst = { y: pts[i].year, c };
       }
       const volatility = this.rollingVolatility(itemKey).latest;
+      const corr = this.pairCorrelation(
+        this.visiblePairSeries(itemKey, 'context:fiat').filter((p) => p.value != null),
+        this.visiblePairSeries(`context:${d}`, 'context:fiat').filter((p) => p.value != null),
+      );
       return {
         cagrSelected: formatPercent(cagr),
         totalChange: formatPercent(total),
         bestYear: `${best.y} (${formatPercent(best.c)})`,
         worstYear: `${worst.y} (${formatPercent(worst.c)})`,
         vol5y: formatPercent(volatility),
+        maxDrawdown: formatPercent(maxDrawdown(pts)),
+        fromPeak: formatPercent(distanceFromPeak(pts)),
+        correlationToDenominator: corr == null ? '—' : corr.toFixed(2),
       };
     },
 
@@ -401,7 +485,7 @@ createApp({
       const item = this.items.find((x) => x.key === itemKey);
       const denominator = this.perChartDenominator[itemKey] || this.allDenominator;
       if (!item) return;
-      const pts = this.visibleSeries(item, denominator);
+      const pts = this.visiblePairSeries(itemKey, `context:${denominator}`);
       const canvas = document.getElementById(`chart-${itemKey}`);
       if (!canvas) return;
       if (this.charts[itemKey]) this.charts[itemKey].destroy();
@@ -452,12 +536,12 @@ createApp({
       const keys = this.compareKeys.length ? this.compareKeys : this.filteredItems.slice(0, 3).map((x) => x.key);
       const datasets = keys.map((key, idx) => {
         const item = this.items.find((x) => x.key === key);
-        const pts = this.visibleSeries(item, this.allDenominator);
+        const pts = this.visiblePairSeries(key, `context:${this.allDenominator}`);
         return { label: item.name, data: pts.map((p) => p.value), borderColor: PALETTE[idx % PALETTE.length], tension: 0.2 };
       });
       const corr = this.compareAnalytics.rollingCorrelation || [];
       if (corr.length) datasets.push({ label: '5Y rolling correlation (first two)', data: corr.map((p) => p.value), borderColor: '#111827', borderDash: [4, 4], yAxisID: 'y1', tension: 0.2 });
-      const labels = this.visibleSeries(this.items.find((x) => x.key === keys[0]), this.allDenominator).map((p) => p.year);
+      const labels = this.visiblePairSeries(keys[0], `context:${this.allDenominator}`).map((p) => p.year);
       const canvas = document.getElementById('chart-compare');
       if (!canvas) return;
       if (this.charts.compare) this.charts.compare.destroy();
@@ -543,7 +627,7 @@ createApp({
         if (!response.ok) throw new Error(`API unavailable (${response.status})`);
         const payload = await response.json();
         if (!isValidDataset(payload)) throw new Error('dataset malformed');
-        this.years = payload.years; this.contextSeries = payload.contextSeries; this.items = payload.items;
+        this.years = payload.years; this.contextSeries = payload.contextSeries; this.items = payload.items; this.monthlySeries = payload.monthlySeries || {};
         this.denominators = Object.entries(this.contextSeries).map(([value, d]) => ({ value, label: d.label }));
         this.perChartDenominator = Object.fromEntries(this.items.map((item) => [item.key, this.allDenominator]));
         if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);
