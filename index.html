@@ -38,6 +38,9 @@
         <label>Range
           <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Date range selector">
             <option value="last10">Last 10 years</option>
+            <option value="last20">Last 20 years</option>
+            <option value="last30">Last 30 years</option>
+            <option value="last40">Last 40 years</option>
             <option value="full">Full history</option>
           </select>
         </label>
