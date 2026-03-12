@@ -2,6 +2,14 @@ const fs = require('fs/promises');
 const path = require('path');
 
 const YAHOO_CHART_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
+const YAHOO_MONTHLY_SYMBOLS = {
+  gold: 'XAUGBP=X',
+  bitcoin: 'BTC-GBP',
+  copper: 'HG=F',
+  silver: 'SI=F',
+  ftse100: '^FTSE',
+  brent_crude_oil: 'BZ=F',
+};
 
 function buildYahooUrl(symbol, periodStartSec, periodEndSec) {
   const params = new URLSearchParams({
@@ -57,6 +65,21 @@ function annualAveragesFromMonthly(points, years) {
   });
 }
 
+function normalizeMonthlySeries(points) {
+  return points.map((point) => {
+    const date = new Date(point.timestamp * 1000);
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth() + 1;
+    const yyyyMm = `${year}-${String(month).padStart(2, '0')}`;
+    return {
+      date: yyyyMm,
+      year,
+      month,
+      value: Number(point.close.toFixed(4)),
+    };
+  });
+}
+
 function mergeSeries(baseValues, refreshedValues) {
   return refreshedValues.map((value, idx) => {
     if (value == null) return baseValues?.[idx] ?? null;
@@ -74,17 +97,41 @@ async function refreshDenominatorSeries(payload) {
   const periodEndSec = Date.UTC(endYear + 1, 0, 1) / 1000;
 
   try {
-    const [goldMonthly, bitcoinMonthly] = await Promise.all([
-      fetchYahooMonthlySeries('XAUGBP=X', periodStartSec, periodEndSec),
-      fetchYahooMonthlySeries('BTC-GBP', periodStartSec, periodEndSec),
-    ]);
+    const monthlyEntries = await Promise.all(
+      Object.entries(YAHOO_MONTHLY_SYMBOLS).map(async ([seriesKey, symbol]) => {
+        const monthly = await fetchYahooMonthlySeries(symbol, periodStartSec, periodEndSec);
+        return [seriesKey, monthly];
+      }),
+    );
+    const monthlyByKey = Object.fromEntries(monthlyEntries);
 
     const nextPayload = structuredClone(payload);
+    nextPayload.monthlySeries = nextPayload.monthlySeries || {};
+
+    Object.entries(monthlyByKey).forEach(([seriesKey, monthly]) => {
+      nextPayload.monthlySeries[seriesKey] = normalizeMonthlySeries(monthly);
+    });
+
     nextPayload.contextSeries.gold.values = mergeSeries(
       payload.contextSeries?.gold?.values,
-      annualAveragesFromMonthly(goldMonthly, years),
+      annualAveragesFromMonthly(monthlyByKey.gold || [], years),
     );
-    nextPayload.contextSeries.bitcoin.values = annualAveragesFromMonthly(bitcoinMonthly, years);
+    nextPayload.contextSeries.bitcoin.values = annualAveragesFromMonthly(monthlyByKey.bitcoin || [], years);
+
+    Object.entries({
+      copper: 'Yahoo Finance HG=F monthly closes (annual average)',
+      silver: 'Yahoo Finance SI=F monthly closes (annual average)',
+      ftse100: 'Yahoo Finance ^FTSE monthly closes (annual average)',
+      brent_crude_oil: 'Yahoo Finance BZ=F monthly closes (annual average)',
+    }).forEach(([itemKey, sourceName]) => {
+      const item = nextPayload.items.find((entry) => entry.key === itemKey);
+      if (!item) return;
+      item.values = mergeSeries(item.values, annualAveragesFromMonthly(monthlyByKey[itemKey] || [], years));
+      item.sources = [{
+        name: sourceName,
+        url: `https://finance.yahoo.com/quote/${encodeURIComponent(YAHOO_MONTHLY_SYMBOLS[itemKey])}/history`,
+      }, ...(item.sources || [])];
+    });
 
     nextPayload.contextSeries.gold.sources = [
       {
