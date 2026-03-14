@@ -118,6 +118,7 @@ createApp({
       years: [], contextSeries: {}, items: [], monthlySeries: {}, denominators: [], charts: {},
       perChartDenominator: {}, allDenominator: 'fiat',
       viewMode: 'cards', selectedRange: 'full', rebased: false,
+      useLogScale: false, showUsdOverlay: false,
       showFullBitcoin: false, compareKeys: [], search: '', categoryFilter: 'all',
       isLoading: true, error: '',
       spreadNumeratorItemKey: '', spreadDenominatorItemKey: '',
@@ -182,6 +183,8 @@ createApp({
       this.selectedRange = p.get('range') || 'full';
       this.viewMode = p.get('mode') || 'cards';
       this.rebased = p.get('rebased') === '1';
+      this.useLogScale = p.get('log') === '1';
+      this.showUsdOverlay = p.get('overlayUsd') === '1';
       this.showFullBitcoin = p.get('btcFull') === '1';
       this.compareKeys = (p.get('items') || '').split(',').filter(Boolean);
       const theme = p.get('theme');
@@ -193,6 +196,8 @@ createApp({
       p.set('range', this.selectedRange);
       p.set('mode', this.viewMode);
       if (this.rebased) p.set('rebased', '1');
+      if (this.useLogScale) p.set('log', '1');
+      if (this.showUsdOverlay) p.set('overlayUsd', '1');
       if (this.showFullBitcoin) p.set('btcFull', '1');
       if (this.compareKeys.length) p.set('items', this.compareKeys.join(','));
       p.set('theme', this.isDarkMode ? 'dark' : 'light');
@@ -214,6 +219,22 @@ createApp({
       if (!seriesKey) return [];
       const key = seriesKey.startsWith('context:') ? seriesKey.replace('context:', '') : seriesKey;
       return this.monthlySeries[key] || [];
+    },
+    pointValueForSeries(seriesKey, pointKey) {
+      if (!seriesKey || pointKey == null) return null;
+      if (typeof pointKey === 'string' && pointKey.includes('-')) {
+        const monthly = this.monthlySeriesForKey(seriesKey);
+        if (!monthly.length) return null;
+        return monthly.find((point) => point.date === pointKey)?.value ?? null;
+      }
+      const annualIndex = this.years.indexOf(Number(pointKey));
+      if (annualIndex < 0) return null;
+      if (seriesKey.startsWith('context:')) {
+        const contextKey = seriesKey.replace('context:', '');
+        return this.contextSeries[contextKey]?.values?.[annualIndex] ?? null;
+      }
+      const item = this.items.find((x) => x.key === seriesKey);
+      return item?.values?.[annualIndex] ?? null;
     },
     shouldUseMonthly() {
       return this.selectedRange === 'last10';
@@ -467,17 +488,47 @@ createApp({
       };
       return {
         responsive: true, maintainAspectRatio: false, animation: false,
+        interaction: { mode: 'index', intersect: false },
         eventAnnotationsPlugin,
         plugins: {
           legend: { display: true, labels: { color: axisColor } },
-          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(3) ?? '—'}` } },
+          tooltip: {
+            callbacks: {
+              title: (items) => (items[0] ? `Date: ${items[0].label}` : ''),
+              label: (ctx) => {
+                const value = ctx.parsed.y;
+                return `${ctx.dataset.label}: ${value == null ? '—' : value.toFixed(3)}`;
+              },
+              afterLabel: (ctx) => {
+                const details = ctx.dataset?.hoverDetails?.[ctx.dataIndex];
+                if (!details) return null;
+                return [
+                  `Priced-in value: ${details.pricedInValue == null ? '—' : details.pricedInValue.toFixed(3)}`,
+                  `${details.numeratorLabel} (USD): ${details.numeratorUsd == null ? '—' : details.numeratorUsd.toFixed(2)}`,
+                  `${details.denominatorLabel} (USD): ${details.denominatorUsd == null ? '—' : details.denominatorUsd.toFixed(2)}`,
+                ];
+              },
+            },
+          },
         },
         scales: {
           x: {
             ticks: { autoSkip: true, maxTicksLimit: 8, color: axisColor },
             grid: { color: gridColor },
           },
-          y: { beginAtZero: true, ticks: { color: axisColor }, grid: { color: gridColor } },
+          y: {
+            type: this.useLogScale ? 'logarithmic' : 'linear',
+            beginAtZero: !this.useLogScale,
+            ticks: { color: axisColor },
+            grid: { color: gridColor },
+          },
+          yUsd: {
+            type: this.useLogScale ? 'logarithmic' : 'linear',
+            position: 'right',
+            display: false,
+            ticks: { color: axisColor },
+            grid: { drawOnChartArea: false },
+          },
         },
       };
     },
@@ -486,6 +537,15 @@ createApp({
       const denominator = this.perChartDenominator[itemKey] || this.allDenominator;
       if (!item) return;
       const pts = this.visiblePairSeries(itemKey, `context:${denominator}`);
+      const denominatorKey = `context:${denominator}`;
+      const denominatorLabel = this.contextSeries[denominator]?.label || denominator;
+      const hoverDetails = pts.map((point) => ({
+        pricedInValue: point.value,
+        numeratorUsd: this.pointValueForSeries(itemKey, point.year),
+        denominatorUsd: this.pointValueForSeries(denominatorKey, point.year),
+        numeratorLabel: item.name,
+        denominatorLabel,
+      }));
       const canvas = document.getElementById(`chart-${itemKey}`);
       if (!canvas) return;
       if (this.charts[itemKey]) this.charts[itemKey].destroy();
@@ -498,7 +558,20 @@ createApp({
         pointRadius: pts.map((p) => (p.observed ? 3 : 2)),
         pointBackgroundColor: pts.map((p) => (p.observed ? this.confidenceColor(item) : 'rgba(100,116,139,0.5)')),
         segment: { borderDash: (ctx) => ((ctx.p0?.raw == null || ctx.p1?.raw == null || !pts[ctx.p0DataIndex]?.observed || !pts[ctx.p1DataIndex]?.observed) ? [5, 5] : []) },
+        hoverDetails,
       }];
+      if (this.showUsdOverlay) {
+        const usdByPoint = new Map(this.visiblePairSeries(itemKey, 'context:fiat').map((point) => [point.year, point.value]));
+        datasets.unshift({
+          label: `${item.name} (USD overlay)`,
+          data: pts.map((point) => usdByPoint.get(point.year) ?? null),
+          borderColor: 'rgba(100, 116, 139, 0.45)',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.2,
+          yAxisID: 'yUsd',
+        });
+      }
       const forecast = [];
       if (forecast.length) {
           datasets.push({
