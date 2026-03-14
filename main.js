@@ -504,8 +504,8 @@ createApp({
                 if (!details) return null;
                 return [
                   `Priced-in value: ${details.pricedInValue == null ? '—' : details.pricedInValue.toFixed(3)}`,
-                  `${details.numeratorLabel} (USD): ${details.numeratorUsd == null ? '—' : details.numeratorUsd.toFixed(2)}`,
-                  `${details.denominatorLabel} (USD): ${details.denominatorUsd == null ? '—' : details.denominatorUsd.toFixed(2)}`,
+                  `${details.numeratorLabel} (GBP): ${details.numeratorUsd == null ? '—' : details.numeratorUsd.toFixed(2)}`,
+                  `${details.denominatorLabel} (GBP): ${details.denominatorUsd == null ? '—' : details.denominatorUsd.toFixed(2)}`,
                 ];
               },
             },
@@ -678,6 +678,18 @@ createApp({
     toggleCompare(key) {
       this.compareKeys = this.compareKeys.includes(key) ? this.compareKeys.filter((x) => x !== key) : [...this.compareKeys, key];
       this.syncUrlAndRender();
+    },
+    singleChartUrl(itemKey) {
+      const params = new URLSearchParams();
+      params.set('item', itemKey);
+      params.set('denom', this.perChartDenominator[itemKey] || this.allDenominator);
+      params.set('range', this.selectedRange);
+      if (this.rebased) params.set('rebased', '1');
+      if (this.useLogScale) params.set('log', '1');
+      if (this.showUsdOverlay) params.set('overlayUsd', '1');
+      if (this.showFullBitcoin) params.set('btcFull', '1');
+      params.set('theme', this.isDarkMode ? 'dark' : 'light');
+      return `single.html?${params.toString()}`;
     },
     downloadCsv() {
       const keys = this.viewMode === 'compare' ? (this.compareKeys.length ? this.compareKeys : this.filteredItems.slice(0, 3).map((x) => x.key)) : this.filteredItems.map((x) => x.key);

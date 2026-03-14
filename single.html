@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Priced In — Single Chart</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <main id="app" class="single-layout">
+      <div class="title-row">
+        <div>
+          <h1>{{ currentItem?.name || 'Single chart view' }}</h1>
+          <p>Shareable view for one item with all chart settings in the URL.</p>
+        </div>
+        <div class="title-actions">
+          <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
+            {{ isDarkMode ? '☀️ Light mode' : '🌙 Dark mode' }}
+          </button>
+          <a class="assumptions-link" href="index.html">Back to dashboard</a>
+        </div>
+      </div>
+
+      <section class="single-controls" v-if="!isLoading && !error && currentItem">
+        <label>Item
+          <select v-model="itemKey" @change="syncUrlAndRender">
+            <option v-for="item in items" :key="item.key" :value="item.key">{{ item.name }}</option>
+          </select>
+        </label>
+        <label>Denominator
+          <select v-model="denominator" @change="syncUrlAndRender">
+            <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
+          </select>
+        </label>
+        <label>Range
+          <select v-model="selectedRange" @change="syncUrlAndRender">
+            <option value="last10">Last 10 years</option>
+            <option value="last20">Last 20 years</option>
+            <option value="last30">Last 30 years</option>
+            <option value="last40">Last 40 years</option>
+            <option value="full">Full history</option>
+          </select>
+        </label>
+        <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100 at range start</label>
+        <label><input type="checkbox" v-model="useLogScale" @change="syncUrlAndRender" /> Log scale</label>
+        <label><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
+        <label><input type="checkbox" v-model="showFullBitcoin" @change="syncUrlAndRender" /> Show full bitcoin history</label>
+        <button @click="copyShareLink">Copy share link</button>
+      </section>
+      <p class="share-feedback" v-if="shareFeedback">{{ shareFeedback }}</p>
+
+      <section v-if="isLoading" class="status-card">Loading pricing data… <span class="skeleton"></span></section>
+      <section v-else-if="error" class="status-card error">{{ error }}</section>
+
+      <article v-else-if="currentItem" class="chart-card single-page-chart">
+        <header>
+          <h2>{{ currentItem.name }} <small>({{ currentItem.category }})</small></h2>
+          <a class="share-link" :href="shareUrl" target="_blank" rel="noopener noreferrer">Open share URL</a>
+        </header>
+        <p class="lineage">{{ contextSeries[denominator]?.lineage?.length ? `Lineage: ${contextSeries[denominator].lineage.join(' → ')}` : 'Lineage: Item price divided by selected denominator series.' }}</p>
+        <div class="chart-wrap"><canvas id="single-chart"></canvas></div>
+      </article>
+    </main>
+
+    <script src="single.js"></script>
+  </body>
+</html>
