@@ -1,5 +1,16 @@
 const { createApp, nextTick } = Vue;
 
+function formatGbp(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  const usePennies = Math.abs(value) < 100;
+  const fractionDigits = usePennies ? 2 : 0;
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(value);
+}
 createApp({
   data() {
     return {
@@ -140,13 +151,20 @@ createApp({
           legend: { labels: { color: axisColor } },
           tooltip: {
             callbacks: {
+              label: (ctx) => {
+                const value = ctx.parsed.y;
+                const formattedValue = ctx.dataset?.valueFormat === 'gbp'
+                  ? formatGbp(value)
+                  : (value == null ? '—' : value.toFixed(3));
+                return `${ctx.dataset.label}: ${formattedValue}`;
+              },
               afterLabel: (ctx) => {
                 const details = ctx.dataset?.hoverDetails?.[ctx.dataIndex];
                 if (!details) return null;
                 return [
                   `Priced-in value: ${details.pricedInValue == null ? '—' : details.pricedInValue.toFixed(3)}`,
-                  `${details.numeratorLabel} (GBP): ${details.numeratorUsd == null ? '—' : details.numeratorUsd.toFixed(2)}`,
-                  `${details.denominatorLabel} (GBP): ${details.denominatorUsd == null ? '—' : details.denominatorUsd.toFixed(2)}`,
+                  `${details.numeratorLabel} (GBP): ${formatGbp(details.numeratorUsd)}`,
+                  `${details.denominatorLabel} (GBP): ${formatGbp(details.denominatorUsd)}`,
                 ];
               },
             },
@@ -184,6 +202,7 @@ createApp({
           borderDash: [5, 5],
           yAxisID: 'yGbp',
           tension: 0.2,
+          valueFormat: 'gbp',
         });
       }
       const canvas = document.getElementById('single-chart');
