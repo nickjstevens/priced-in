@@ -11,6 +11,60 @@ function formatGbp(value) {
     maximumFractionDigits: fractionDigits,
   }).format(value);
 }
+
+function formatPercent(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(2)}%`;
+}
+
+function maxDrawdown(points) {
+  if (!points.length) return null;
+  let peak = points[0].value;
+  let worst = 0;
+  points.forEach((point) => {
+    if (point.value > peak) peak = point.value;
+    if (peak > 0) {
+      const drawdown = ((point.value - peak) / peak) * 100;
+      if (drawdown < worst) worst = drawdown;
+    }
+  });
+  return worst;
+}
+
+function distanceFromPeak(points) {
+  if (!points.length) return null;
+  const peak = points.reduce((m, p) => (p.value > m ? p.value : m), points[0].value);
+  const latest = points[points.length - 1].value;
+  if (!peak) return null;
+  return ((latest - peak) / peak) * 100;
+}
+
+function pointLabelToDecimalYear(value) {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return null;
+  if (!value.includes('-')) {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  const [yearPart, monthPart] = value.split('-');
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+  if (Number.isNaN(year) || Number.isNaN(month) || month < 1 || month > 12) return null;
+  return year + ((month - 1) / 12);
+}
+
+function correlation(xs, ys) {
+  if (!xs.length || xs.length !== ys.length) return null;
+  const xMean = xs.reduce((a, b) => a + b, 0) / xs.length;
+  const yMean = ys.reduce((a, b) => a + b, 0) / ys.length;
+  const cov = xs.reduce((acc, x, idx) => acc + ((x - xMean) * (ys[idx] - yMean)), 0);
+  const xVar = xs.reduce((acc, x) => acc + ((x - xMean) ** 2), 0);
+  const yVar = ys.reduce((acc, y) => acc + ((y - yMean) ** 2), 0);
+  if (!xVar || !yVar) return null;
+  return cov / Math.sqrt(xVar * yVar);
+}
+
 createApp({
   data() {
     return {
@@ -210,6 +264,98 @@ createApp({
       if (this.chart) this.chart.destroy();
       const options = this.chartOptions();
       this.chart = new Chart(canvas, { type: 'line', data: { labels: points.map((point) => point.year), datasets }, options });
+    },
+    chartStats() {
+      const item = this.currentItem;
+      if (!item) {
+        return {
+          cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—',
+        };
+      }
+      const pts = this.visiblePairSeries(item.key, `context:${this.denominator}`).filter((point) => point.value != null);
+      if (pts.length < 2) {
+        return {
+          cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—',
+        };
+      }
+      const first = pts[0];
+      const last = pts[pts.length - 1];
+      const firstPeriod = pointLabelToDecimalYear(first.year);
+      const lastPeriod = pointLabelToDecimalYear(last.year);
+      const periodYears = (firstPeriod != null && lastPeriod != null) ? (lastPeriod - firstPeriod) : null;
+      const cagr = periodYears > 0 ? (((last.value / first.value) ** (1 / periodYears) - 1) * 100) : null;
+      const total = ((last.value - first.value) / first.value) * 100;
+      let best = { y: null, c: -Infinity };
+      let worst = { y: null, c: Infinity };
+      for (let i = 1; i < pts.length; i += 1) {
+        const c = ((pts[i].value - pts[i - 1].value) / pts[i - 1].value) * 100;
+        if (c > best.c) best = { y: pts[i].year, c };
+        if (c < worst.c) worst = { y: pts[i].year, c };
+      }
+      const volatility = this.rollingVolatility().latest;
+      const pricedInFiat = this.visiblePairSeries(item.key, 'context:fiat').filter((point) => point.value != null);
+      const denominatorFiat = this.visiblePairSeries(`context:${this.denominator}`, 'context:fiat').filter((point) => point.value != null);
+      const corr = this.pairCorrelation(pricedInFiat, denominatorFiat);
+      return {
+        cagrSelected: formatPercent(cagr),
+        totalChange: formatPercent(total),
+        bestYear: `${best.y} (${formatPercent(best.c)})`,
+        worstYear: `${worst.y} (${formatPercent(worst.c)})`,
+        vol5y: formatPercent(volatility),
+        maxDrawdown: formatPercent(maxDrawdown(pts)),
+        fromPeak: formatPercent(distanceFromPeak(pts)),
+        correlationToDenominator: corr == null ? '—' : corr.toFixed(2),
+      };
+    },
+    rollingVolatility() {
+      const item = this.currentItem;
+      if (!item) return { latest: null, series: [] };
+      const pts = this.visiblePairSeries(item.key, `context:${this.denominator}`).filter((point) => point.value != null);
+      if (pts.length < 6) return { latest: null, series: [] };
+      const returns = [];
+      for (let i = 1; i < pts.length; i += 1) {
+        if (pts[i - 1].value <= 0 || pts[i].value <= 0) continue;
+        returns.push({ year: pts[i].year, value: Math.log(pts[i].value / pts[i - 1].value) });
+      }
+      const volatility = [];
+      for (let i = 4; i < returns.length; i += 1) {
+        const window = returns.slice(i - 4, i + 1).map((point) => point.value);
+        const mean = window.reduce((a, b) => a + b, 0) / window.length;
+        const variance = window.reduce((acc, x) => acc + ((x - mean) ** 2), 0) / window.length;
+        volatility.push({ year: returns[i].year, value: Math.sqrt(variance) * 100 });
+      }
+      return { latest: volatility[volatility.length - 1]?.value ?? null, series: volatility };
+    },
+    pairCorrelation(aPoints, bPoints) {
+      const bByYear = new Map(bPoints.map((point) => [point.year, point.value]));
+      const x = [];
+      const y = [];
+      aPoints.forEach((point) => {
+        const bValue = bByYear.get(point.year);
+        if (point.value != null && bValue != null) {
+          x.push(point.value);
+          y.push(bValue);
+        }
+      });
+      if (x.length < 5) return null;
+      return correlation(x, y);
+    },
+    insightText() {
+      const item = this.currentItem;
+      if (!item) return '';
+      const pts = this.visiblePairSeries(item.key, `context:${this.denominator}`).filter((point) => point.value != null);
+      if (pts.length < 2) return 'Not enough data in this range for an insight.';
+      const change = ((pts[pts.length - 1].value - pts[0].value) / pts[0].value) * 100;
+      return change >= 0
+        ? `${item.name} rose ${change.toFixed(1)}% over this selected period.`
+        : `${item.name} fell ${Math.abs(change).toFixed(1)}% over this selected period.`;
+    },
+    sourceSet() {
+      return [...(this.currentItem?.sources || []), ...(this.contextSeries[this.denominator]?.sources || [])];
+    },
+    dataLineage() {
+      const lineage = this.contextSeries[this.denominator]?.lineage || [];
+      return lineage.length ? `Lineage: ${lineage.join(' → ')}` : 'Lineage: Item price divided by selected denominator series.';
     },
     toggleTheme() {
       this.isDarkMode = !this.isDarkMode;

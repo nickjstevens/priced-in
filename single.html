@@ -59,8 +59,34 @@
           <h2>{{ currentItem.name }} <small>({{ currentItem.category }})</small></h2>
           <a class="share-link" :href="shareUrl" target="_blank" rel="noopener noreferrer">Open share URL</a>
         </header>
-        <p class="lineage">{{ contextSeries[denominator]?.lineage?.length ? `Lineage: ${contextSeries[denominator].lineage.join(' → ')}` : 'Lineage: Item price divided by selected denominator series.' }}</p>
+        <dl class="stats-strip">
+          <div class="stat"><dt>CAGR (selected)</dt><dd>{{ chartStats().cagrSelected }}</dd></div>
+          <div class="stat"><dt>Total change</dt><dd>{{ chartStats().totalChange }}</dd></div>
+          <div class="stat"><dt>Best year</dt><dd>{{ chartStats().bestYear }}</dd></div>
+          <div class="stat"><dt>Worst year</dt><dd>{{ chartStats().worstYear }}</dd></div>
+          <div class="stat"><dt>Volatility (5Y log-return)</dt><dd>{{ chartStats().vol5y }}</dd></div>
+          <div class="stat"><dt>Max drawdown</dt><dd>{{ chartStats().maxDrawdown }}</dd></div>
+          <div class="stat"><dt>From historical peak</dt><dd>{{ chartStats().fromPeak }}</dd></div>
+          <div class="stat"><dt>Corr. vs priced-in asset</dt><dd>{{ chartStats().correlationToDenominator }}</dd></div>
+        </dl>
         <div class="chart-wrap"><canvas id="single-chart"></canvas></div>
+        <details class="meta"><summary>What is being measured?</summary>
+          <ul>
+            <li>Unit basis: {{ currentItem.metadata?.unit_basis }}</li>
+            <li>Geography: {{ currentItem.metadata?.geography }}</li>
+            <li>Nominal/real: {{ currentItem.metadata?.price_basis }}</li>
+            <li>Frequency: {{ currentItem.metadata?.frequency }}</li>
+            <li>Last updated: {{ currentItem.metadata?.last_updated }}</li>
+            <li>Confidence: {{ currentItem.metadata?.source_confidence }}</li>
+          </ul>
+        </details>
+        <p class="lineage">{{ insightText() }}</p>
+        <details class="sources"><summary>Sources & lineage</summary>
+          <ul>
+            <li v-for="source in sourceSet()" :key="`${currentItem.key}-${source.url}`"><span class="badge">{{ source.type || 'source' }}</span> <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a> ({{ source.date }}) — {{ source.note }}</li>
+          </ul>
+          <p class="lineage">{{ dataLineage() }}</p>
+        </details>
       </article>
     </main>
 
