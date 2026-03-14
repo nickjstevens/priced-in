@@ -45,6 +45,8 @@
           </select>
         </label>
         <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100 at range start</label>
+        <label><input type="checkbox" v-model="useLogScale" @change="syncUrlAndRender" /> Log scale (long-range friendly)</label>
+        <label><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay USD price (faded)</label>
         <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
           {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
         </button>
