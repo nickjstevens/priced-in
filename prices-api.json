@@ -273,7 +273,7 @@
       ]
     },
     "salary": {
-      "label": "Full-time annual earnings benchmark",
+      "label": "Average annual earnings benchmark",
       "unit": "GBP per year",
       "values": [
         330,
@@ -364,7 +364,7 @@
       ],
       "series_basis": "calendar_year_average",
       "lineage": [
-        "Series reframed to a full-time annual earnings benchmark. Historical values before 2024 remain legacy proxy values pending a full end-to-end rebuild from ONS-compatible historical series."
+        "Series framed as an average annual earnings benchmark (legacy proxy history with recent-year alignment to published ONS annual earnings anchors)."
       ]
     },
     "bitcoin": {
@@ -1888,24 +1888,24 @@
       "name": "TV Licence (colour)",
       "category": "utilities",
       "values": [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         10.0,
         11.0,
         11.4891,
@@ -1988,7 +1988,7 @@
         "frequency": "Annual",
         "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "Colour TV licence is zero before its January 1968 introduction; subsequent annual values interpolate between statutory fee-change points.",
+        "notes": "Colour TV licence is blank before its January 1968 introduction; subsequent annual values interpolate between statutory fee-change points.",
         "series_basis": "regulated_tariff"
       }
     },
