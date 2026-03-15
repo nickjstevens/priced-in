@@ -79,8 +79,8 @@
   ],
   "contextSeries": {
     "fiat": {
-      "label": "GBP (£)",
-      "unit": "£",
+      "label": "GBP (\u00a3)",
+      "unit": "\u00a3",
       "values": [
         1,
         1,
@@ -167,10 +167,11 @@
           "date": "2025-01-01",
           "note": "Primary denominator reference source."
         }
-      ]
+      ],
+      "series_basis": "calendar_year_average"
     },
     "gold": {
-      "label": "Gold (oz)",
+      "label": "Gold (LBMA annual average, USD/oz)",
       "unit": "oz",
       "values": [
         35,
@@ -247,29 +248,33 @@
         1799,
         1801,
         1943,
-        1929,
-        2050
+        2386.2,
+        3431.5
       ],
       "sources": [
         {
-          "name": "Macrotrends annual gold prices (USD per troy ounce, yearly average)",
-          "url": "https://www.macrotrends.net/1333/historical-gold-prices-100-year-chart",
+          "name": "World Gold Council Gold Demand Trends: full year 2025",
+          "url": "https://www.gold.org/goldhub/research/gold-demand-trends/gold-demand-trends-full-year-2025",
           "type": "market",
-          "date": "2026-03-11",
-          "note": "Used for 1952–2009 backfill so gold-denominated comparisons cover TV licence history."
+          "date": "2026-01-29",
+          "note": "Reports annual average LBMA (PM) gold price of about US$3,431/oz in 2025 and 2024 annual average of US$2,386.20."
         },
         {
-          "name": "World Gold Council / LBMA historical prices",
+          "name": "Gold price averages dataset",
           "url": "https://www.gold.org/goldhub/data/gold-prices",
           "type": "market",
-          "date": "2025-01-01",
-          "note": "Primary denominator reference source."
+          "date": "2026-03-15",
+          "note": "Gold price averages over monthly, quarterly and annual timeframes are referenced to the LBMA benchmark."
         }
+      ],
+      "series_basis": "calendar_year_average",
+      "lineage": [
+        "Gold denominator intended as LBMA annual average USD per troy ounce; recent years updated to published World Gold Council/LBMA annual averages."
       ]
     },
     "salary": {
-      "label": "Average Salary (annual)",
-      "unit": "x annual salary",
+      "label": "Full-time annual earnings benchmark",
+      "unit": "GBP per year",
       "values": [
         330,
         360.02,
@@ -345,17 +350,21 @@
         31700,
         33000,
         34800,
-        35500,
-        37200
+        37439,
+        39039
       ],
       "sources": [
         {
-          "name": "ONS Annual Survey of Hours and Earnings",
-          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours",
+          "name": "ONS Annual Survey of Hours and Earnings 2025",
+          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/bulletins/annualsurveyofhoursandearnings/2025",
           "type": "official",
-          "date": "2025-01-01",
-          "note": "Primary denominator reference source."
+          "date": "2025-10-23",
+          "note": "Median gross annual earnings for full-time employees were \u00a337,439 in April 2024 and \u00a339,039 in April 2025."
         }
+      ],
+      "series_basis": "calendar_year_average",
+      "lineage": [
+        "Series reframed to a full-time annual earnings benchmark. Historical values before 2024 remain legacy proxy values pending a full end-to-end rebuild from ONS-compatible historical series."
       ]
     },
     "bitcoin": {
@@ -447,11 +456,12 @@
           "date": "2025-01-01",
           "note": "Primary denominator reference source."
         }
-      ]
+      ],
+      "series_basis": "year_end_close"
     },
     "real_fiat": {
       "label": "Real GBP (CPI-adjusted)",
-      "unit": "real £ (2025)",
+      "unit": "real \u00a3 (2025)",
       "values": [
         0.1384,
         0.142,
@@ -542,11 +552,12 @@
       "lineage": [
         "CPI index rebased to 2025=100",
         "Real GBP = nominal GBP / (CPI/100)"
-      ]
+      ],
+      "series_basis": "calendar_year_average"
     },
     "median_salary": {
-      "label": "Median Salary (annual)",
-      "unit": "x median annual salary",
+      "label": "Full-time annual earnings benchmark",
+      "unit": "GBP per year",
       "values": [
         287.1,
         313.22,
@@ -622,21 +633,22 @@
         27579,
         28710,
         30276,
-        30885,
-        32364
+        37439,
+        39039
       ],
       "sources": [
         {
-          "name": "ONS Annual Survey of Hours and Earnings (median pay proxy)",
-          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours",
+          "name": "ONS Annual Survey of Hours and Earnings 2025",
+          "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/bulletins/annualsurveyofhoursandearnings/2025",
           "type": "official",
-          "date": "2025-01-01",
-          "note": "Estimated median annual salary as 87% of average salary series."
+          "date": "2025-10-23",
+          "note": "Median gross annual earnings for full-time employees were \u00a337,439 in April 2024 and \u00a339,039 in April 2025."
         }
       ],
       "lineage": [
-        "Median salary proxy = 0.87 × average salary"
-      ]
+        "Series reframed to a full-time annual earnings benchmark. Historical values before 2024 remain legacy proxy values pending a full end-to-end rebuild from ONS-compatible historical series."
+      ],
+      "series_basis": "calendar_year_average"
     },
     "hours_worked": {
       "label": "Hours at Median Wage",
@@ -716,22 +728,22 @@
         15.599,
         16.2387,
         17.1244,
-        17.4689,
-        18.3054
+        14.4108,
+        15.1755
       ],
       "sources": [
         {
-          "name": "ONS ASHE annual hours and earnings (derived hourly pay)",
+          "name": "Derived from benchmark earnings series",
           "url": "https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours",
           "type": "derived",
-          "date": "2025-01-01",
-          "note": "Hourly earnings estimated from median annual salary divided by annual hours worked."
+          "date": "2026-03-15",
+          "note": "Hours-per-pound series recalculated from legacy implied annual hours and the updated full-time earnings benchmark."
         }
       ],
       "lineage": [
-        "Median hourly pay = median annual salary / annual hours",
-        "Hours required = item price / median hourly pay"
-      ]
+        "Hours per \u00a31 of earnings = implied annual hours / benchmark annual earnings. Recent years move with the updated full-time earnings benchmark."
+      ],
+      "series_basis": "calendar_year_average"
     }
   },
   "items": [
@@ -813,30 +825,16 @@
         265000,
         285000,
         288000,
-        285000,
-        292000
+        263991,
+        270259
       ],
       "sources": [
         {
-          "name": "Nationwide UK House Price Index (historical series from 1952)",
-          "url": "https://www.nationwidehousepriceindex.co.uk/",
+          "name": "HM Land Registry UK House Price Index",
+          "url": "https://landregistry.data.gov.uk/app/ukhpi/",
           "type": "official",
-          "date": "2025-01-01",
-          "note": "Item-level source used in annual series."
-        },
-        {
-          "name": "UK House Price Index (ONS/Land Registry annual average)",
-          "url": "https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/housepriceindex",
-          "type": "official",
-          "date": "2025-01-01",
-          "note": "Item-level source used in annual series."
-        },
-        {
-          "name": "Aggregation method: annual geometric interpolation between historical anchor points",
-          "url": "https://en.wikipedia.org/wiki/Interpolation",
-          "type": "market",
-          "date": "2025-01-01",
-          "note": "Item-level source used in annual series."
+          "date": "2026-02-17",
+          "note": "Used for UK average house price endpoints including Dec 2024 and Dec 2025."
         }
       ],
       "category": "housing",
@@ -845,9 +843,10 @@
         "geography": "United Kingdom",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
-        "last_updated": "2025-01-01",
+        "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "Historical series may include interpolated values between anchor observations."
+        "notes": "1950\u20132023 remain historical/interpolated anchors; 2024 and 2025 endpoints updated to UK average house prices from UK HPI rather than England-only figures.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
@@ -948,7 +947,8 @@
         "frequency": "Annual",
         "last_updated": "2025-01-01",
         "source_confidence": "medium",
-        "notes": "Annual proxy compiled from cited sources."
+        "notes": "Annual proxy compiled from cited sources.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
@@ -1049,7 +1049,8 @@
         "frequency": "Annual",
         "last_updated": "2025-01-01",
         "source_confidence": "medium",
-        "notes": "Annual proxy compiled from cited sources."
+        "notes": "Annual proxy compiled from cited sources.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
@@ -1150,7 +1151,8 @@
         "frequency": "Annual",
         "last_updated": "2025-01-01",
         "source_confidence": "medium",
-        "notes": "Annual proxy compiled from cited sources."
+        "notes": "Annual proxy compiled from cited sources.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
@@ -1251,7 +1253,8 @@
         "frequency": "Annual",
         "last_updated": "2025-01-01",
         "source_confidence": "medium",
-        "notes": "Annual proxy compiled from cited sources."
+        "notes": "Annual proxy compiled from cited sources.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
@@ -1352,7 +1355,8 @@
         "frequency": "Annual",
         "last_updated": "2025-01-01",
         "source_confidence": "medium",
-        "notes": "Annual proxy compiled from cited sources."
+        "notes": "Annual proxy compiled from cited sources.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
@@ -1453,80 +1457,81 @@
         "frequency": "Annual",
         "last_updated": "2025-01-01",
         "source_confidence": "medium",
-        "notes": "Annual proxy compiled from cited sources."
+        "notes": "Annual proxy compiled from cited sources.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
       "key": "tuition",
       "name": "University Tuition (annual)",
       "values": [
-        293.2607,
-        305.4022,
-        318.0603,
-        331.2509,
-        344.9907,
-        359.068,
-        373.9535,
-        389.4399,
-        405.5454,
-        422.5311,
-        439.9351,
-        458.0157,
-        477.0464,
-        496.8022,
-        517.3043,
-        538.8395,
-        561.1732,
-        584.3287,
-        608.6066,
-        633.7625,
-        659.8215,
-        687.3888,
-        715.6346,
-        745.4684,
-        776.0361,
-        808.2756,
-        841.6196,
-        876.7324,
-        913.0306,
-        950.5468,
-        989.9767,
-        1031.048,
-        1073.8111,
-        1117.9715,
-        1164.2696,
-        1212.4188,
-        1262.8369,
-        1314.8624,
-        1369.6569,
-        1426.1781,
-        1485.2399,
-        1546.533,
-        1610.5186,
-        1677.2817,
-        1746.9092,
-        1819.0763,
-        1894.2762,
-        1972.6027,
-        2054.5847,
-        2139.4614,
-        2228.2064,
-        2320.0379,
-        2416.4209,
-        2516.1063,
-        2620.6059,
-        2728.6355,
-        2841.7551,
-        2959.6348,
-        3081.919,
-        3209.246,
-        3290,
-        3290,
-        3290,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
         9000,
         9000,
         9000,
         9000,
+        9000,
         9250,
         9250,
         9250,
@@ -1535,26 +1540,34 @@
         9250,
         9250,
         9250,
-        9250
+        9275
       ],
       "sources": [
         {
-          "name": "UK Government tuition fee regulations",
-          "url": "https://www.gov.uk/government/publications/higher-education-student-finance",
+          "name": "UK Parliament briefing: Tuition fees in England",
+          "url": "https://commonslibrary.parliament.uk/research-briefings/cbp-9175/",
           "type": "official",
-          "date": "2025-01-01",
-          "note": "Item-level source used in annual series."
+          "date": "2024-12-18",
+          "note": "Confirms \u00a31,000 upfront fees introduced from 1998 and later reforms to \u00a33,000 and \u00a39,000 fee caps."
+        },
+        {
+          "name": "DfE changes to tuition fees: 2025 to 2026 academic year",
+          "url": "https://www.gov.uk/government/publications/tuition-fees-and-student-support-2025-to-2026-academic-year/changes-to-tuition-fees-2025-to-2026-academic-year",
+          "type": "official",
+          "date": "2025-11-26",
+          "note": "Maximum standard full-time fee cap increased to \u00a39,275 for 2025-26."
         }
       ],
       "category": "education",
       "metadata": {
         "unit_basis": "University Tuition (annual)",
-        "geography": "United Kingdom",
+        "geography": "England",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
-        "last_updated": "2025-01-01",
+        "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "Annual proxy compiled from cited sources."
+        "notes": "English undergraduate fee-cap series: zero before the 1998 introduction of upfront tuition fees; step changes reflect national fee-cap regimes.",
+        "series_basis": "regulated_tariff"
       }
     },
     {
@@ -1562,40 +1575,40 @@
       "name": "FTSE 100 Index",
       "category": "finance",
       "values": [
-        213.1277,
-        223.0449,
-        233.4338,
-        244.3124,
-        255.6995,
-        267.4443,
-        279.9035,
-        292.931,
-        306.5481,
-        320.9607,
-        335.8272,
-        351.3515,
-        367.753,
-        384.8692,
-        402.7262,
-        421.558,
-        441.1934,
-        461.6612,
-        483.2112,
-        505.6628,
-        529.048,
-        553.8666,
-        579.4663,
-        606.5969,
-        634.581,
-        664.1998,
-        695.0071,
-        727.5696,
-        761.4247,
-        796.6165,
-        833.7482,
-        872.6155,
-        913.2845,
-        955.5271,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         1000,
         1190.5,
         1381,
@@ -1637,22 +1650,22 @@
         7452,
         7733,
         8173,
-        8400
+        9940.71
       ],
       "sources": [
         {
-          "name": "London Stock Exchange / FTSE Russell historical closes",
-          "url": "https://www.londonstockexchange.com/indices/ftse-100",
-          "type": "market",
-          "date": "2026-03-10",
-          "note": "Annual series built from published year-end closes with interpolation between anchor years."
+          "name": "LSEG FTSE 100 40th anniversary note",
+          "url": "https://www.lseg.com/content/dam/ftse-russell/en_us/documents/announcement/ftse-100-anniversary.pdf",
+          "type": "official",
+          "date": "2024-02-29",
+          "note": "Confirms FTSE 100 established on 3 January 1984."
         },
         {
-          "name": "Investing.com FTSE 100 Historical Data",
-          "url": "https://www.investing.com/indices/uk-100-historical-data",
+          "name": "This is Money historic prices for UKX",
+          "url": "https://investing.thisismoney.co.uk/historic-prices/UKX",
           "type": "market",
-          "date": "2026-03-10",
-          "note": "Cross-check for annual closing levels."
+          "date": "2026-03-15",
+          "note": "31 December 2025 close shown as 9,940.71."
         }
       ],
       "metadata": {
@@ -1660,9 +1673,112 @@
         "geography": "United Kingdom",
         "price_basis": "Nominal index level",
         "frequency": "Annual",
-        "last_updated": "2026-03-10",
+        "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "Sparse anchor points are linearly interpolated for continuity."
+        "notes": "Blank before 1984 because the FTSE 100 launched on 3 January 1984. 1984 onward remains a year-end-close series; some intermediate years may still be interpolated placeholders pending a full rebuild.",
+        "series_basis": "year_end_close"
+      }
+    },
+    {
+      "key": "sp500",
+      "name": "S&P 500 Index",
+      "values": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        45.43,
+        41.12,
+        55.62,
+        58.03,
+        59.72,
+        69.07,
+        65.06,
+        76.45,
+        86.12,
+        93.32,
+        84.45,
+        95.04,
+        102.0,
+        90.31,
+        93.49,
+        103.3,
+        118.4,
+        96.11,
+        72.56,
+        96.86,
+        103.8,
+        90.25,
+        99.71,
+        110.9,
+        133.0,
+        117.3,
+        144.3,
+        166.4,
+        171.6,
+        208.2,
+        264.5,
+        250.5,
+        285.4,
+        339.97,
+        325.49,
+        416.08,
+        435.23,
+        472.99,
+        465.25,
+        614.42,
+        766.22,
+        963.36,
+        1248.77,
+        1425.59,
+        1335.63,
+        1140.21,
+        895.84,
+        1132.52,
+        1181.41,
+        1278.73,
+        1424.16,
+        1378.76,
+        865.58,
+        1123.58,
+        1282.62,
+        1300.58,
+        1480.4,
+        1822.36,
+        2028.18,
+        1918.6,
+        2275.12,
+        2789.8,
+        2607.39,
+        3278.2,
+        3793.75,
+        4573.82,
+        3960.66,
+        4804.49,
+        5979.52
+      ],
+      "sources": [
+        {
+          "name": "Multpl S&P 500 historical prices by year",
+          "url": "https://www.multpl.com/s-p-500-historical-prices/table/by-year",
+          "type": "market",
+          "date": "2026-03-15",
+          "note": "Annual average level by year; Multpl cites Standard & Poor's and Robert Shiller for historic prices."
+        }
+      ],
+      "category": "markets",
+      "metadata": {
+        "unit_basis": "Index points (annual average)",
+        "geography": "United States",
+        "price_basis": "Nominal index level",
+        "frequency": "Annual",
+        "last_updated": "2026-03-15",
+        "source_confidence": "medium",
+        "series_basis": "calendar_year_average",
+        "notes": "Blank before 1957 by design, matching the modern S&P 500 launch year requested for this dataset."
       }
     },
     {
@@ -1757,13 +1873,14 @@
         }
       ],
       "metadata": {
-        "unit_basis": "Annual bill (£ per year)",
+        "unit_basis": "Annual bill (\u00a3 per year)",
         "geography": "England",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
         "last_updated": "2026-03-10",
         "source_confidence": "medium",
-        "notes": "Represents average Band D council tax, England only."
+        "notes": "Represents average Band D council tax, England only.",
+        "series_basis": "regulated_tariff"
       }
     },
     {
@@ -1771,80 +1888,80 @@
       "name": "TV Licence (colour)",
       "category": "utilities",
       "values": [
-        1.8772,
-        1.9376,
-        2,
-        2.25,
-        2.5,
-        2.75,
-        3,
-        3.25,
-        3.5,
-        3.75,
-        4,
-        4.8,
-        5.6,
-        6.4,
-        7.2,
-        8,
-        8.8,
-        9.6,
-        10.4,
-        11.2,
-        12,
-        14.2,
-        16.4,
-        18.6,
-        20.8,
-        23,
-        25.2,
-        27.4,
-        29.6,
-        31.8,
-        34,
-        37.7,
-        41.4,
-        45.1,
-        48.8,
-        52.5,
-        56.2,
-        59.9,
-        63.6,
-        67.3,
-        71,
-        74,
-        77,
-        80,
-        83,
-        86,
-        89,
-        92,
-        95,
-        98,
-        101,
-        105.45,
-        109.9,
-        114.35,
-        118.8,
-        123.25,
-        127.7,
-        132.15,
-        136.6,
-        141.05,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        10.0,
+        11.0,
+        11.4891,
+        12.0,
+        13.2802,
+        14.6969,
+        16.2648,
+        18.0,
+        19.4422,
+        21.0,
+        25.0,
+        34.0,
+        39.5474,
+        46.0,
+        48.7445,
+        51.6527,
+        54.7344,
+        58.0,
+        59.4628,
+        60.9625,
+        62.5,
+        66.0,
+        71.0,
+        77.0,
+        80.0,
+        83.0,
+        84.5,
+        86.5,
+        89.5,
+        91.5,
+        97.5,
+        101.0,
+        104.0,
+        109.0,
+        112.0,
+        116.0,
+        121.0,
+        126.5,
+        131.5,
+        135.5,
+        139.5,
+        142.5,
         145.5,
-        145.714,
-        145.929,
-        146.143,
-        146.357,
-        146.571,
-        146.786,
-        147,
-        150,
-        153,
-        156,
-        159,
-        162.5,
-        166,
+        145.7133,
+        145.927,
+        146.141,
+        146.3553,
+        146.5699,
+        146.7848,
+        147.0,
+        150.5,
+        154.5,
+        157.5,
+        159.0,
+        162.4257,
+        165.9251,
         169.5,
         174.5
       ],
@@ -1865,13 +1982,14 @@
         }
       ],
       "metadata": {
-        "unit_basis": "Annual licence fee (£ per year)",
+        "unit_basis": "Annual licence fee (\u00a3 per year)",
         "geography": "United Kingdom",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
-        "last_updated": "2026-03-10",
+        "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "Colour TV licence fee; interpolated between known historical fee points."
+        "notes": "Colour TV licence is zero before its January 1968 introduction; subsequent annual values interpolate between statutory fee-change points.",
+        "series_basis": "regulated_tariff"
       }
     },
     {
@@ -1962,7 +2080,7 @@
           "url": "https://www.gov.uk/government/statistics/quarterly-energy-prices",
           "type": "official",
           "date": "2026-03-10",
-          "note": "Domestic electricity unit rates converted to £/kWh annual anchors."
+          "note": "Domestic electricity unit rates converted to \u00a3/kWh annual anchors."
         },
         {
           "name": "Ofgem default tariff cap levels",
@@ -1973,13 +2091,14 @@
         }
       ],
       "metadata": {
-        "unit_basis": "£ per kWh",
+        "unit_basis": "\u00a3 per kWh",
         "geography": "United Kingdom",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
         "last_updated": "2026-03-10",
         "source_confidence": "medium",
-        "notes": "Annualised domestic unit-rate anchors with interpolation."
+        "notes": "Annualised domestic unit-rate anchors with interpolation.",
+        "series_basis": "regulated_tariff"
       }
     },
     {
@@ -2027,67 +2146,68 @@
         109.4372,
         112.8746,
         116.3746,
-        120,
-        133,
-        146,
-        159,
-        172,
-        185,
-        198,
-        211,
-        224,
-        237,
-        250,
-        272,
-        294,
-        316,
-        338,
-        360,
-        382,
-        404,
-        426,
-        448,
-        470,
-        475.8,
-        481.6,
-        487.4,
-        493.2,
-        499,
-        497.2,
-        495.4,
-        493.6,
-        491.8,
-        490,
-        500,
-        510,
-        520,
-        551,
-        586
+        120.0,
+        133.0,
+        146.0,
+        159.0,
+        172.0,
+        185.0,
+        198.0,
+        211.0,
+        224.0,
+        237.0,
+        250.0,
+        272.0,
+        294.0,
+        316.0,
+        338.0,
+        360.0,
+        382.0,
+        404.0,
+        426.0,
+        448.0,
+        470.0,
+        487.7222,
+        506.1126,
+        525.1965,
+        545.0,
+        542.4468,
+        539.9056,
+        537.3764,
+        534.8589,
+        532.3533,
+        529.8594,
+        527.3771,
+        524.9065,
+        522.4475,
+        520.0,
+        686.0
       ],
       "sources": [
         {
-          "name": "South West Water charges and annual bill publications",
-          "url": "https://www.southwestwater.co.uk/about-us/our-charges",
+          "name": "South West Water customer services FAQ",
+          "url": "https://www.southwestwater.co.uk/household/help-support/faqs/customer-services",
           "type": "official",
-          "date": "2026-03-10",
-          "note": "Average annual household bill anchors for the South West Water region."
+          "date": "2026-03-15",
+          "note": "States average annual household bill is \u00a3686 from 1 April 2025, compared with \u00a3545 11 years earlier."
         },
         {
-          "name": "Ofwat annual water company performance and charges",
-          "url": "https://www.ofwat.gov.uk/publication/water-company-performance-report/",
+          "name": "Water UK annual average bill changes 2025-2026",
+          "url": "https://www.water.org.uk/annual-average-bill-changes-2025-2026",
           "type": "official",
-          "date": "2026-03-10",
-          "note": "Cross-check for regional bill trends."
+          "date": "2025-01-29",
+          "note": "Shows South West Water 2024-25 average bill \u00a3520 and 2025-26 \u00a3686."
         }
       ],
       "metadata": {
-        "unit_basis": "Average annual household bill (£ per year)",
+        "unit_basis": "Average annual household bill (\u00a3 per year)",
         "geography": "South West Water region (England)",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
-        "last_updated": "2026-03-10",
+        "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "Represents typical household bill levels; interpolation used between published points."
+        "notes": "2024 and 2025 use direct published bill figures; 2014 is anchored from South West Water\u2019s statement that 2025 is \u00a3686 compared with \u00a3545 eleven years earlier; surrounding years are interpolated/back-cast for continuity.",
+        "series_basis": "regulated_tariff"
       }
     },
     {
@@ -2148,54 +2268,55 @@
         0.8,
         0.83,
         0.86,
-        0.89,
-        0.92,
-        0.95,
-        1,
-        1.05,
-        1.1,
+        0.7729,
+        0.8189,
+        0.9082,
+        0.9518,
+        0.9711,
+        1.1756,
+        1.0415,
+        1.1923,
+        1.3881,
+        1.4216,
+        1.4059,
+        1.3347,
         1.15,
-        1.2,
-        1.32,
-        1.44,
-        1.333,
-        1.225,
-        1.117,
-        1.01,
-        1.11,
-        1.21,
-        1.31,
-        1.17,
-        1.34,
-        1.8,
-        1.59,
-        1.51,
-        1.55
+        1.1042,
+        1.2021,
+        1.3004,
+        1.3171,
+        1.1946,
+        1.3504,
+        1.7778,
+        1.5812,
+        1.4836,
+        1.4296
       ],
       "sources": [
         {
-          "name": "Department for Transport road fuel prices (diesel)",
-          "url": "https://www.gov.uk/government/statistics/road-fuel-prices",
+          "name": "DESNZ weekly road fuel prices",
+          "url": "https://www.gov.uk/government/statistics/weekly-road-fuel-prices",
           "type": "official",
           "date": "2026-03-10",
-          "note": "UK weekly diesel pump prices converted to annual anchors."
+          "note": "Calendar-year averages for 2003-2025 calculated from weekly ULSD pump prices."
         },
         {
-          "name": "RAC Fuel Watch",
-          "url": "https://www.rac.co.uk/drive/advice/fuel-watch/",
+          "name": "RAC Fuel Watch 2025 annual average check",
+          "url": "https://media.rac.co.uk/fuel-falls-2p-a-litre-in-december-reversing-most-of-novembers-rise",
           "type": "market",
-          "date": "2026-03-10",
-          "note": "Cross-check for recent annual levels."
+          "date": "2026-01-06",
+          "note": "Cross-check: RAC reported diesel averaged 142.96p/litre throughout 2025."
         }
       ],
       "metadata": {
-        "unit_basis": "£ per litre",
+        "unit_basis": "\u00a3 per litre",
         "geography": "United Kingdom",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
-        "last_updated": "2026-03-10",
+        "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "Annual anchors derived from UK average pump prices."
+        "notes": "2003\u20132024 are exact calendar-year averages from DESNZ weekly UK road fuel price statistics; 2025 is set to RAC Fuel Watch's published full-year average of 142.96p/litre; earlier years remain reconstructed historical anchors.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
@@ -2290,13 +2411,14 @@
         }
       ],
       "metadata": {
-        "unit_basis": "£ per hour (adult rate)",
+        "unit_basis": "\u00a3 per hour (adult rate)",
         "geography": "United Kingdom",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
         "last_updated": "2026-03-10",
         "source_confidence": "medium",
-        "notes": "Series uses the prevailing adult minimum wage / national living wage each year."
+        "notes": "Series uses the prevailing adult minimum wage / national living wage each year.",
+        "series_basis": "regulated_tariff"
       }
     },
     {
@@ -2394,17 +2516,18 @@
           "url": "https://www.bankofengland.co.uk/boeapps/database/",
           "type": "official",
           "date": "2025-01-01",
-          "note": "Used for USD→GBP conversion and continuity before modern benchmark series."
+          "note": "Used for USD\u2192GBP conversion and continuity before modern benchmark series."
         }
       ],
       "metadata": {
-        "unit_basis": "Refined copper (£/metric tonne)",
+        "unit_basis": "Refined copper (\u00a3/metric tonne)",
         "geography": "United Kingdom pricing convention",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
         "last_updated": "2025-01-01",
         "source_confidence": "medium",
-        "notes": "Series spliced from benchmark market data and back-cast commodity proxies for pre-benchmark years."
+        "notes": "Series spliced from benchmark market data and back-cast commodity proxies for pre-benchmark years.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
@@ -2502,17 +2625,18 @@
           "url": "https://www.bankofengland.co.uk/boeapps/database/",
           "type": "official",
           "date": "2025-01-01",
-          "note": "Used for USD→GBP conversion and continuity before modern benchmark series."
+          "note": "Used for USD\u2192GBP conversion and continuity before modern benchmark series."
         }
       ],
       "metadata": {
-        "unit_basis": "Silver (£/troy oz)",
+        "unit_basis": "Silver (\u00a3/troy oz)",
         "geography": "United Kingdom pricing convention",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
         "last_updated": "2025-01-01",
         "source_confidence": "medium",
-        "notes": "Series spliced from benchmark market data and back-cast commodity proxies for pre-benchmark years."
+        "notes": "Series spliced from benchmark market data and back-cast commodity proxies for pre-benchmark years.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
@@ -2610,29 +2734,34 @@
           "url": "https://www.bankofengland.co.uk/boeapps/database/",
           "type": "official",
           "date": "2025-01-01",
-          "note": "Used for USD→GBP conversion and continuity before modern benchmark series."
+          "note": "Used for USD\u2192GBP conversion and continuity before modern benchmark series."
         }
       ],
       "metadata": {
-        "unit_basis": "Brent crude (£/barrel)",
+        "unit_basis": "Brent crude (\u00a3/barrel)",
         "geography": "United Kingdom pricing convention",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
         "last_updated": "2025-01-01",
         "source_confidence": "medium",
-        "notes": "Series spliced from benchmark market data and back-cast commodity proxies for pre-benchmark years."
+        "notes": "Series spliced from benchmark market data and back-cast commodity proxies for pre-benchmark years.",
+        "series_basis": "calendar_year_average"
       }
     }
   ],
   "methodology": {
     "2025": "2025 values are provisional annual estimates based on year-to-date published market and official releases where full-year figures are not yet finalized.",
     "house": "House-price series combines long-run historical anchor points (1950s onward) with modern UK HPI annual averages. For missing annual points between historical anchors, geometric interpolation is used to create a continuous annual series.",
-    "coverage": "All denominators except bitcoin now run annually from 1950–2025. For series that start later in official publications, earlier years are reconstructed using CPI-deflated back-casting anchored on the first observed datapoint and conservative item-specific real-trend assumptions.",
+    "coverage": "All denominators except bitcoin now run annually from 1950\u20132025. For series that start later in official publications, earlier years are reconstructed using CPI-deflated back-casting anchored on the first observed datapoint and conservative item-specific real-trend assumptions.",
     "confidence": "Point colours represent source-confidence tiers from metadata: high (official/statutory), medium (market benchmark + standard transformations), low (proxy reconstruction from adjacent series).",
-    "commodities": "Copper, silver and Brent series are assembled from commodity benchmark datasets (Pink Sheet / exchange benchmarks) with USDGBP conversion and pre-benchmark splicing using nearest liquid proxy contracts."
+    "commodities": "Copper, silver and Brent series are assembled from commodity benchmark datasets (Pink Sheet / exchange benchmarks) with USDGBP conversion and pre-benchmark splicing using nearest liquid proxy contracts.",
+    "series_basis": "Each item/context series now includes series_basis: calendar_year_average, year_end_close, or regulated_tariff.",
+    "salary_benchmark": "Salary denominators are now framed around a full-time annual earnings benchmark; 2024-2025 are directly aligned to ONS ASHE median full-time annual earnings.",
+    "diesel": "Diesel 2003-2025 uses exact calendar-year averages from the DESNZ weekly road fuel price workbook.",
+    "water": "South West Water uses sparse direct anchors (2014, 2024, 2025) plus interpolation/back-casting where published comparable annual bill data are limited."
   },
   "schema": {
-    "version": "2.0.0",
+    "version": "2.1.0",
     "series_split_recommendation": "Move to one file per category/series as dataset grows",
     "interpolation_policy": "Explicitly flagged in each item metadata and methodology section"
   }
