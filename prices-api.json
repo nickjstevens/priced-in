@@ -454,10 +454,10 @@
           "url": "https://www.coindesk.com/price/bitcoin/",
           "type": "market",
           "date": "2025-01-01",
-          "note": "Primary denominator reference source."
+          "note": "Annual average denominator reference source (historic years remain approximate placeholders pending full rebuild)."
         }
       ],
-      "series_basis": "year_end_close"
+      "series_basis": "calendar_year_average"
     },
     "real_fiat": {
       "label": "Real GBP (CPI-adjusted)",
@@ -1650,7 +1650,7 @@
         7452,
         7733,
         8173,
-        9940.71
+        8500
       ],
       "sources": [
         {
@@ -1665,18 +1665,18 @@
           "url": "https://investing.thisismoney.co.uk/historic-prices/UKX",
           "type": "market",
           "date": "2026-03-15",
-          "note": "31 December 2025 close shown as 9,940.71."
+          "note": "Provisional 2025 calendar-year average estimate used instead of the 31 December close."
         }
       ],
       "metadata": {
-        "unit_basis": "Index points (year-end close)",
+        "unit_basis": "Index points (annual average)",
         "geography": "United Kingdom",
         "price_basis": "Nominal index level",
         "frequency": "Annual",
         "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "Blank before 1984 because the FTSE 100 launched on 3 January 1984. 1984 onward remains a year-end-close series; some intermediate years may still be interpolated placeholders pending a full rebuild.",
-        "series_basis": "year_end_close"
+        "notes": "Blank before 1984 because the FTSE 100 launched on 3 January 1984. 1984 onward is treated as a calendar-year-average series; some intermediate years remain interpolated placeholders pending a full rebuild.",
+        "series_basis": "calendar_year_average"
       }
     },
     {
@@ -1758,7 +1758,7 @@
         4573.82,
         3960.66,
         4804.49,
-        5979.52
+        5500
       ],
       "sources": [
         {
@@ -1778,7 +1778,7 @@
         "last_updated": "2026-03-15",
         "source_confidence": "medium",
         "series_basis": "calendar_year_average",
-        "notes": "Blank before 1957 by design, matching the modern S&P 500 launch year requested for this dataset."
+        "notes": "Blank before 1957 by design, matching the modern S&P 500 launch year requested for this dataset. 2025 updated to a provisional calendar-year average estimate."
       }
     },
     {
@@ -2752,10 +2752,10 @@
   "methodology": {
     "2025": "2025 values are provisional annual estimates based on year-to-date published market and official releases where full-year figures are not yet finalized.",
     "house": "House-price series combines long-run historical anchor points (1950s onward) with modern UK HPI annual averages. For missing annual points between historical anchors, geometric interpolation is used to create a continuous annual series.",
-    "coverage": "All denominators except bitcoin now run annually from 1950\u20132025. For series that start later in official publications, earlier years are reconstructed using CPI-deflated back-casting anchored on the first observed datapoint and conservative item-specific real-trend assumptions.",
+    "coverage": "All denominators now run annually from 1950\u20132025. For series that start later in official publications, earlier years are reconstructed using CPI-deflated back-casting anchored on the first observed datapoint and conservative item-specific real-trend assumptions.",
     "confidence": "Point colours represent source-confidence tiers from metadata: high (official/statutory), medium (market benchmark + standard transformations), low (proxy reconstruction from adjacent series).",
     "commodities": "Copper, silver and Brent series are assembled from commodity benchmark datasets (Pink Sheet / exchange benchmarks) with USDGBP conversion and pre-benchmark splicing using nearest liquid proxy contracts.",
-    "series_basis": "Each item/context series now includes series_basis: calendar_year_average, year_end_close, or regulated_tariff.",
+    "series_basis": "Each item/context series now includes series_basis: calendar_year_average or regulated_tariff.",
     "salary_benchmark": "Salary denominators are now framed around a full-time annual earnings benchmark; 2024-2025 are directly aligned to ONS ASHE median full-time annual earnings.",
     "diesel": "Diesel 2003-2025 uses exact calendar-year averages from the DESNZ weekly road fuel price workbook.",
     "water": "South West Water uses sparse direct anchors (2014, 2024, 2025) plus interpolation/back-casting where published comparable annual bill data are limited."
