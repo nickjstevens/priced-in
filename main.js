@@ -88,6 +88,42 @@ function formatGbp(value) {
 }
 
 
+
+function pointLabelToDecimalYear(value) {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return null;
+  if (!value.includes('-')) {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  const [yearPart, monthPart] = value.split('-');
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+  if (Number.isNaN(year) || Number.isNaN(month) || month < 1 || month > 12) return null;
+  return year + ((month - 1) / 12);
+}
+
+function decimalYearToLabel(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  const year = Math.floor(value);
+  const monthIndex = Math.round((value - year) * 12);
+  if (monthIndex <= 0) return String(year);
+  const month = String(Math.min(monthIndex + 1, 12)).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function buildMonthlySeries(monthlyPayload) {
+  if (!monthlyPayload || !Array.isArray(monthlyPayload.months)) return {};
+  const series = {};
+  Object.entries(monthlyPayload.contextSeries || {}).forEach(([key, entry]) => {
+    series[key] = monthlyPayload.months.map((date, idx) => ({ date, value: entry.values?.[idx] ?? null }));
+  });
+  (monthlyPayload.items || []).forEach((item) => {
+    series[item.key] = monthlyPayload.months.map((date, idx) => ({ date, value: item.values?.[idx] ?? null }));
+  });
+  return series;
+}
+
 function correlation(xs, ys) {
   if (!xs.length || xs.length !== ys.length) return null;
   const xMean = xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -258,7 +294,7 @@ createApp({
       return item?.values?.[annualIndex] ?? null;
     },
     shouldUseMonthly() {
-      return this.selectedRange === 'last10';
+      return false;
     },
     visiblePairSeries(numeratorKey, denominatorKey) {
       if (!numeratorKey || !denominatorKey) return [];
@@ -310,6 +346,35 @@ createApp({
       }
 
       return points;
+    },
+    monthlyPairSeries(numeratorKey, denominatorKey) {
+      if (!numeratorKey || !denominatorKey) return [];
+      const numeratorMonthly = this.monthlySeriesForKey(numeratorKey);
+      const denominatorMonthly = this.monthlySeriesForKey(denominatorKey);
+      if (!numeratorMonthly.length || !denominatorMonthly.length) return [];
+      const [fromYear, toYear] = this.rangeBounds();
+      const fromDate = `${fromYear}-01`;
+      const toDate = `${toYear}-12`;
+      const denomByDate = new Map(denominatorMonthly.map((point) => [point.date, point.value]));
+      let points = numeratorMonthly
+        .filter((point) => point.date >= fromDate && point.date <= toDate)
+        .map((point) => {
+          const d = denomByDate.get(point.date);
+          if (point.value == null || d == null || d === 0) return null;
+          return { year: point.date, value: point.value / d, observed: true };
+        })
+        .filter(Boolean);
+      if (denominatorKey === 'context:bitcoin' && !this.showFullBitcoin) {
+        points = points.filter((point) => Number(point.year.slice(0, 4)) >= 2017);
+      }
+      if (this.rebased) {
+        const first = points.find((point) => point.value != null)?.value;
+        if (first) points = points.map((point) => ({ ...point, value: (point.value / first) * 100 }));
+      }
+      return points;
+    },
+    toChartPoints(points) {
+      return points.map((point) => ({ x: pointLabelToDecimalYear(point.year), y: point.value }));
     },
     pairCorrelation(aPoints, bPoints) {
       const bByYear = new Map(bPoints.map((point) => [point.year, point.value]));
@@ -481,8 +546,10 @@ createApp({
         afterDatasetsDraw: (chart) => {
           const { ctx, chartArea, scales } = chart;
           if (!chartArea || !scales.x) return;
-          const labels = chart.data.labels || [];
-          const years = labels.map((x) => Number(x)).filter((x) => !Number.isNaN(x));
+          const years = chart.data.datasets
+            .flatMap((dataset) => dataset.data || [])
+            .map((point) => (typeof point === 'number' ? point : point?.x))
+            .filter((value) => value != null && !Number.isNaN(value));
           if (!years.length) return;
           const minYear = Math.min(...years);
           const maxYear = Math.max(...years);
@@ -527,7 +594,7 @@ createApp({
           legend: { display: true, labels: { color: axisColor } },
           tooltip: {
             callbacks: {
-              title: (items) => (items[0] ? `Date: ${items[0].label}` : ''),
+              title: (items) => (items[0] ? `Date: ${decimalYearToLabel(items[0].parsed.x)}` : ''),
               label: (ctx) => {
                 const value = ctx.parsed.y;
                 const formattedValue = ctx.dataset?.valueFormat === 'gbp'
@@ -549,7 +616,13 @@ createApp({
         },
         scales: {
           x: {
-            ticks: { autoSkip: true, maxTicksLimit: 8, color: axisColor },
+            type: 'linear',
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 8,
+              color: axisColor,
+              callback: (value) => decimalYearToLabel(Number(value)),
+            },
             grid: { color: gridColor },
           },
           y: {
@@ -585,9 +658,10 @@ createApp({
       const canvas = document.getElementById(`chart-${itemKey}`);
       if (!canvas) return;
       if (this.charts[itemKey]) this.charts[itemKey].destroy();
+      const monthlyPts = this.monthlyPairSeries(itemKey, `context:${denominator}`);
       const datasets = [{
-        label: item.name,
-        data: pts.map((p) => p.value),
+        label: `${item.name} (annual)`,
+        data: this.toChartPoints(pts),
         borderColor: PALETTE[0],
         backgroundColor: 'rgba(31, 111, 235, 0.1)',
         tension: 0.2,
@@ -600,13 +674,24 @@ createApp({
         const usdByPoint = new Map(this.visiblePairSeries(itemKey, 'context:fiat').map((point) => [point.year, point.value]));
         datasets.unshift({
           label: `${item.name} (USD overlay)`,
-          data: pts.map((point) => usdByPoint.get(point.year) ?? null),
+          data: this.toChartPoints(pts.map((point) => ({ ...point, value: usdByPoint.get(point.year) ?? null }))),
           borderColor: 'rgba(100, 116, 139, 0.45)',
           borderWidth: 1.5,
           pointRadius: 0,
           tension: 0.2,
           yAxisID: 'yUsd',
           valueFormat: 'gbp',
+        });
+      }
+      if (monthlyPts.length) {
+        datasets.push({
+          label: `${item.name} (monthly)`,
+          data: this.toChartPoints(monthlyPts),
+          borderColor: 'rgba(14, 165, 233, 0.95)',
+          borderDash: [6, 4],
+          borderWidth: 1.8,
+          pointRadius: 0,
+          tension: 0.15,
         });
       }
       const forecast = [];
@@ -637,28 +722,31 @@ createApp({
       const options = this.chartOptions();
       this.charts[itemKey] = new Chart(canvas, {
         type: 'line',
-        data: { labels: [...pts.map((p) => p.year), ...forecast.map((f) => f.year)], datasets },
+        data: { datasets },
         options,
         plugins: [options.eventAnnotationsPlugin],
       });
     },
     renderCompareChart() {
       const keys = this.compareKeys.length ? this.compareKeys : this.filteredItems.slice(0, 3).map((x) => x.key);
-      const datasets = keys.map((key, idx) => {
+      const datasets = keys.flatMap((key, idx) => {
         const item = this.items.find((x) => x.key === key);
         const pts = this.visiblePairSeries(key, `context:${this.allDenominator}`);
-        return { label: item.name, data: pts.map((p) => p.value), borderColor: PALETTE[idx % PALETTE.length], tension: 0.2 };
+        const monthlyPts = this.monthlyPairSeries(key, `context:${this.allDenominator}`);
+        const color = PALETTE[idx % PALETTE.length];
+        const annualDataset = { label: `${item.name} (annual)`, data: this.toChartPoints(pts), borderColor: color, tension: 0.2 };
+        if (!monthlyPts.length) return [annualDataset];
+        return [annualDataset, { label: `${item.name} (monthly)`, data: this.toChartPoints(monthlyPts), borderColor: color, borderDash: [6, 4], pointRadius: 0, tension: 0.15 }];
       });
       const corr = this.compareAnalytics.rollingCorrelation || [];
-      if (corr.length) datasets.push({ label: '5Y rolling correlation (first two)', data: corr.map((p) => p.value), borderColor: '#111827', borderDash: [4, 4], yAxisID: 'y1', tension: 0.2 });
-      const labels = this.visiblePairSeries(keys[0], `context:${this.allDenominator}`).map((p) => p.year);
+      if (corr.length) datasets.push({ label: '5Y rolling correlation (first two)', data: this.toChartPoints(corr), borderColor: '#111827', borderDash: [4, 4], yAxisID: 'y1', tension: 0.2 });
       const canvas = document.getElementById('chart-compare');
       if (!canvas) return;
       if (this.charts.compare) this.charts.compare.destroy();
       const options = this.chartOptions();
       this.charts.compare = new Chart(canvas, {
         type: 'line',
-        data: { labels, datasets },
+        data: { datasets },
         plugins: [options.eventAnnotationsPlugin],
         options: {
           ...options,
@@ -678,13 +766,21 @@ createApp({
       this.charts.spread = new Chart(canvas, {
         type: 'line',
         data: {
-          labels: pts.map((p) => p.year),
           datasets: [{
             label: `${this.spreadSeriesOptions.find((x) => x.key === this.spreadNumeratorItemKey)?.name || 'Item A'} / ${this.spreadSeriesOptions.find((x) => x.key === this.spreadDenominatorItemKey)?.name || 'Item B'}`,
-            data: pts.map((p) => p.value),
+            data: this.toChartPoints(pts),
             borderColor: '#7c3aed',
             tension: 0.2,
-          }],
+          },
+          ...(this.monthlyPairSeries(this.spreadNumeratorItemKey, this.spreadDenominatorItemKey).length ? [{
+            label: 'Monthly ratio',
+            data: this.toChartPoints(this.monthlyPairSeries(this.spreadNumeratorItemKey, this.spreadDenominatorItemKey)),
+            borderColor: '#a78bfa',
+            borderDash: [6, 4],
+            pointRadius: 0,
+            tension: 0.15,
+          }] : []),
+          ],
         },
         options,
         plugins: [options.eventAnnotationsPlugin],
@@ -745,11 +841,19 @@ createApp({
     async fetchPricingData() {
       this.isLoading = true; this.error = '';
       try {
-        const response = await fetch('/api/prices');
+        const [response, monthlyResponse] = await Promise.all([
+          fetch('/api/prices'),
+          fetch('/prices-monthly-api.json').catch(() => null),
+        ]);
         if (!response.ok) throw new Error(`API unavailable (${response.status})`);
         const payload = await response.json();
         if (!isValidDataset(payload)) throw new Error('dataset malformed');
-        this.years = payload.years; this.contextSeries = payload.contextSeries; this.items = payload.items; this.monthlySeries = payload.monthlySeries || {};
+        let derivedMonthlySeries = payload.monthlySeries || {};
+        if (monthlyResponse?.ok) {
+          const monthlyPayload = await monthlyResponse.json();
+          derivedMonthlySeries = buildMonthlySeries(monthlyPayload);
+        }
+        this.years = payload.years; this.contextSeries = payload.contextSeries; this.items = payload.items; this.monthlySeries = derivedMonthlySeries;
         this.denominators = Object.entries(this.contextSeries).map(([value, d]) => ({ value, label: d.label }));
         this.perChartDenominator = Object.fromEntries(this.items.map((item) => [item.key, this.allDenominator]));
         if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);

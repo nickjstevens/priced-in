@@ -54,6 +54,28 @@ function pointLabelToDecimalYear(value) {
   return year + ((month - 1) / 12);
 }
 
+
+function decimalYearToLabel(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  const year = Math.floor(value);
+  const monthIndex = Math.round((value - year) * 12);
+  if (monthIndex <= 0) return String(year);
+  const month = String(Math.min(monthIndex + 1, 12)).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function buildMonthlySeries(monthlyPayload) {
+  if (!monthlyPayload || !Array.isArray(monthlyPayload.months)) return {};
+  const series = {};
+  Object.entries(monthlyPayload.contextSeries || {}).forEach(([key, entry]) => {
+    series[key] = monthlyPayload.months.map((date, idx) => ({ date, value: entry.values?.[idx] ?? null }));
+  });
+  (monthlyPayload.items || []).forEach((item) => {
+    series[item.key] = monthlyPayload.months.map((date, idx) => ({ date, value: item.values?.[idx] ?? null }));
+  });
+  return series;
+}
+
 function correlation(xs, ys) {
   if (!xs.length || xs.length !== ys.length) return null;
   const xMean = xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -151,32 +173,6 @@ createApp({
       return this.items.find((item) => item.key === seriesKey)?.values?.[annualIndex] ?? null;
     },
     visiblePairSeries(numeratorKey, denominatorKey) {
-      const useMonthly = this.selectedRange === 'last10';
-      if (useMonthly) {
-        const numeratorMonthly = this.monthlySeriesForKey(numeratorKey);
-        const denominatorMonthly = this.monthlySeriesForKey(denominatorKey);
-        if (numeratorMonthly.length && denominatorMonthly.length) {
-          const [fromYear, toYear] = this.rangeBounds();
-          const fromDate = `${fromYear}-01`;
-          const toDate = `${toYear}-12`;
-          const denomByDate = new Map(denominatorMonthly.map((point) => [point.date, point.value]));
-          let points = numeratorMonthly
-            .filter((point) => point.date >= fromDate && point.date <= toDate)
-            .map((point) => {
-              const d = denomByDate.get(point.date);
-              if (point.value == null || d == null || d === 0) return null;
-              return { year: point.date, value: point.value / d };
-            })
-            .filter(Boolean);
-          if (denominatorKey === 'context:bitcoin' && !this.showFullBitcoin) points = points.filter((point) => Number(point.year.slice(0, 4)) >= 2017);
-          if (this.rebased) {
-            const first = points[0]?.value;
-            if (first) points = points.map((point) => ({ ...point, value: (point.value / first) * 100 }));
-          }
-          return points;
-        }
-      }
-
       const item = this.items.find((x) => x.key === numeratorKey);
       if (!item) return [];
       const [from, to] = this.rangeBounds();
@@ -194,6 +190,32 @@ createApp({
       }
       return points;
     },
+    monthlyPairSeries(numeratorKey, denominatorKey) {
+      const numeratorMonthly = this.monthlySeriesForKey(numeratorKey);
+      const denominatorMonthly = this.monthlySeriesForKey(denominatorKey);
+      if (!numeratorMonthly.length || !denominatorMonthly.length) return [];
+      const [fromYear, toYear] = this.rangeBounds();
+      const fromDate = `${fromYear}-01`;
+      const toDate = `${toYear}-12`;
+      const denomByDate = new Map(denominatorMonthly.map((point) => [point.date, point.value]));
+      let points = numeratorMonthly
+        .filter((point) => point.date >= fromDate && point.date <= toDate)
+        .map((point) => {
+          const d = denomByDate.get(point.date);
+          if (point.value == null || d == null || d === 0) return null;
+          return { year: point.date, value: point.value / d };
+        })
+        .filter(Boolean);
+      if (denominatorKey === 'context:bitcoin' && !this.showFullBitcoin) points = points.filter((point) => Number(point.year.slice(0, 4)) >= 2017);
+      if (this.rebased) {
+        const first = points[0]?.value;
+        if (first) points = points.map((point) => ({ ...point, value: (point.value / first) * 100 }));
+      }
+      return points;
+    },
+    toChartPoints(points) {
+      return points.map((point) => ({ x: pointLabelToDecimalYear(point.year), y: point.value }));
+    },
     chartOptions() {
       const axisColor = this.isDarkMode ? '#cbd5e1' : '#334155';
       const gridColor = this.isDarkMode ? 'rgba(148,163,184,0.22)' : 'rgba(51,65,85,0.16)';
@@ -205,6 +227,7 @@ createApp({
           legend: { labels: { color: axisColor } },
           tooltip: {
             callbacks: {
+              title: (items) => (items[0] ? `Date: ${decimalYearToLabel(items[0].parsed.x)}` : ''),
               label: (ctx) => {
                 const value = ctx.parsed.y;
                 const formattedValue = ctx.dataset?.valueFormat === 'gbp'
@@ -225,7 +248,7 @@ createApp({
           },
         },
         scales: {
-          x: { ticks: { color: axisColor }, grid: { color: gridColor } },
+          x: { type: 'linear', ticks: { color: axisColor, callback: (value) => decimalYearToLabel(Number(value)) }, grid: { color: gridColor } },
           y: { type: this.useLogScale ? 'logarithmic' : 'linear', beginAtZero: !this.useLogScale, ticks: { color: axisColor }, grid: { color: gridColor } },
           yGbp: { type: this.useLogScale ? 'logarithmic' : 'linear', position: 'right', display: false, grid: { drawOnChartArea: false }, ticks: { color: axisColor } },
         },
@@ -241,9 +264,10 @@ createApp({
         numeratorLabel: this.currentItem.name,
         denominatorLabel: this.contextSeries[this.denominator]?.label || this.denominator,
       }));
+      const monthlyPoints = this.monthlyPairSeries(this.currentItem.key, `context:${this.denominator}`);
       const datasets = [{
-        label: `${this.currentItem.name} priced in ${this.contextSeries[this.denominator]?.label || this.denominator}`,
-        data: points.map((point) => point.value),
+        label: `${this.currentItem.name} priced in ${this.contextSeries[this.denominator]?.label || this.denominator} (annual)`,
+        data: this.toChartPoints(points),
         borderColor: '#1f6feb',
         tension: 0.2,
         hoverDetails,
@@ -251,7 +275,7 @@ createApp({
       if (this.showUsdOverlay) {
         datasets.push({
           label: `${this.currentItem.name} (GBP overlay)`,
-          data: points.map((point) => this.pointValueForSeries(this.currentItem.key, point.year)),
+          data: this.toChartPoints(points.map((point) => ({ ...point, value: this.pointValueForSeries(this.currentItem.key, point.year) }))),
           borderColor: 'rgba(249, 115, 22, 0.45)',
           borderDash: [5, 5],
           yAxisID: 'yGbp',
@@ -259,11 +283,21 @@ createApp({
           valueFormat: 'gbp',
         });
       }
+      if (monthlyPoints.length) {
+        datasets.push({
+          label: `${this.currentItem.name} priced in ${this.contextSeries[this.denominator]?.label || this.denominator} (monthly)`,
+          data: this.toChartPoints(monthlyPoints),
+          borderColor: 'rgba(14, 165, 233, 0.95)',
+          borderDash: [6, 4],
+          pointRadius: 0,
+          tension: 0.15,
+        });
+      }
       const canvas = document.getElementById('single-chart');
       if (!canvas) return;
       if (this.chart) this.chart.destroy();
       const options = this.chartOptions();
-      this.chart = new Chart(canvas, { type: 'line', data: { labels: points.map((point) => point.year), datasets }, options });
+      this.chart = new Chart(canvas, { type: 'line', data: { datasets }, options });
     },
     chartStats() {
       const item = this.currentItem;
@@ -376,13 +410,21 @@ createApp({
       this.isLoading = true;
       this.error = '';
       try {
-        const response = await fetch('/api/prices');
+        const [response, monthlyResponse] = await Promise.all([
+          fetch('/api/prices'),
+          fetch('/prices-monthly-api.json').catch(() => null),
+        ]);
         if (!response.ok) throw new Error(`API unavailable (${response.status})`);
         const payload = await response.json();
+        let derivedMonthlySeries = payload.monthlySeries || {};
+        if (monthlyResponse?.ok) {
+          const monthlyPayload = await monthlyResponse.json();
+          derivedMonthlySeries = buildMonthlySeries(monthlyPayload);
+        }
         this.years = payload.years;
         this.contextSeries = payload.contextSeries;
         this.items = payload.items;
-        this.monthlySeries = payload.monthlySeries || {};
+        this.monthlySeries = derivedMonthlySeries;
         this.denominators = Object.entries(this.contextSeries).map(([value, d]) => ({ value, label: d.label }));
         if (!this.itemKey || !this.items.some((item) => item.key === this.itemKey)) this.itemKey = this.items[0]?.key || '';
         if (!this.contextSeries[this.denominator]) this.denominator = this.denominators[0]?.value || 'fiat';
