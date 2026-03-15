@@ -232,6 +232,15 @@ createApp({
       const key = seriesKey.startsWith('context:') ? seriesKey.replace('context:', '') : seriesKey;
       return this.monthlySeries[key] || [];
     },
+    annualSeriesValuesForKey(seriesKey) {
+      if (!seriesKey) return [];
+      if (seriesKey.startsWith('context:')) {
+        const contextKey = seriesKey.replace('context:', '');
+        return this.contextSeries[contextKey]?.values || [];
+      }
+      const item = this.items.find((x) => x.key === seriesKey);
+      return item?.values || [];
+    },
     pointValueForSeries(seriesKey, pointKey) {
       if (!seriesKey || pointKey == null) return null;
       if (typeof pointKey === 'string' && pointKey.includes('-')) {
@@ -279,16 +288,28 @@ createApp({
           return monthlyPoints;
         }
       }
-      if (numeratorKey.startsWith('context:')) {
-        const contextKey = numeratorKey.replace('context:', '');
-        const synthetic = {
-          key: numeratorKey,
-          values: this.contextSeries[contextKey]?.values || [],
-        };
-        return this.visibleSeries(synthetic, denominatorKey.replace('context:', ''));
+      const [fromYear, toYear] = this.rangeBounds();
+      const numeratorAnnual = this.annualSeriesValuesForKey(numeratorKey);
+      const denominatorAnnual = this.annualSeriesValuesForKey(denominatorKey);
+      let points = this.years.map((year, idx) => {
+        const numeratorValue = numeratorAnnual[idx];
+        const denominatorValue = denominatorAnnual[idx];
+        if (numeratorValue == null || denominatorValue == null || denominatorValue === 0) {
+          return { year, value: null, observed: false };
+        }
+        return { year, value: numeratorValue / denominatorValue, observed: true };
+      }).filter((point) => point.year >= fromYear && point.year <= toYear && point.observed);
+
+      if (denominatorKey === 'context:bitcoin' && !this.showFullBitcoin) {
+        points = points.filter((point) => point.year >= 2017);
       }
-      const item = this.items.find((x) => x.key === numeratorKey);
-      return this.visibleSeries(item, denominatorKey.replace('context:', ''));
+
+      if (this.rebased) {
+        const first = points.find((point) => point.value != null)?.value;
+        if (first) points = points.map((point) => ({ ...point, value: (point.value / first) * 100 }));
+      }
+
+      return points;
     },
     pairCorrelation(aPoints, bPoints) {
       const bByYear = new Map(bPoints.map((point) => [point.year, point.value]));
