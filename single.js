@@ -76,6 +76,12 @@ function buildMonthlySeries(monthlyPayload) {
   return series;
 }
 
+function isRawMonthlyDataset(monthlyPayload) {
+  const interpolationDetail = monthlyPayload?.methodology?.interpolation
+    || monthlyPayload?.methodology?.interpolation_policy;
+  return !interpolationDetail;
+}
+
 function correlation(xs, ys) {
   if (!xs.length || xs.length !== ys.length) return null;
   const xMean = xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -419,7 +425,9 @@ createApp({
         let derivedMonthlySeries = payload.monthlySeries || {};
         if (monthlyResponse?.ok) {
           const monthlyPayload = await monthlyResponse.json();
-          derivedMonthlySeries = buildMonthlySeries(monthlyPayload);
+          if (isRawMonthlyDataset(monthlyPayload)) {
+            derivedMonthlySeries = buildMonthlySeries(monthlyPayload);
+          }
         }
         this.years = payload.years;
         this.contextSeries = payload.contextSeries;
