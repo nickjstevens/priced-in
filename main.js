@@ -1,66 +1,4 @@
 const PALETTE = ['#1f6feb', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444', '#7c3aed', '#0f766e', '#f97316'];
-const EVENT_MARKERS = [
-  {
-    start: 2008,
-    end: 2009,
-    label: 'Global financial crisis',
-    palette: { light: 'rgba(239, 68, 68, 0.16)', dark: 'rgba(248, 113, 113, 0.24)' },
-  },
-  {
-    start: 2016,
-    end: 2017,
-    label: 'Brexit shock',
-    palette: { light: 'rgba(245, 158, 11, 0.16)', dark: 'rgba(251, 191, 36, 0.24)' },
-  },
-  {
-    start: 2020,
-    end: 2021,
-    label: 'COVID shock',
-    palette: { light: 'rgba(14, 165, 233, 0.16)', dark: 'rgba(56, 189, 248, 0.24)' },
-  },
-  {
-    start: 2022,
-    end: 2023,
-    label: 'Inflation spike',
-    palette: { light: 'rgba(139, 92, 246, 0.15)', dark: 'rgba(167, 139, 250, 0.24)' },
-  },
-  {
-    start: 2013 - 0.35,
-    end: 2013 + 0.35,
-    label: 'BTC peak',
-    palette: { light: 'rgba(16, 185, 129, 0.14)', dark: 'rgba(52, 211, 153, 0.22)' },
-  },
-  {
-    start: 2015 - 0.35,
-    end: 2015 + 0.35,
-    label: 'BTC trough',
-    palette: { light: 'rgba(244, 63, 94, 0.14)', dark: 'rgba(251, 113, 133, 0.22)' },
-  },
-  {
-    start: 2017 - 0.35,
-    end: 2017 + 0.35,
-    label: 'BTC peak',
-    palette: { light: 'rgba(16, 185, 129, 0.14)', dark: 'rgba(52, 211, 153, 0.22)' },
-  },
-  {
-    start: 2018 - 0.35,
-    end: 2018 + 0.35,
-    label: 'BTC trough',
-    palette: { light: 'rgba(244, 63, 94, 0.14)', dark: 'rgba(251, 113, 133, 0.22)' },
-  },
-  {
-    start: 2021 - 0.35,
-    end: 2021 + 0.35,
-    label: 'BTC peak',
-    palette: { light: 'rgba(16, 185, 129, 0.14)', dark: 'rgba(52, 211, 153, 0.22)' },
-  },
-  {
-    start: 2022 - 0.35,
-    end: 2022 + 0.35,
-    label: 'BTC trough',
-    palette: { light: 'rgba(244, 63, 94, 0.14)', dark: 'rgba(251, 113, 133, 0.22)' },
-  },
-];
 const STORAGE_KEYS = {
   theme: 'priced-in-theme',
 };
@@ -122,6 +60,12 @@ function buildMonthlySeries(monthlyPayload) {
     series[item.key] = monthlyPayload.months.map((date, idx) => ({ date, value: item.values?.[idx] ?? null }));
   });
   return series;
+}
+
+function isRawMonthlyDataset(monthlyPayload) {
+  const interpolationDetail = monthlyPayload?.methodology?.interpolation
+    || monthlyPayload?.methodology?.interpolation_policy;
+  return !interpolationDetail;
 }
 
 function correlation(xs, ys) {
@@ -541,55 +485,9 @@ createApp({
     chartOptions() {
       const axisColor = this.isDarkMode ? '#cbd5e1' : '#334155';
       const gridColor = this.isDarkMode ? 'rgba(148,163,184,0.22)' : 'rgba(51,65,85,0.16)';
-      const eventAnnotationsPlugin = {
-        id: 'eventAnnotations',
-        afterDatasetsDraw: (chart) => {
-          const { ctx, chartArea, scales } = chart;
-          if (!chartArea || !scales.x) return;
-          const years = chart.data.datasets
-            .flatMap((dataset) => dataset.data || [])
-            .map((point) => (typeof point === 'number' ? point : point?.x))
-            .filter((value) => value != null && !Number.isNaN(value));
-          if (!years.length) return;
-          const minYear = Math.min(...years);
-          const maxYear = Math.max(...years);
-          ctx.save();
-          ctx.fillStyle = this.isDarkMode ? '#cbd5e1' : '#334155';
-          ctx.font = '11px system-ui, -apple-system, Segoe UI, sans-serif';
-          const visibleMarkers = EVENT_MARKERS.filter((event) => event.end >= minYear && event.start <= maxYear);
-          visibleMarkers.forEach((event, idx) => {
-            const start = Math.max(event.start, minYear);
-            const end = Math.min(event.end, maxYear);
-            let xStart = scales.x.getPixelForValue(start);
-            let xEnd = scales.x.getPixelForValue(end);
-            if (Number.isNaN(xStart) || Number.isNaN(xEnd)) return;
-            if (xEnd < xStart) [xStart, xEnd] = [xEnd, xStart];
-            const width = Math.max(4, xEnd - xStart);
-            const clampedX = Math.max(chartArea.left, xStart);
-            const clampedWidth = Math.min(chartArea.right, clampedX + width) - clampedX;
-            if (clampedWidth <= 0) return;
-
-            ctx.fillStyle = this.isDarkMode ? event.palette.dark : event.palette.light;
-            ctx.fillRect(clampedX, chartArea.top, clampedWidth, chartArea.bottom - chartArea.top);
-
-            ctx.strokeStyle = this.isDarkMode ? 'rgba(148,163,184,0.45)' : 'rgba(51,65,85,0.3)';
-            ctx.strokeRect(clampedX, chartArea.top, clampedWidth, chartArea.bottom - chartArea.top);
-
-            const labelX = Math.min(chartArea.right - 8, clampedX + 4);
-            const labelY = chartArea.top + 14 + ((idx % 3) * 14);
-            const textWidth = ctx.measureText(event.label).width;
-            ctx.fillStyle = this.isDarkMode ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255, 255, 255, 0.76)';
-            ctx.fillRect(labelX - 2, labelY - 10, textWidth + 4, 12);
-            ctx.fillStyle = this.isDarkMode ? '#e2e8f0' : '#1e293b';
-            ctx.fillText(event.label, labelX, labelY);
-          });
-          ctx.restore();
-        },
-      };
       return {
         responsive: true, maintainAspectRatio: false, animation: false,
         interaction: { mode: 'index', intersect: false },
-        eventAnnotationsPlugin,
         plugins: {
           legend: { display: true, labels: { color: axisColor } },
           tooltip: {
@@ -724,7 +622,6 @@ createApp({
         type: 'line',
         data: { datasets },
         options,
-        plugins: [options.eventAnnotationsPlugin],
       });
     },
     renderCompareChart() {
@@ -747,7 +644,6 @@ createApp({
       this.charts.compare = new Chart(canvas, {
         type: 'line',
         data: { datasets },
-        plugins: [options.eventAnnotationsPlugin],
         options: {
           ...options,
           scales: {
@@ -783,7 +679,6 @@ createApp({
           ],
         },
         options,
-        plugins: [options.eventAnnotationsPlugin],
       });
     },
     currentRegime() {
@@ -851,7 +746,9 @@ createApp({
         let derivedMonthlySeries = payload.monthlySeries || {};
         if (monthlyResponse?.ok) {
           const monthlyPayload = await monthlyResponse.json();
-          derivedMonthlySeries = buildMonthlySeries(monthlyPayload);
+          if (isRawMonthlyDataset(monthlyPayload)) {
+            derivedMonthlySeries = buildMonthlySeries(monthlyPayload);
+          }
         }
         this.years = payload.years; this.contextSeries = payload.contextSeries; this.items = payload.items; this.monthlySeries = derivedMonthlySeries;
         this.denominators = Object.entries(this.contextSeries).map(([value, d]) => ({ value, label: d.label }));
