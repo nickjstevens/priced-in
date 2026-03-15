@@ -55,6 +55,7 @@ header { display: flex; justify-content: space-between; gap: .6rem; align-items:
 .lineage { color: var(--text-muted); }
 .tool-card { margin-bottom: 1rem; }
 .spread-controls { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin-bottom: .8rem; }
+.invert-ratio-btn { margin-left: 0; }
 .ratio-stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: .4rem; margin: .6rem 0; }
 .tool-card ul { margin-top: 0; padding-left: 1.2rem; }
 @media (max-width: 720px) { .title-row, header { flex-direction: column; align-items: flex-start; } .grid { grid-template-columns: 1fr; } }

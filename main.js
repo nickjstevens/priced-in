@@ -703,6 +703,14 @@ createApp({
       this.items.forEach((item) => { this.perChartDenominator[item.key] = this.allDenominator; });
       this.syncUrlAndRender();
     },
+    invertSpreadPair() {
+      if (!this.spreadNumeratorItemKey || !this.spreadDenominatorItemKey) return;
+      [this.spreadNumeratorItemKey, this.spreadDenominatorItemKey] = [
+        this.spreadDenominatorItemKey,
+        this.spreadNumeratorItemKey,
+      ];
+      this.syncUrlAndRender();
+    },
     toggleCompare(key) {
       this.compareKeys = this.compareKeys.includes(key) ? this.compareKeys.filter((x) => x !== key) : [...this.compareKeys, key];
       this.syncUrlAndRender();

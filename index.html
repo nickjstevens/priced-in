@@ -147,6 +147,7 @@
                 <option v-for="series in spreadSeriesOptions" :key="`spread-b-item-${series.key}`" :value="series.key">{{ series.name }}</option>
               </select>
             </label>
+            <button type="button" class="invert-ratio-btn" @click="invertSpreadPair">Invert ratio (B / A)</button>
           </div>
           <div class="chart-wrap"><canvas id="chart-spread"></canvas></div>
         </article>
