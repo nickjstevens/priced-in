@@ -103,7 +103,7 @@ createApp({
       return [...itemSeries, ...denominatorSeries];
     },
     compareAnalytics() {
-      const keys = this.compareKeys.length ? this.compareKeys : this.filteredItems.slice(0, 3).map((x) => x.key);
+      const keys = this.compareKeys.length ? this.compareKeys : this.filteredItems.map((x) => x.key);
       if (keys.length < 2) return { rollingCorrelation: null, averageCorrelation: null, regime: 'Need at least two series' };
       const a = this.visibleSeries(this.items.find((x) => x.key === keys[0]), this.allDenominator).filter((p) => p.value != null);
       const b = this.visibleSeries(this.items.find((x) => x.key === keys[1]), this.allDenominator).filter((p) => p.value != null);
@@ -516,7 +516,7 @@ createApp({
       });
     },
     renderCompareChart() {
-      const keys = this.compareKeys.length ? this.compareKeys : this.filteredItems.slice(0, 3).map((x) => x.key);
+      const keys = this.compareKeys.length ? this.compareKeys : this.filteredItems.map((x) => x.key);
       const datasets = keys.flatMap((key, idx) => {
         const item = this.items.find((x) => x.key === key);
         const pts = this.visiblePairSeries(key, `context:${this.allDenominator}`);
@@ -580,6 +580,18 @@ createApp({
       else this.filteredItems.forEach((item) => this.renderChart(item.key));
       this.renderSpreadChart();
     },
+    syncCompareSelectionToCategory() {
+      const categoryKeys = this.filteredItems.map((item) => item.key);
+      this.compareKeys = [...categoryKeys];
+    },
+    onViewModeChange() {
+      if (this.viewMode === 'compare') this.syncCompareSelectionToCategory();
+      this.syncUrlAndRender();
+    },
+    onCategoryChange() {
+      if (this.viewMode === 'compare') this.syncCompareSelectionToCategory();
+      this.syncUrlAndRender();
+    },
     applyToAll() {
       this.items.forEach((item) => { this.perChartDenominator[item.key] = this.allDenominator; });
       this.syncUrlAndRender();
@@ -609,7 +621,7 @@ createApp({
       return `single.html?${params.toString()}`;
     },
     downloadCsv() {
-      const keys = this.viewMode === 'compare' ? (this.compareKeys.length ? this.compareKeys : this.filteredItems.slice(0, 3).map((x) => x.key)) : this.filteredItems.map((x) => x.key);
+      const keys = this.viewMode === 'compare' ? (this.compareKeys.length ? this.compareKeys : this.filteredItems.map((x) => x.key)) : this.filteredItems.map((x) => x.key);
       const rows = ['year,item,value,denominator'];
       keys.forEach((key) => {
         const item = this.items.find((x) => x.key === key);
@@ -632,7 +644,8 @@ createApp({
         this.years = payload.years; this.contextSeries = payload.contextSeries; this.items = payload.items;
         this.denominators = Object.entries(this.contextSeries).map(([value, d]) => ({ value, label: d.label }));
         this.perChartDenominator = Object.fromEntries(this.items.map((item) => [item.key, this.allDenominator]));
-        if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);
+        if (this.viewMode === 'compare') this.syncCompareSelectionToCategory();
+        else if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);
         if (!this.spreadNumeratorItemKey) this.spreadNumeratorItemKey = this.items[0]?.key || '';
         if (!this.spreadDenominatorItemKey) this.spreadDenominatorItemKey = this.denominators[0] ? `context:${this.denominators[0].value}` : (this.items[1]?.key || this.items[0]?.key || '');
       } catch (err) {

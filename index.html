@@ -25,7 +25,7 @@
 
       <section class="controls" v-if="!isLoading && !error">
         <label>Mode
-          <select v-model="viewMode" @change="syncUrlAndRender" aria-label="View mode">
+          <select v-model="viewMode" @change="onViewModeChange" aria-label="View mode">
             <option value="cards">One chart per item</option>
             <option value="compare">Compare items on one chart</option>
           </select>
@@ -52,7 +52,7 @@
         </button>
         <button @click="downloadCsv">Download CSV</button>
         <label>Category
-          <select v-model="categoryFilter" @change="syncUrlAndRender"><option value="all">All</option><option value="housing">Housing</option><option value="food">Food</option><option value="energy">Energy</option><option value="transport">Transport</option><option value="education">Education</option><option value="leisure">Leisure</option><option value="finance">Finance</option><option value="taxes">Taxes</option><option value="utilities">Utilities</option><option value="income">Income</option></select>
+          <select v-model="categoryFilter" @change="onCategoryChange"><option value="all">All</option><option value="housing">Housing</option><option value="food">Food</option><option value="energy">Energy</option><option value="transport">Transport</option><option value="education">Education</option><option value="leisure">Leisure</option><option value="finance">Finance</option><option value="taxes">Taxes</option><option value="utilities">Utilities</option><option value="income">Income</option></select>
         </label>
         <label class="search">Search
           <input v-model="search" @input="syncUrlAndRender" placeholder="house, tuition, eggs…" aria-label="Search items" />
