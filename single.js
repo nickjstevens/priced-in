@@ -149,11 +149,21 @@ createApp({
         })
         .filter((point) => point.year >= from && point.year <= to && point.value != null);
       if (this.denominator === 'bitcoin' && !this.showFullBitcoin) points = points.filter((point) => Number(point.year) >= 2017);
-      if (this.rebased) {
-        const first = points[0]?.value;
-        if (first) points = points.map((point) => ({ ...point, value: (point.value / first) * 100 }));
-      }
-      return points;
+      return this.applySeriesTransforms(points);
+    },
+    visibleOverlaySeries(seriesKey) {
+      const [from, to] = this.rangeBounds();
+      let points = this.years
+        .map((year) => ({ year, value: this.pointValueForSeries(seriesKey, year) }))
+        .filter((point) => point.year >= from && point.year <= to && point.value != null);
+      if (this.denominator === 'bitcoin' && !this.showFullBitcoin) points = points.filter((point) => Number(point.year) >= 2017);
+      return this.applySeriesTransforms(points);
+    },
+    applySeriesTransforms(points) {
+      if (!this.rebased) return points;
+      const first = points[0]?.value;
+      if (!first) return points;
+      return points.map((point) => ({ ...point, value: (point.value / first) * 100 }));
     },
     toChartPoints(points) {
       return points.map((point) => ({ x: pointLabelToDecimalYear(point.year), y: point.value }));
@@ -213,10 +223,10 @@ createApp({
         tension: 0.2,
         hoverDetails,
       }];
-      if (this.showUsdOverlay) {
+      if (this.showUsdOverlay && this.denominator !== 'fiat') {
         datasets.push({
           label: `${this.currentItem.name} (GBP overlay)`,
-          data: this.toChartPoints(points.map((point) => ({ ...point, value: this.pointValueForSeries(this.currentItem.key, point.year) }))),
+          data: this.toChartPoints(this.visibleOverlaySeries(this.currentItem.key)),
           borderColor: 'rgba(249, 115, 22, 0.45)',
           borderDash: [5, 5],
           yAxisID: 'yGbp',
