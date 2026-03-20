@@ -214,12 +214,27 @@ createApp({
         points = points.filter((point) => point.year >= 2017);
       }
 
-      if (this.rebased) {
-        const first = points.find((point) => point.value != null)?.value;
-        if (first) points = points.map((point) => ({ ...point, value: (point.value / first) * 100 }));
+      return this.applySeriesTransforms(points);
+    },
+    visibleOverlaySeries(seriesKey, denominator) {
+      if (!seriesKey) return [];
+      const [fromYear, toYear] = this.rangeBounds();
+      let points = this.years.map((year) => {
+        const value = this.pointValueForSeries(seriesKey, year);
+        return { year, value, observed: value != null };
+      }).filter((point) => point.year >= fromYear && point.year <= toYear && point.observed);
+
+      if (denominator === 'bitcoin' && !this.showFullBitcoin) {
+        points = points.filter((point) => point.year >= 2017);
       }
 
-      return points;
+      return this.applySeriesTransforms(points);
+    },
+    applySeriesTransforms(points) {
+      if (!this.rebased) return points;
+      const first = points.find((point) => point.value != null)?.value;
+      if (!first) return points;
+      return points.map((point) => ({ ...point, value: (point.value / first) * 100 }));
     },
     toChartPoints(points) {
       return points.map((point) => ({ x: pointLabelToDecimalYear(point.year), y: point.value }));
@@ -260,11 +275,7 @@ createApp({
         .filter((p) => p.year >= from && p.year <= to);
       if (denominator === 'bitcoin' && !this.showFullBitcoin) points = points.filter((p) => p.year >= 2017);
       points = points.filter((p) => p.observed);
-      if (this.rebased) {
-        const first = points.find((p) => p.value != null)?.value;
-        if (first) points = points.map((p) => ({ ...p, value: p.value == null ? null : (p.value / first) * 100 }));
-      }
-      return points;
+      return this.applySeriesTransforms(points);
     },
     rollingVolatility(itemKey) {
       const item = this.items.find((x) => x.key === itemKey);
@@ -433,7 +444,7 @@ createApp({
             ticks: { color: axisColor },
             grid: { color: gridColor },
           },
-          yUsd: {
+          yGbp: {
             type: this.useLogScale ? 'logarithmic' : 'linear',
             position: 'right',
             display: false,
@@ -471,16 +482,15 @@ createApp({
         segment: { borderDash: (ctx) => ((ctx.p0?.raw == null || ctx.p1?.raw == null || !pts[ctx.p0DataIndex]?.observed || !pts[ctx.p1DataIndex]?.observed) ? [5, 5] : []) },
         hoverDetails,
       }];
-      if (this.showUsdOverlay) {
-        const usdByPoint = new Map(this.visiblePairSeries(itemKey, 'context:fiat').map((point) => [point.year, point.value]));
+      if (this.showUsdOverlay && denominator !== 'fiat') {
         datasets.unshift({
-          label: `${item.name} (USD overlay)`,
-          data: this.toChartPoints(pts.map((point) => ({ ...point, value: usdByPoint.get(point.year) ?? null }))),
+          label: `${item.name} (GBP overlay)`,
+          data: this.toChartPoints(this.visibleOverlaySeries(itemKey, denominator)),
           borderColor: 'rgba(100, 116, 139, 0.45)',
           borderWidth: 1.5,
           pointRadius: 0,
           tension: 0.2,
-          yAxisID: 'yUsd',
+          yAxisID: 'yGbp',
           valueFormat: 'gbp',
         });
       }      const forecast = [];

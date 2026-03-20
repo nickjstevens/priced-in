@@ -45,7 +45,7 @@
         </label>
         <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100 at range start</label>
         <label><input type="checkbox" v-model="useLogScale" @change="syncUrlAndRender" /> Log scale</label>
-        <label><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
+        <label v-if="denominator !== 'fiat'"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
         <label><input type="checkbox" v-model="showFullBitcoin" @change="syncUrlAndRender" /> Show full bitcoin history</label>
         <button @click="copyShareLink">Copy share link</button>
       </section>
