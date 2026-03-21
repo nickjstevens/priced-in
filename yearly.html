@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Priced In — Yearly Data</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
+  </head>
+  <body data-page="yearly">
+    <main id="app">
+      <div class="dashboard-shell">
+        <header class="app-header">
+          <a class="brand-panel" href="index.html" aria-label="Go to homepage">
+            <span class="brand-kicker">Detailed annual table</span>
+            <h1>Priced In — Yearly Data</h1>
+            <p>Review the selected yearly table in detail and export it to CSV.</p>
+          </a>
+        </header>
+
+        <section v-if="isLoading" class="status-card">Loading pricing data… <span class="skeleton"></span></section>
+        <section v-else-if="error" class="status-card error">{{ error }}</section>
+
+        <section v-else class="chart-card panel-shell">
+          <header>
+            <div class="card-title-block">
+              <h2>Yearly data table</h2>
+              <p class="lineage">This view follows the same denominator, time range, rebasing, and bitcoin-history settings as the main compare chart.</p>
+            </div>
+            <div class="card-actions">
+              <a class="page-link" :href="backUrl">← Back to dashboard</a>
+              <button type="button" @click="downloadCsv">Download CSV</button>
+            </div>
+          </header>
+          <div class="table-wrap yearly-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th v-for="column in compareTableColumns" :key="column.key">{{ column.name }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in compareTableRows" :key="row.year">
+                  <th>{{ row.year }}</th>
+                  <td v-for="column in compareTableColumns" :key="`${row.year}-${column.key}`">{{ formatTableValue(row.values[column.key]) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script src="yearly.js"></script>
+  </body>
+</html>

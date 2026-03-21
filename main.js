@@ -132,9 +132,29 @@ const PLOTLY_MODEBAR_ICON = {
     height: 512,
     path: 'M96 96v320h320v-32H128V96H96zm80 224h64v-32h-64v32zm96-64h64v-32h-64v32zm96-64h64v-32h-64v32zM176 192h64v-32h-64v32z',
   },
+  yearly: {
+    width: 512,
+    height: 512,
+    path: 'M112 64h64v48h160V64h64v48h48v336H64V112h48V64zm272 112H128v208h256V176zm-32 48v32H160v-32h192zm-80 64v32H160v-32h112z',
+  },
+  range: {
+    width: 512,
+    height: 512,
+    path: 'M80 96h352v64H80V96zm64 128h224v64H144v-64zm64 128h96v64h-96v-64z',
+  },
+  dragX: {
+    width: 512,
+    height: 512,
+    path: 'M64 240h320v-64l96 80-96 80v-64H64v-32zm0-96h32v224H64V144z',
+  },
+  dragY: {
+    width: 512,
+    height: 512,
+    path: 'M240 448V128h-64l80-96 80 96h-64v320h-32zm-96 0h224v32H144v-32z',
+  },
 };
 
-function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [] } = {}) {
+function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [], onOpenYearlyData, dragAxisButtons = [] } = {}) {
   const modeBarButtonsToAdd = [];
   if (onToggleLogScale) {
     modeBarButtonsToAdd.push({
@@ -153,6 +173,15 @@ function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [] } = 
     });
   }
   if (rangeButtons.length) modeBarButtonsToAdd.push(...rangeButtons);
+  if (dragAxisButtons.length) modeBarButtonsToAdd.push(...dragAxisButtons);
+  if (onOpenYearlyData) {
+    modeBarButtonsToAdd.push({
+      name: 'Open yearly data',
+      title: 'Open yearly data table in a dedicated page',
+      icon: PLOTLY_MODEBAR_ICON.yearly,
+      click: onOpenYearlyData,
+    });
+  }
   return {
     responsive: true,
     displayModeBar: true,
@@ -188,8 +217,9 @@ createApp({
       isMobileMenuOpen: false,
       compareHoveredYear: null,
       spreadHoveredYear: null,
-      summarySortKey: 'name',
-      summarySortDirection: 'asc',
+      summarySortKey: 'totalChange',
+      summarySortDirection: 'desc',
+      compareDragAxis: 'x',
     };
   },
   computed: {
@@ -712,9 +742,55 @@ createApp({
       return RANGE_OPTIONS.map((option) => ({
         name: `Range: ${option.label}`,
         title: `${this.selectedRange === option.value ? 'Active: ' : ''}Show ${option.label.toLowerCase()}`,
+        icon: PLOTLY_MODEBAR_ICON.range,
         text: option.label,
         click: () => this.setSelectedRange(option.value),
       }));
+    },
+    compareDragAxisButtons() {
+      return [
+        {
+          name: 'Drag x-axis only',
+          title: `${this.compareDragAxis === 'x' ? 'Active: ' : ''}Lock drag interactions to the x-axis`,
+          icon: PLOTLY_MODEBAR_ICON.dragX,
+          click: () => this.setCompareDragAxis('x'),
+        },
+        {
+          name: 'Drag y-axis only',
+          title: `${this.compareDragAxis === 'y' ? 'Active: ' : ''}Lock drag interactions to the y-axis`,
+          icon: PLOTLY_MODEBAR_ICON.dragY,
+          click: () => this.setCompareDragAxis('y'),
+        },
+      ];
+    },
+    setCompareDragAxis(axis) {
+      if (!['x', 'y'].includes(axis) || this.compareDragAxis === axis) return;
+      this.compareDragAxis = axis;
+      const chartEl = this.charts.compare;
+      if (!chartEl) return;
+      Plotly.relayout(chartEl, {
+        'xaxis.fixedrange': axis === 'y',
+        'yaxis.fixedrange': axis === 'x',
+      });
+    },
+    compareChartLayout() {
+      return this.plotlyLayout({
+        xaxis: { ...plotlyAxisBase(this.isDarkMode), title: '', tickmode: 'auto', nticks: 8, tickformat: 'd', fixedrange: this.compareDragAxis === 'y' },
+        yaxis: { ...plotlyAxisBase(this.isDarkMode), title: '', type: this.useLogScale ? 'log' : 'linear', rangemode: this.useLogScale ? undefined : 'tozero', fixedrange: this.compareDragAxis === 'x' },
+      });
+    },
+    openYearlyDataPage() {
+      window.open(`yearly.html?${this.buildYearlyDataParams().toString()}`, '_blank', 'noopener');
+    },
+    buildYearlyDataParams() {
+      const params = new URLSearchParams();
+      params.set('denom', this.allDenominator);
+      params.set('range', this.selectedRange);
+      if (this.compareSelectionKeys.length) params.set('items', this.compareSelectionKeys.join(','));
+      if (this.rebased) params.set('rebased', '1');
+      if (this.showFullBitcoin) params.set('btcFull', '1');
+      params.set('theme', this.isDarkMode ? 'dark' : 'light');
+      return params;
     },
     toggleMobileMenu() {
       this.isMobileMenuOpen = !this.isMobileMenuOpen;
@@ -837,10 +913,12 @@ createApp({
         points: this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear),
         color,
       })));
-      Plotly.react(chartEl, traces, this.plotlyLayout(), plotlyConfig({
+      Plotly.react(chartEl, traces, this.compareChartLayout(), plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
         rangeButtons: this.rangeModeBarButtons(),
+        dragAxisButtons: this.compareDragAxisButtons(),
+        onOpenYearlyData: () => this.openYearlyDataPage(),
       }));
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.compareHoveredYear = event?.points?.[0]?.x ?? null; },

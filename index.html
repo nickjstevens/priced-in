@@ -81,7 +81,15 @@
           <div class="compare-layout compare-layout-single">
             <div class="compare-main">
               <div class="chart-wrap chart-wrap-lg"><div id="chart-compare" class="plotly-chart"></div></div>
-              <p class="chart-modebar-hint">Use the chart modebar to switch time scales.</p>
+              <details class="instructions-panel panel-shell">
+                <summary>Instructions</summary>
+                <div class="instructions-list">
+                  <p>Use the chart modebar to switch time scales.</p>
+                  <p>Use the new yearly data button in the modebar to open a detailed annual table view with CSV export.</p>
+                  <p>Use the drag direction buttons in the modebar to lock navigation to either the x-axis or y-axis, which is especially helpful on mobile.</p>
+                  <p>Log scale and rebase toggles are also available in the modebar for faster comparisons.</p>
+                </div>
+              </details>
               <section class="data-table-panel summary-table-panel">
                 <h3>Selected item summary</h3>
                 <div class="table-wrap">
@@ -131,25 +139,6 @@
                   <div class="sparkline-wrap"><div :id="`chart-single-${item.key}`" class="plotly-chart"></div></div>
                 </article>
               </section>
-              <details class="data-table-panel">
-                <summary>Show chart data table</summary>
-                <div class="table-wrap">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th>Year</th>
-                        <th v-for="column in compareTableColumns" :key="column.key">{{ column.name }}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="row in compareTableRows" :key="row.year" :class="{ active: compareHoveredYear === row.year }">
-                        <th>{{ row.year }}</th>
-                        <td v-for="column in compareTableColumns" :key="`${row.year}-${column.key}`">{{ formatTableValue(row.values[column.key]) }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </details>
             </div>
           </div>
         </article>

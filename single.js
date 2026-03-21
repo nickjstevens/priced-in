@@ -47,6 +47,11 @@ const PLOTLY_MODEBAR_ICON = {
     height: 512,
     path: 'M96 96v320h320v-32H128V96H96zm80 224h64v-32h-64v32zm96-64h64v-32h-64v32zm96-64h64v-32h-64v32zM176 192h64v-32h-64v32z',
   },
+  range: {
+    width: 512,
+    height: 512,
+    path: 'M80 96h352v64H80V96zm64 128h224v64H144v-64zm64 128h96v64h-96v-64z',
+  },
 };
 
 function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [] } = {}) {
@@ -471,6 +476,7 @@ createApp({
       return RANGE_OPTIONS.map((option) => ({
         name: `Range: ${option.label}`,
         title: `${this.selectedRange === option.value ? 'Active: ' : ''}Show ${option.label.toLowerCase()}`,
+        icon: PLOTLY_MODEBAR_ICON.range,
         text: option.label,
         click: () => this.setSelectedRange(option.value),
       }));
