@@ -18,7 +18,7 @@
         <div class="title-actions">
           <nav class="page-nav" aria-label="Main sections">
             <a class="page-link" :class="{ active: currentPage === 'cost' }" href="index.html">Cost of Living</a>
-            <a class="page-link" :class="{ active: currentPage === 'ratio' }" :href="ratioPageUrl">Relative Ratio</a>
+            <a class="page-link" :class="{ active: currentPage === 'ratio' }" :href="ratioPageUrl()">Relative Ratio</a>
             <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">Assumptions & Caveats</a>
           </nav>
           <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
