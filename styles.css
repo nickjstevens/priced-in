@@ -91,3 +91,5 @@ header { display: flex; justify-content: space-between; gap: .6rem; align-items:
 .series-option-item { color: #b45309; }
 :root[data-theme='dark'] .series-option-denominator { color: #93c5fd; }
 :root[data-theme='dark'] .series-option-item { color: #fcd34d; }
+
+.swap-button { margin-left: 0; font-weight: 700; }

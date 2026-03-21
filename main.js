@@ -80,7 +80,7 @@ createApp({
       useLogScale: false, showUsdOverlay: false, showSpreadRollingCorrelation: false,
       showFullBitcoin: false, compareKeys: [], search: '', categoryFilter: 'all',
       isLoading: true, error: '',
-      spreadNumeratorItemKey: '', spreadDenominatorItemKey: '', invertSpread: false,
+      spreadNumeratorItemKey: '', spreadDenominatorItemKey: '',
       isDarkMode: false,
       compareHoveredYear: null,
       spreadHoveredYear: null,
@@ -159,14 +159,10 @@ createApp({
       }));
     },
     spreadSeries() {
-      const numeratorKey = this.invertSpread ? this.spreadDenominatorItemKey : this.spreadNumeratorItemKey;
-      const denominatorKey = this.invertSpread ? this.spreadNumeratorItemKey : this.spreadDenominatorItemKey;
-      return this.visiblePairSeries(numeratorKey, denominatorKey);
+      return this.visiblePairSeries(this.spreadNumeratorItemKey, this.spreadDenominatorItemKey);
     },
     ratioSeriesLabel() {
-      const numeratorKey = this.invertSpread ? this.spreadDenominatorItemKey : this.spreadNumeratorItemKey;
-      const denominatorKey = this.invertSpread ? this.spreadNumeratorItemKey : this.spreadDenominatorItemKey;
-      return `${this.seriesName(numeratorKey)} / ${this.seriesName(denominatorKey)}`;
+      return `${this.seriesName(this.spreadNumeratorItemKey)} / ${this.seriesName(this.spreadDenominatorItemKey)}`;
     },
     spreadTableRows() {
       return this.spreadSeries.map((point) => ({ year: point.year, value: point.value }));
@@ -193,6 +189,9 @@ createApp({
       }
       return rolling;
     },
+    canShowSpreadRollingCorrelation() {
+      return !this.isGbpSeries(this.spreadNumeratorItemKey) && !this.isGbpSeries(this.spreadDenominatorItemKey);
+    },
     costRebaseNotice() {
       if (!this.rebased) return '';
       const forcedStart = this.costRebaseForcedStartYear();
@@ -203,8 +202,8 @@ createApp({
     ratioRebaseNotice() {
       if (!this.rebased) return '';
       const starts = this.rebaseStartYears([
-        this.invertSpread ? this.spreadDenominatorItemKey : this.spreadNumeratorItemKey,
-        this.invertSpread ? this.spreadNumeratorItemKey : this.spreadDenominatorItemKey,
+        this.spreadNumeratorItemKey,
+        this.spreadDenominatorItemKey,
       ]);
       if (!starts.length) return '';
       const forcedStart = Math.max(...starts);
@@ -241,14 +240,19 @@ createApp({
       this.showUsdOverlay = p.get('overlayUsd') === '1';
       this.showSpreadRollingCorrelation = p.get('overlayCorr') === '1';
       this.showFullBitcoin = p.get('btcFull') === '1';
-      this.invertSpread = p.get('invertRatio') === '1';
       this.compareKeys = (p.get('items') || '').split(',').filter(Boolean);
       this.spreadNumeratorItemKey = p.get('itemA') || '';
       this.spreadDenominatorItemKey = p.get('itemB') || '';
+      if (p.get('invertRatio') === '1') {
+        [this.spreadNumeratorItemKey, this.spreadDenominatorItemKey] = [this.spreadDenominatorItemKey, this.spreadNumeratorItemKey];
+      }
       const theme = p.get('theme');
       if (theme === 'dark' || theme === 'light') this.isDarkMode = theme === 'dark';
     },
     async syncUrlAndRender() {
+      if (this.currentPage === 'ratio' && !this.canShowSpreadRollingCorrelation) {
+        this.showSpreadRollingCorrelation = false;
+      }
       const p = new URLSearchParams();
       p.set('range', this.selectedRange);
       if (this.currentPage === 'cost') {
@@ -259,7 +263,6 @@ createApp({
       if (this.currentPage === 'ratio') {
         if (this.spreadNumeratorItemKey) p.set('itemA', this.spreadNumeratorItemKey);
         if (this.spreadDenominatorItemKey) p.set('itemB', this.spreadDenominatorItemKey);
-        if (this.invertSpread) p.set('invertRatio', '1');
       }
       if (this.rebased) p.set('rebased', '1');
       if (this.useLogScale) p.set('log', '1');
@@ -577,6 +580,7 @@ createApp({
           borderColor: 'rgba(100, 116, 139, 0.45)',
           borderWidth: 1.5,
           pointRadius: 0,
+          pointHitRadius: 12,
           tension: 0.2,
           yAxisID: 'yGbp',
           valueFormat: 'gbp',
@@ -614,13 +618,20 @@ createApp({
         options,
       });
     },
+    swapSpreadItems() {
+      [this.spreadNumeratorItemKey, this.spreadDenominatorItemKey] = [this.spreadDenominatorItemKey, this.spreadNumeratorItemKey];
+      this.syncUrlAndRender();
+    },
+    isGbpSeries(seriesKey) {
+      return seriesKey === 'context:fiat';
+    },
     renderSpreadChart() {
       const canvas = document.getElementById('chart-spread');
       if (!canvas) return;
       if (this.charts.spread) this.charts.spread.destroy();
       const pts = this.spreadSeries;
-      const numeratorKey = this.invertSpread ? this.spreadDenominatorItemKey : this.spreadNumeratorItemKey;
-      const denominatorKey = this.invertSpread ? this.spreadNumeratorItemKey : this.spreadDenominatorItemKey;
+      const numeratorKey = this.spreadNumeratorItemKey;
+      const denominatorKey = this.spreadDenominatorItemKey;
       const hoverDetails = pts.map((point) => ({
         pricedInValue: point.value,
         numeratorUsd: this.pointValueForSeries(numeratorKey, point.year),
@@ -634,6 +645,8 @@ createApp({
         borderColor: '#7c3aed',
         tension: 0.2,
         pointRadius: 2,
+        pointHoverRadius: 6,
+        pointHitRadius: 18,
         hoverDetails,
       }];
       const rollingCorrelation = this.spreadRollingCorrelation || [];
@@ -651,7 +664,7 @@ createApp({
         });
       }
       if (this.showUsdOverlay) {
-        const overlayKey = this.invertSpread ? this.spreadDenominatorItemKey : this.spreadNumeratorItemKey;
+        const overlayKey = this.spreadNumeratorItemKey;
         datasets.unshift({
           label: `${this.seriesName(overlayKey)} (GBP overlay)`,
           data: this.toChartPoints(this.visibleOverlaySeries(overlayKey, 'fiat')),
@@ -667,7 +680,7 @@ createApp({
         tooltipEnabled: true,
         hoverHandler: (_event, activeElements) => this.updateHoveredYear('spread', activeElements),
         interactionMode: 'nearest',
-        interactionIntersect: true,
+        interactionIntersect: false,
       });
       this.charts.spread = new Chart(canvas, {
         type: 'line',
@@ -707,7 +720,12 @@ createApp({
         if (this.viewMode === 'compare') this.renderCompareChart();
         else this.filteredItems.forEach((item) => this.renderChart(item.key));
       }
-      if (this.currentPage === 'ratio') this.renderSpreadChart();
+      if (this.currentPage === 'ratio') {
+        if (this.isGbpSeries(this.spreadNumeratorItemKey) || this.isGbpSeries(this.spreadDenominatorItemKey)) {
+          this.showSpreadRollingCorrelation = false;
+        }
+        this.renderSpreadChart();
+      }
     },
     syncCompareSelectionToCategory() {
       this.compareKeys = [...this.filteredItems.map((item) => item.key)];
@@ -734,11 +752,10 @@ createApp({
       if (this.rebased) params.set('rebased', '1');
       if (this.useLogScale) params.set('log', '1');
       if (this.showUsdOverlay) params.set('overlayUsd', '1');
-      if (this.showSpreadRollingCorrelation) params.set('overlayCorr', '1');
+      if (this.canShowSpreadRollingCorrelation && this.showSpreadRollingCorrelation) params.set('overlayCorr', '1');
       if (this.showFullBitcoin) params.set('btcFull', '1');
       if (this.spreadNumeratorItemKey) params.set('itemA', this.spreadNumeratorItemKey);
       if (this.spreadDenominatorItemKey) params.set('itemB', this.spreadDenominatorItemKey);
-      if (this.invertSpread) params.set('invertRatio', '1');
       params.set('theme', this.isDarkMode ? 'dark' : 'light');
       return `ratio.html?${params.toString()}`;
     },
