@@ -81,7 +81,8 @@ createApp({
       showFullBitcoin: false, compareKeys: [], search: '', categoryFilter: 'all',
       isLoading: true, error: '',
       spreadNumeratorItemKey: '', spreadDenominatorItemKey: '',
-      isDarkMode: false,
+      isDarkMode: true,
+      isMobileMenuOpen: false,
       compareHoveredYear: null,
       spreadHoveredYear: null,
     };
@@ -483,6 +484,12 @@ createApp({
       this.isDarkMode = !this.isDarkMode;
       this.applyTheme();
       this.syncUrlAndRender();
+    },
+    toggleMobileMenu() {
+      this.isMobileMenuOpen = !this.isMobileMenuOpen;
+    },
+    closeMobileMenu() {
+      this.isMobileMenuOpen = false;
     },
     confidenceColor(item) {
       const confidence = item?.metadata?.source_confidence || 'medium';

@@ -10,20 +10,39 @@
   </head>
   <body>
     <main id="app" class="single-layout">
-      <div class="title-row">
-        <div>
-          <h1>{{ currentItem?.name || 'Single chart view' }}</h1>
-          <p>Shareable view for one item with all chart settings in the URL.</p>
-        </div>
-        <div class="title-actions">
-          <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
-            {{ isDarkMode ? '☀️ Light mode' : '🌙 Dark mode' }}
-          </button>
-          <a class="assumptions-link" href="index.html">Back to dashboard</a>
-        </div>
-      </div>
+      <div class="dashboard-shell">
+        <header class="app-header">
+          <a class="brand-panel" href="index.html" aria-label="Go to homepage">
+            <span class="brand-kicker">Single series focus</span>
+            <h1>{{ currentItem?.name || 'Single chart view' }}</h1>
+            <p>Shareable view for one item with all chart settings in the URL.</p>
+          </a>
+          <div class="header-actions">
+            <button
+              class="menu-toggle"
+              type="button"
+              @click="toggleMobileMenu"
+              :aria-expanded="isMobileMenuOpen ? 'true' : 'false'"
+              aria-controls="site-menu"
+              aria-label="Toggle navigation menu"
+            >
+              <span></span><span></span><span></span>
+            </button>
+            <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
+              <nav class="page-nav" aria-label="Main sections">
+                <a class="page-link" href="index.html">Cost of Living</a>
+                <a class="page-link" :href="ratioPageUrl">Relative Ratio</a>
+                <a class="page-link" href="assumptions.html">Assumptions & Caveats</a>
+              </nav>
+              <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
+                <span class="theme-toggle-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+                <span>{{ isDarkMode ? 'Light mode' : 'Dark mode' }}</span>
+              </button>
+            </div>
+          </div>
+        </header>
 
-      <section class="single-controls" v-if="!isLoading && !error && currentItem">
+      <section class="single-controls panel-shell" v-if="!isLoading && !error && currentItem">
         <label>Item
           <select v-model="itemKey" @change="syncUrlAndRender">
             <option v-for="item in items" :key="item.key" :value="item.key">{{ item.name }}</option>
@@ -54,7 +73,7 @@
       <section v-if="isLoading" class="status-card">Loading pricing data… <span class="skeleton"></span></section>
       <section v-else-if="error" class="status-card error">{{ error }}</section>
 
-      <article v-else-if="currentItem" class="chart-card single-page-chart">
+      <article v-else-if="currentItem" class="chart-card single-page-chart panel-shell">
         <header>
           <h2>{{ currentItem.name }} <small>({{ currentItem.category }})</small></h2>
           <a class="share-link" :href="shareUrl" target="_blank" rel="noopener noreferrer">Open share URL</a>
@@ -88,6 +107,7 @@
           <p class="lineage">{{ dataLineage() }}</p>
         </details>
       </article>
+      </div>
     </main>
 
     <script src="single.js"></script>

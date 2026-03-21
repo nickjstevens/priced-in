@@ -10,28 +10,43 @@
   </head>
   <body data-page="cost">
     <main id="app">
-      <div class="title-row">
-        <div>
-          <h1>Priced In — Cost of Living Explorer</h1>
-          <p>Compare UK costs priced in nominal £, real £, gold, salary, median salary, hours worked, and bitcoin.</p>
-        </div>
-        <div class="title-actions">
-          <nav class="page-nav" aria-label="Main sections">
-            <a class="page-link" :class="{ active: currentPage === 'cost' }" href="index.html">Cost of Living</a>
-            <a class="page-link" :class="{ active: currentPage === 'ratio' }" :href="ratioPageUrl()">Relative Ratio</a>
-            <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">Assumptions & Caveats</a>
-          </nav>
-          <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
-            {{ isDarkMode ? '☀️ Light mode' : '🌙 Dark mode' }}
-          </button>
-        </div>
-      </div>
+      <div class="dashboard-shell">
+        <header class="app-header">
+          <a class="brand-panel" href="index.html" aria-label="Go to homepage">
+            <span class="brand-kicker">UK pricing explorer</span>
+            <h1>Priced In — Cost of Living Explorer</h1>
+            <p>Compare UK costs priced in nominal £, real £, gold, salary, median salary, hours worked, and bitcoin.</p>
+          </a>
+          <div class="header-actions">
+            <button
+              class="menu-toggle"
+              type="button"
+              @click="toggleMobileMenu"
+              :aria-expanded="isMobileMenuOpen ? 'true' : 'false'"
+              aria-controls="site-menu"
+              aria-label="Toggle navigation menu"
+            >
+              <span></span><span></span><span></span>
+            </button>
+            <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
+              <nav class="page-nav" aria-label="Main sections">
+                <a class="page-link" :class="{ active: currentPage === 'cost' }" href="index.html">Cost of Living</a>
+                <a class="page-link" :class="{ active: currentPage === 'ratio' }" :href="ratioPageUrl()">Relative Ratio</a>
+                <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">Assumptions & Caveats</a>
+              </nav>
+              <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
+                <span class="theme-toggle-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+                <span>{{ isDarkMode ? 'Light mode' : 'Dark mode' }}</span>
+              </button>
+            </div>
+          </div>
+        </header>
 
-      <section v-if="isLoading" class="status-card">Loading pricing data from API… <span class="skeleton"></span></section>
-      <section v-else-if="error" class="status-card error">{{ error }}</section>
+        <section v-if="isLoading" class="status-card">Loading pricing data from API… <span class="skeleton"></span></section>
+        <section v-else-if="error" class="status-card error">{{ error }}</section>
 
-      <section v-else>
-        <section class="controls">
+        <section v-else>
+        <section class="controls panel-shell">
           <label>Mode
             <select v-model="viewMode" @change="onViewModeChange" aria-label="View mode">
               <option value="cards">One chart per item</option>
@@ -72,7 +87,7 @@
         <p v-if="allDenominator==='bitcoin' && !showFullBitcoin" class="notice">Bitcoin is hidden before 2017 by default because early annual averages are sparse and highly volatile. Use “Show full available history” to include all years.</p>
         <p v-if="costRebaseNotice" class="notice">{{ costRebaseNotice }}</p>
 
-        <article class="chart-card" v-if="viewMode==='compare'">
+        <article class="chart-card panel-shell" v-if="viewMode==='compare'">
           <header><h2>Comparison chart</h2></header>
           <div class="compare-layout">
             <div class="compare-main">
@@ -107,7 +122,7 @@
         </article>
 
         <section v-else class="grid">
-          <article class="chart-card" v-for="item in filteredItems" :key="item.key">
+          <article class="chart-card panel-shell" v-for="item in filteredItems" :key="item.key">
             <header>
               <h2>{{ item.name }} <small>({{ categoryDisplayLabel(item.category) }})</small></h2>
               <div class="card-actions">
@@ -150,6 +165,7 @@
           </article>
         </section>
       </section>
+      </div>
     </main>
     <script src="main.js"></script>
   </body>
