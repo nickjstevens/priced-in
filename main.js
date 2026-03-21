@@ -133,7 +133,7 @@ createApp({
     compareSeriesMap() {
       return Object.fromEntries(this.compareSelectionKeys.map((key) => {
         const item = this.items.find((x) => x.key === key);
-        return [key, this.visiblePairSeries(key, `context:${this.allDenominator}`)];
+        return [key, this.visiblePairSeries(key, `context:${this.allDenominator}`, this.costRebaseForcedStartYear())];
       }));
     },
     compareTableColumns() {
@@ -166,9 +166,8 @@ createApp({
     },
     costRebaseNotice() {
       if (!this.rebased) return '';
-      const starts = this.rebaseStartYears(this.viewMode === 'compare' ? this.compareSelectionKeys : this.filteredItems.map((item) => item.key), this.allDenominator);
-      if (!starts.length) return '';
-      const forcedStart = Math.max(...starts);
+      const forcedStart = this.costRebaseForcedStartYear();
+      if (forcedStart == null) return '';
       const selectedStart = this.rangeBounds()[0];
       return forcedStart > selectedStart ? `Rebased comparisons start in ${forcedStart} so every visible series begins from a common observed point.` : '';
     },
@@ -287,6 +286,14 @@ createApp({
         return this.years.find((year, idx) => year >= fromYear && year <= toYear && values[idx] != null);
       }).filter((year) => year != null);
     },
+    costRebaseSeriesKeys() {
+      return this.viewMode === 'compare' ? this.compareSelectionKeys : this.filteredItems.map((item) => item.key);
+    },
+    costRebaseForcedStartYear() {
+      if (!this.rebased) return null;
+      const starts = this.rebaseStartYears(this.costRebaseSeriesKeys(), this.allDenominator);
+      return starts.length ? Math.max(...starts) : null;
+    },
     applySeriesTransforms(points, forcedStartYear = null) {
       if (!this.rebased) return points;
       const startYear = forcedStartYear ?? points.find((point) => point.value != null)?.year;
@@ -296,7 +303,7 @@ createApp({
         .filter((point) => point.year >= rebasingPoint.year)
         .map((point) => ({ ...point, value: (point.value / rebasingPoint.value) * 100 }));
     },
-    visiblePairSeries(numeratorKey, denominatorKey) {
+    visiblePairSeries(numeratorKey, denominatorKey, forcedStartYear = null) {
       if (!numeratorKey || !denominatorKey) return [];
       const [fromYear, toYear] = this.rangeBounds();
       const numeratorAnnual = this.annualSeriesValuesForKey(numeratorKey);
@@ -312,10 +319,10 @@ createApp({
 
       if (denominatorKey === 'context:bitcoin' && !this.showFullBitcoin) points = points.filter((point) => point.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([numeratorKey, denominatorKey]);
-      const forcedStart = this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null;
+      const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
       return this.applySeriesTransforms(points, forcedStart);
     },
-    visibleOverlaySeries(seriesKey, denominator) {
+    visibleOverlaySeries(seriesKey, denominator, forcedStartYear = null) {
       if (!seriesKey) return [];
       const [fromYear, toYear] = this.rangeBounds();
       let points = this.years.map((year) => {
@@ -324,10 +331,10 @@ createApp({
       }).filter((point) => point.year >= fromYear && point.year <= toYear && point.observed);
       if (denominator === 'bitcoin' && !this.showFullBitcoin) points = points.filter((point) => point.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([seriesKey]);
-      const forcedStart = this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null;
+      const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
       return this.applySeriesTransforms(points, forcedStart);
     },
-    visibleSeries(item, denominator) {
+    visibleSeries(item, denominator, forcedStartYear = null) {
       if (!item) return [];
       const [from, to] = this.rangeBounds();
       let points = this.years.map((year, idx) => ({
@@ -337,7 +344,7 @@ createApp({
       })).filter((p) => p.year >= from && p.year <= to && p.observed);
       if (denominator === 'bitcoin' && !this.showFullBitcoin) points = points.filter((p) => p.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([item.key], denominator);
-      const forcedStart = this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null;
+      const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
       return this.applySeriesTransforms(points, forcedStart);
     },
     toChartPoints(points) {
@@ -417,7 +424,7 @@ createApp({
     insightText(itemKey) {
       const item = this.items.find((x) => x.key === itemKey);
       if (!item) return '';
-      const pts = this.visibleSeries(item, this.perChartDenominator[itemKey] || this.allDenominator).filter((p) => p.value != null);
+      const pts = this.visibleSeries(item, this.perChartDenominator[itemKey] || this.allDenominator, this.costRebaseForcedStartYear()).filter((p) => p.value != null);
       if (pts.length < 2) return 'Not enough data in this range for an insight.';
       const change = ((pts[pts.length - 1].value - pts[0].value) / pts[0].value) * 100;
       return change >= 0 ? `${item.name} rose ${change.toFixed(1)}% over this selected period.` : `${item.name} fell ${Math.abs(change).toFixed(1)}% over this selected period.`;
@@ -505,7 +512,8 @@ createApp({
       const item = this.items.find((x) => x.key === itemKey);
       const denominator = this.perChartDenominator[itemKey] || this.allDenominator;
       if (!item) return;
-      const pts = this.visiblePairSeries(itemKey, `context:${denominator}`);
+      const forcedStartYear = denominator === this.allDenominator ? this.costRebaseForcedStartYear() : null;
+      const pts = this.visiblePairSeries(itemKey, `context:${denominator}`, forcedStartYear);
       const denominatorKey = `context:${denominator}`;
       const denominatorLabel = this.contextSeries[denominator]?.label || denominator;
       const hoverDetails = pts.map((point) => ({
@@ -531,7 +539,7 @@ createApp({
       if (this.showUsdOverlay && denominator !== 'fiat') {
         datasets.unshift({
           label: `${item.name} (GBP overlay)`,
-          data: this.toChartPoints(this.visibleOverlaySeries(itemKey, denominator)),
+          data: this.toChartPoints(this.visibleOverlaySeries(itemKey, denominator, forcedStartYear)),
           borderColor: 'rgba(100, 116, 139, 0.45)',
           borderWidth: 1.5,
           pointRadius: 0,
