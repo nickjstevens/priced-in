@@ -188,6 +188,8 @@ createApp({
       isMobileMenuOpen: false,
       compareHoveredYear: null,
       spreadHoveredYear: null,
+      summarySortKey: 'name',
+      summarySortDirection: 'asc',
     };
   },
   computed: {
@@ -273,16 +275,40 @@ createApp({
         { key: 'worstYear', label: 'Worst year' },
       ];
     },
+    summaryTableExtremes() {
+      return this.summaryTableColumns.reduce((extremes, column) => {
+        const values = this.filteredItems
+          .map((item) => this.chartStats(item.key).raw?.[column.key])
+          .filter((value) => Number.isFinite(value));
+        extremes[column.key] = {
+          min: values.length ? Math.min(...values) : null,
+          max: values.length ? Math.max(...values) : null,
+        };
+        return extremes;
+      }, {});
+    },
     summaryTableRows() {
+      const collator = new Intl.Collator(undefined, { sensitivity: 'base' });
       return this.filteredItems
-        .slice()
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
         .map((item) => ({
           key: item.key,
           name: item.name,
           category: item.category,
           stats: this.chartStats(item.key),
-        }));
+        }))
+        .sort((a, b) => {
+          const direction = this.summarySortDirection === 'desc' ? -1 : 1;
+          if (this.summarySortKey === 'name') return direction * collator.compare(a.name, b.name);
+          const aValue = a.stats.raw?.[this.summarySortKey];
+          const bValue = b.stats.raw?.[this.summarySortKey];
+          const aFinite = Number.isFinite(aValue);
+          const bFinite = Number.isFinite(bValue);
+          if (!aFinite && !bFinite) return collator.compare(a.name, b.name);
+          if (!aFinite) return 1;
+          if (!bFinite) return -1;
+          if (aValue === bValue) return collator.compare(a.name, b.name);
+          return direction * (aValue - bValue);
+        });
     },
     spreadSeries() {
       return this.visiblePairSeries(this.spreadNumeratorItemKey, this.spreadDenominatorItemKey);
@@ -338,6 +364,27 @@ createApp({
     },
   },
   methods: {
+    toggleSummarySort(columnKey) {
+      if (this.summarySortKey === columnKey) {
+        this.summarySortDirection = this.summarySortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.summarySortKey = columnKey;
+        this.summarySortDirection = columnKey === 'name' ? 'asc' : 'desc';
+      }
+    },
+    summarySortLabel(columnKey) {
+      if (this.summarySortKey !== columnKey) return '';
+      return this.summarySortDirection === 'asc' ? '▲' : '▼';
+    },
+    summaryCellExtremaClass(columnKey, value) {
+      if (!Number.isFinite(value)) return '';
+      const extremes = this.summaryTableExtremes[columnKey];
+      if (!extremes) return '';
+      const classes = [];
+      if (extremes.max != null && value === extremes.max) classes.push('summary-cell-max');
+      if (extremes.min != null && value === extremes.min) classes.push('summary-cell-min');
+      return classes.join(' ');
+    },
     formatPercent,
     maxDrawdown,
     distanceFromPeak,
@@ -582,10 +629,12 @@ createApp({
       const d = this.perChartDenominator[itemKey] || this.allDenominator;
       if (!item) return {
         cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—', correlationToDenominator: '—',
+        raw: { cagrSelected: null, totalChange: null, bestYear: null, worstYear: null },
       };
       const pts = this.visiblePairSeries(itemKey, `context:${d}`).filter((p) => p.value != null);
       if (pts.length < 2) return {
         cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—', correlationToDenominator: '—',
+        raw: { cagrSelected: null, totalChange: null, bestYear: null, worstYear: null },
       };
       const first = pts[0]; const last = pts[pts.length - 1];
       const years = last.year - first.year;
@@ -612,6 +661,12 @@ createApp({
         maxDrawdown: formatPercent(maxDrawdown(pts)),
         fromPeak: formatPercent(distanceFromPeak(pts)),
         correlationToDenominator: corr == null ? '—' : corr.toFixed(2),
+        raw: {
+          cagrSelected: cagr,
+          totalChange: total,
+          bestYear: Number.isFinite(best.c) ? best.c : null,
+          worstYear: Number.isFinite(worst.c) ? worst.c : null,
+        },
       };
     },
     insightText(itemKey) {

@@ -88,8 +88,18 @@
                   <table class="data-table summary-table">
                     <thead>
                       <tr>
-                        <th>Item</th>
-                        <th v-for="column in summaryTableColumns" :key="column.key">{{ column.label }}</th>
+                        <th>
+                          <button type="button" class="summary-sort-button" @click="toggleSummarySort('name')">
+                            <span>Item</span>
+                            <span class="summary-sort-indicator" aria-hidden="true">{{ summarySortLabel('name') }}</span>
+                          </button>
+                        </th>
+                        <th v-for="column in summaryTableColumns" :key="column.key">
+                          <button type="button" class="summary-sort-button" @click="toggleSummarySort(column.key)">
+                            <span>{{ column.label }}</span>
+                            <span class="summary-sort-indicator" aria-hidden="true">{{ summarySortLabel(column.key) }}</span>
+                          </button>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -100,7 +110,11 @@
                             <span class="category-badge" :style="categoryTagStyle(row.category)">{{ categoryDisplayLabel(row.category) }}</span>
                           </div>
                         </th>
-                        <td v-for="column in summaryTableColumns" :key="`${row.key}-${column.key}`">{{ row.stats[column.key] }}</td>
+                        <td
+                          v-for="column in summaryTableColumns"
+                          :key="`${row.key}-${column.key}`"
+                          :class="summaryCellExtremaClass(column.key, row.stats.raw?.[column.key])"
+                        >{{ row.stats[column.key] }}</td>
                       </tr>
                     </tbody>
                   </table>
