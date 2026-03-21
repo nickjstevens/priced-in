@@ -48,15 +48,15 @@
 
         <section v-else>
         <section class="controls panel-shell">
-          <label>Priced In
-            <select v-model="allDenominator" @change="applyToAll" aria-label="Priced in selector">
-              <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
-            </select>
-          </label>
           <label>Item
             <select v-model="selectedItemKey" @change="onItemSelectionChange" aria-label="Item selector">
               <option value="all">All</option>
               <option v-for="item in itemOptions" :key="item.key" :value="item.key">{{ item.name }}</option>
+            </select>
+          </label>
+          <label>Priced In
+            <select v-model="allDenominator" @change="applyToAll" aria-label="Priced in selector">
+              <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
             </select>
           </label>
           <label v-if="allDenominator !== 'fiat'"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
