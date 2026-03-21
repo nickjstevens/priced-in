@@ -8,30 +8,76 @@
   </head>
   <body>
     <main class="doc">
-      <div class="title-row">
-        <div>
-          <h1>Assumptions and caveats</h1>
-          <p>Reference notes on coverage, methodology, and source confidence.</p>
-        </div>
-        <div class="title-actions">
-          <nav class="page-nav" aria-label="Main sections">
-            <a class="page-link" href="index.html">Cost of Living</a>
-            <a class="page-link" href="ratio.html">Relative Ratio</a>
-            <a class="page-link active" href="assumptions.html">Assumptions &amp; Caveats</a>
-          </nav>
-        </div>
+      <div class="dashboard-shell">
+        <header class="app-header app-header-static">
+          <a class="brand-panel" href="index.html" aria-label="Go to homepage">
+            <span class="brand-kicker">Methodology notes</span>
+            <h1>Assumptions and caveats</h1>
+            <p>Reference notes on coverage, methodology, and source confidence.</p>
+          </a>
+          <div class="header-actions">
+            <button
+              class="menu-toggle"
+              type="button"
+              data-menu-toggle
+              aria-expanded="false"
+              aria-controls="site-menu"
+              aria-label="Toggle navigation menu"
+            >
+              <span></span><span></span><span></span>
+            </button>
+            <div class="title-actions" id="site-menu" data-menu-panel>
+              <nav class="page-nav" aria-label="Main sections">
+                <a class="page-link" href="index.html">Cost of Living</a>
+                <a class="page-link" href="ratio.html">Relative Ratio</a>
+                <a class="page-link active" href="assumptions.html">Assumptions &amp; Caveats</a>
+              </nav>
+              <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle light and dark mode">
+                <span class="theme-toggle-icon">🌙</span>
+                <span data-theme-label>Dark mode</span>
+              </button>
+            </div>
+          </div>
+        </header>
+        <section class="chart-card assumptions-card panel-shell">
+          <ul>
+            <li>Coverage is annual 1950–2025 for all items and all denominators except bitcoin, which is intentionally sparse before market launch years.</li>
+            <li>Denominators include nominal GBP, CPI-adjusted real GBP, gold, average salary, median salary, hours worked at median wage, and bitcoin.</li>
+            <li>Where official annual series begin after 1950, the app back-casts earlier years using CPI-adjusted anchor points and conservative real-trend assumptions; inspect each card’s source notes before drawing strong conclusions.</li>
+            <li>Point colours follow source confidence metadata: high (official/statutory), medium (benchmark market + standard transformations), low (proxy reconstruction).</li>
+            <li>Added commodities: copper, silver, and Brent crude oil, each with annual points through the full range.</li>
+            <li>Most values are nominal unless the “Real GBP” denominator is selected.</li>
+            <li>Sources include official, market, and derived series with lineage notes in the app.</li>
+          </ul>
+        </section>
       </div>
-      <section class="chart-card assumptions-card">
-        <ul>
-          <li>Coverage is annual 1950–2025 for all items and all denominators except bitcoin, which is intentionally sparse before market launch years.</li>
-          <li>Denominators include nominal GBP, CPI-adjusted real GBP, gold, average salary, median salary, hours worked at median wage, and bitcoin.</li>
-          <li>Where official annual series begin after 1950, the app back-casts earlier years using CPI-adjusted anchor points and conservative real-trend assumptions; inspect each card’s source notes before drawing strong conclusions.</li>
-          <li>Point colours follow source confidence metadata: high (official/statutory), medium (benchmark market + standard transformations), low (proxy reconstruction).</li>
-          <li>Added commodities: copper, silver, and Brent crude oil, each with annual points through the full range.</li>
-          <li>Most values are nominal unless the “Real GBP” denominator is selected.</li>
-          <li>Sources include official, market, and derived series with lineage notes in the app.</li>
-        </ul>
-      </section>
     </main>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const storageKey = 'priced-in-theme';
+        const toggle = document.querySelector('[data-theme-toggle]');
+        const label = document.querySelector('[data-theme-label]');
+        const icon = toggle?.querySelector('.theme-toggle-icon');
+        const menuToggle = document.querySelector('[data-menu-toggle]');
+        const menuPanel = document.querySelector('[data-menu-panel]');
+        const applyTheme = (theme) => {
+          root.setAttribute('data-theme', theme);
+          if (label) label.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+          if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+        };
+        const savedTheme = localStorage.getItem(storageKey);
+        applyTheme(savedTheme === 'light' ? 'light' : 'dark');
+        toggle?.addEventListener('click', () => {
+          const nextTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+          localStorage.setItem(storageKey, nextTheme);
+          applyTheme(nextTheme);
+        });
+        menuToggle?.addEventListener('click', () => {
+          const isOpen = menuPanel.classList.toggle('open');
+          menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+      })();
+    </script>
   </body>
 </html>
