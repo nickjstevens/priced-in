@@ -31,6 +31,7 @@
             <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" :class="{ active: currentPage === 'cost' }" href="index.html">Cost of Living</a>
+                <a class="page-link" :href="singleItemMenuUrl()">Single Item</a>
                 <a class="page-link" :class="{ active: currentPage === 'ratio' }" :href="ratioPageUrl()">Relative Ratio</a>
                 <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">Assumptions & Caveats</a>
               </nav>
