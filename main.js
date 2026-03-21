@@ -164,6 +164,23 @@ createApp({
       const denominator = this.visiblePairSeries(this.spreadDenominatorItemKey, 'context:fiat').filter((p) => p.value != null);
       return this.pairCorrelation(numerator, denominator);
     },
+    spreadRollingCorrelation() {
+      const numerator = this.visiblePairSeries(this.spreadNumeratorItemKey, 'context:fiat').filter((p) => p.value != null);
+      const denominator = this.visiblePairSeries(this.spreadDenominatorItemKey, 'context:fiat').filter((p) => p.value != null);
+      if (numerator.length < 5 || denominator.length < 5) return [];
+      const denominatorMap = new Map(denominator.map((point) => [point.year, point.value]));
+      const aligned = numerator
+        .filter((point) => denominatorMap.has(point.year))
+        .map((point) => ({ year: point.year, a: point.value, b: denominatorMap.get(point.year) }));
+      if (aligned.length < 5) return [];
+      const rolling = [];
+      for (let i = 4; i < aligned.length; i += 1) {
+        const window = aligned.slice(i - 4, i + 1);
+        const corr = correlation(window.map((point) => point.a), window.map((point) => point.b));
+        if (corr != null) rolling.push({ year: aligned[i].year, value: corr });
+      }
+      return rolling;
+    },
     costRebaseNotice() {
       if (!this.rebased) return '';
       const forcedStart = this.costRebaseForcedStartYear();
@@ -567,10 +584,6 @@ createApp({
           pointRadius: 2,
         };
       });
-      const corr = this.compareAnalytics.rollingCorrelation || [];
-      if (corr.length) {
-        datasets.push({ label: '5Y rolling correlation (first two)', data: this.toChartPoints(corr), borderColor: '#111827', borderDash: [4, 4], yAxisID: 'y1', tension: 0.2, pointRadius: 0 });
-      }
       const canvas = document.getElementById('chart-compare');
       if (!canvas) return;
       if (this.charts.compare) this.charts.compare.destroy();
@@ -581,13 +594,7 @@ createApp({
       this.charts.compare = new Chart(canvas, {
         type: 'line',
         data: { datasets },
-        options: {
-          ...options,
-          scales: {
-            ...options.scales,
-            y1: { position: 'right', min: -1, max: 1, grid: { drawOnChartArea: false }, ticks: { color: this.isDarkMode ? '#f1f5f9' : '#111827' } },
-          },
-        },
+        options,
       });
     },
     renderSpreadChart() {
@@ -602,6 +609,20 @@ createApp({
         tension: 0.2,
         pointRadius: 2,
       }];
+      const rollingCorrelation = this.spreadRollingCorrelation || [];
+      if (rollingCorrelation.length) {
+        datasets.push({
+          label: '5Y rolling correlation (A vs B)',
+          data: this.toChartPoints(rollingCorrelation),
+          borderColor: this.isDarkMode ? '#f8fafc' : '#0f172a',
+          backgroundColor: this.isDarkMode ? 'rgba(248,250,252,0.18)' : 'rgba(15,23,42,0.08)',
+          borderDash: [6, 4],
+          borderWidth: 2,
+          yAxisID: 'y1',
+          tension: 0.2,
+          pointRadius: 0,
+        });
+      }
       if (this.showUsdOverlay) {
         const overlayKey = this.invertSpread ? this.spreadDenominatorItemKey : this.spreadNumeratorItemKey;
         datasets.unshift({
@@ -615,13 +636,26 @@ createApp({
           valueFormat: 'gbp',
         });
       }
+      const options = this.chartOptions({
+        tooltipEnabled: false,
+        hoverHandler: (_event, activeElements) => this.updateHoveredYear('spread', activeElements),
+      });
       this.charts.spread = new Chart(canvas, {
         type: 'line',
         data: { datasets },
-        options: this.chartOptions({
-          tooltipEnabled: false,
-          hoverHandler: (_event, activeElements) => this.updateHoveredYear('spread', activeElements),
-        }),
+        options: {
+          ...options,
+          scales: {
+            ...options.scales,
+            y1: {
+              position: 'right',
+              min: -1,
+              max: 1,
+              grid: { drawOnChartArea: false },
+              ticks: { color: this.isDarkMode ? '#e2e8f0' : '#0f172a' },
+            },
+          },
+        },
       });
     },
     currentRegime() {
