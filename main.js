@@ -148,6 +148,7 @@ function plotlyConfig({ onToggleLogScale, onToggleRebase } = {}) {
     displaylogo: false,
     scrollZoom: false,
     modeBarButtonsToAdd,
+    modeBarButtonsToRemove: ['zoom2d','pan2d','select2d','lasso2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toggleSpikelines','hoverClosestCartesian','hoverCompareCartesian','toImage'],
   };
 }
 
@@ -163,9 +164,9 @@ createApp({
       currentPage: document.body.dataset.page || 'cost',
       years: [], contextSeries: {}, items: [], denominators: [], charts: {},
       perChartDenominator: {}, allDenominator: 'fiat',
-      viewMode: 'cards', selectedRange: 'full', rebased: false,
+      viewMode: 'compare', selectedRange: 'full', rebased: false,
       useLogScale: false, showUsdOverlay: false, showSpreadRollingCorrelation: false,
-      showFullBitcoin: false, compareKeys: [], search: '', categoryFilter: 'all',
+      showFullBitcoin: false, compareKeys: [], search: '', selectedCategories: [], selectedItemKey: 'all',
       isLoading: true, error: '',
       spreadNumeratorItemKey: '', spreadDenominatorItemKey: '',
       isDarkMode: true,
@@ -186,13 +187,16 @@ createApp({
         .sort((a, b) => a.localeCompare(b))
         .map((category) => ({ value: category, label: this.categoryDisplayLabel(category) }));
     },
-    allCategoryLabel() {
-      return `All [${this.items.length}]`;
+    allCategoriesSelected() {
+      return this.selectedCategories.length === this.availableCategories.length;
+    },
+    itemOptions() {
+      const q = this.search.trim().toLowerCase();
+      return this.items.filter((item) => (!this.selectedCategories.length || this.selectedCategories.includes(item.category))
+        && (!q || item.name.toLowerCase().includes(q) || item.category?.includes(q)));
     },
     filteredItems() {
-      const q = this.search.trim().toLowerCase();
-      return this.items.filter((item) => (this.categoryFilter === 'all' || item.category === this.categoryFilter)
-        && (!q || item.name.toLowerCase().includes(q) || item.category?.includes(q)));
+      return this.itemOptions;
     },
     spreadSeriesOptions() {
       const itemSeries = this.items.map((item) => ({ key: item.key, name: item.name, isDenominator: false }));
@@ -349,13 +353,16 @@ createApp({
       const p = new URLSearchParams(location.search);
       this.allDenominator = p.get('denom') || 'fiat';
       this.selectedRange = p.get('range') || 'full';
-      this.viewMode = p.get('mode') || 'cards';
+      this.viewMode = 'compare';
       this.rebased = p.get('rebased') === '1';
       this.useLogScale = p.get('log') === '1';
       this.showUsdOverlay = p.get('overlayUsd') === '1';
       this.showSpreadRollingCorrelation = p.get('overlayCorr') === '1';
       this.showFullBitcoin = p.get('btcFull') === '1';
       this.compareKeys = (p.get('items') || '').split(',').filter(Boolean);
+      const categories = (p.get('categories') || '').split(',').filter(Boolean);
+      this.selectedCategories = categories;
+      this.selectedItemKey = p.get('item') || 'all';
       this.spreadNumeratorItemKey = p.get('itemA') || '';
       this.spreadDenominatorItemKey = p.get('itemB') || '';
       if (p.get('invertRatio') === '1') {
@@ -372,8 +379,9 @@ createApp({
       p.set('range', this.selectedRange);
       if (this.currentPage === 'cost') {
         p.set('denom', this.allDenominator);
-        p.set('mode', this.viewMode);
         if (this.compareKeys.length) p.set('items', this.compareKeys.join(','));
+        if (this.selectedCategories.length && !this.allCategoriesSelected) p.set('categories', this.selectedCategories.join(','));
+        if (this.selectedItemKey && this.selectedItemKey !== 'all') p.set('item', this.selectedItemKey);
       }
       if (this.currentPage === 'ratio') {
         if (this.spreadNumeratorItemKey) p.set('itemA', this.spreadNumeratorItemKey);
@@ -690,9 +698,11 @@ createApp({
     renderCompareChart() {
       const chartEl = document.getElementById('chart-compare');
       if (!chartEl) return;
-      const traces = this.compareSelectionKeys.map((key, idx) => {
+      const keys = this.filteredItems.map((item) => item.key);
+      const forcedStartYear = this.costRebaseForcedStartYear();
+      const traces = keys.map((key, idx) => {
         const item = this.items.find((x) => x.key === key);
-        const pts = this.compareSeriesMap[key] || [];
+        const pts = this.visiblePairSeries(key, `context:${this.allDenominator}`, forcedStartYear);
         const trace = this.plotlyLineTrace({
           name: `${item.name} (annual)`,
           points: pts,
@@ -793,8 +803,7 @@ createApp({
       });
       this.charts = {};
       if (this.currentPage === 'cost') {
-        if (this.viewMode === 'compare') this.renderCompareChart();
-        else this.filteredItems.forEach((item) => this.renderChart(item.key));
+        this.renderCompareChart();
       }
       if (this.currentPage === 'ratio') {
         if (this.isGbpSeries(this.spreadNumeratorItemKey) || this.isGbpSeries(this.spreadDenominatorItemKey)) {
@@ -806,7 +815,26 @@ createApp({
     onViewModeChange() {
       this.syncUrlAndRender();
     },
-    onCategoryChange() {
+    categoryTagStyle(category) {
+      return this.categoryBadgeStyle(category, this.items.find((item) => item.category === category)?.key);
+    },
+    selectAllCategories() {
+      this.selectedCategories = this.availableCategories.map((category) => category.value);
+      this.selectedItemKey = 'all';
+      this.syncUrlAndRender();
+    },
+    toggleCategory(category) {
+      if (this.selectedCategories.includes(category)) this.selectedCategories = this.selectedCategories.filter((value) => value !== category);
+      else this.selectedCategories = [...this.selectedCategories, category];
+      if (!this.selectedCategories.length) this.selectedCategories = this.availableCategories.map((entry) => entry.value);
+      if (this.selectedItemKey !== 'all' && !this.itemOptions.some((item) => item.key === this.selectedItemKey)) this.selectedItemKey = 'all';
+      this.syncUrlAndRender();
+    },
+    onItemSelectionChange() {
+      if (this.selectedItemKey && this.selectedItemKey !== 'all') {
+        window.location.href = this.singleChartUrl(this.selectedItemKey);
+        return;
+      }
       this.syncUrlAndRender();
     },
     applyToAll() {
@@ -816,6 +844,13 @@ createApp({
     toggleCompare(key) {
       this.compareKeys = this.compareKeys.includes(key) ? this.compareKeys.filter((x) => x !== key) : [...this.compareKeys, key];
       this.syncUrlAndRender();
+    },
+    singleItemMenuUrl() {
+      const params = new URLSearchParams();
+      params.set('item', 'house');
+      params.set('denom', 'fiat');
+      params.set('theme', this.isDarkMode ? 'dark' : 'light');
+      return `single.html?${params.toString()}`;
     },
     ratioPageUrl() {
       const params = new URLSearchParams();
@@ -855,8 +890,8 @@ createApp({
         this.items = payload.items;
         this.denominators = Object.entries(this.contextSeries).map(([value, d]) => ({ value, label: d.label }));
         this.perChartDenominator = Object.fromEntries(this.items.map((item) => [item.key, this.allDenominator]));
-        if (this.viewMode === 'compare') this.syncCompareSelectionToCategory();
-        else if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);
+        if (!this.selectedCategories.length) this.selectedCategories = this.availableCategories.map((category) => category.value);
+        if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);
         if (!this.spreadNumeratorItemKey) this.spreadNumeratorItemKey = this.items[0]?.key || '';
         if (!this.spreadDenominatorItemKey) this.spreadDenominatorItemKey = this.denominators[0] ? `context:${this.denominators[0].value}` : (this.items[1]?.key || this.items[0]?.key || '');
       } catch (err) {
@@ -871,6 +906,8 @@ createApp({
     this.readUrlState();
     this.applyTheme();
     await this.fetchPricingData();
+    if (!this.selectedCategories.length) this.selectedCategories = this.availableCategories.map((category) => category.value);
+    if (this.selectedItemKey !== 'all' && !this.itemOptions.some((item) => item.key === this.selectedItemKey)) this.selectedItemKey = 'all';
     await nextTick();
     this.renderAll();
   },

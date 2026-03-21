@@ -67,6 +67,7 @@ function plotlyConfig({ onToggleLogScale, onToggleRebase } = {}) {
     displaylogo: false,
     scrollZoom: false,
     modeBarButtonsToAdd,
+    modeBarButtonsToRemove: ['zoom2d','pan2d','select2d','lasso2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toggleSpikelines','hoverClosestCartesian','hoverCompareCartesian','toImage'],
   };
 }
 
@@ -163,6 +164,13 @@ createApp({
     },
     shareUrl() {
       return new URL(`single.html?${this.toParams().toString()}`, window.location.origin).toString();
+    },
+    singleItemMenuUrl() {
+      const params = new URLSearchParams();
+      params.set('item', 'house');
+      params.set('denom', 'fiat');
+      params.set('theme', this.isDarkMode ? 'dark' : 'light');
+      return `single.html?${params.toString()}`;
     },
     ratioPageUrl() {
       const params = new URLSearchParams();

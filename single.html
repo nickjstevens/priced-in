@@ -31,6 +31,7 @@
             <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" href="index.html">Cost of Living</a>
+                <a class="page-link" :href="singleItemMenuUrl">Single Item</a>
                 <a class="page-link" :href="ratioPageUrl">Relative Ratio</a>
                 <a class="page-link" href="assumptions.html">Assumptions & Caveats</a>
               </nav>
@@ -48,7 +49,7 @@
             <option v-for="item in items" :key="item.key" :value="item.key">{{ item.name }}</option>
           </select>
         </label>
-        <label>Denominator
+        <label>Priced In
           <select v-model="denominator" @change="syncUrlAndRender">
             <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
           </select>

@@ -31,6 +31,7 @@
             <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" :class="{ active: currentPage === 'cost' }" href="index.html">Cost of Living</a>
+                <a class="page-link" :href="singleItemMenuUrl()">Single Item</a>
                 <a class="page-link" :class="{ active: currentPage === 'ratio' }" :href="ratioPageUrl()">Relative Ratio</a>
                 <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">Assumptions & Caveats</a>
               </nav>
@@ -47,49 +48,60 @@
 
         <section v-else>
         <section class="controls panel-shell">
-          <label>Mode
-            <select v-model="viewMode" @change="onViewModeChange" aria-label="View mode">
-              <option value="cards">One chart per item</option>
-              <option value="compare">Compare items on one chart</option>
-            </select>
-          </label>
-          <label>Denominator
-            <select v-model="allDenominator" @change="applyToAll" aria-label="Denominator selector">
+          <label>Priced In
+            <select v-model="allDenominator" @change="applyToAll" aria-label="Priced in selector">
               <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
             </select>
           </label>
-          <label>Range
-            <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Date range selector">
-              <option value="last10">Last 10 years</option>
-              <option value="last20">Last 20 years</option>
-              <option value="last30">Last 30 years</option>
-              <option value="last40">Last 40 years</option>
-              <option value="full">Full history</option>
+          <label>Item
+            <select v-model="selectedItemKey" @change="onItemSelectionChange" aria-label="Item selector">
+              <option value="all">All</option>
+              <option v-for="item in itemOptions" :key="item.key" :value="item.key">{{ item.name }}</option>
             </select>
           </label>
           <label v-if="allDenominator !== 'fiat'"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
           <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
             {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
           </button>
-          <label>Category
-            <select v-model="categoryFilter" @change="onCategoryChange">
-              <option value="all">{{ allCategoryLabel }}</option>
-              <option v-for="category in availableCategories" :key="category.value" :value="category.value">{{ category.label }}</option>
-            </select>
-          </label>
           <label class="search">Search
             <input v-model="search" @input="syncUrlAndRender" placeholder="house, tuition, eggs…" aria-label="Search items" />
           </label>
         </section>
 
+        <section class="category-tags panel-shell" aria-label="Category filters">
+          <button type="button" class="filter-tag" :class="{ active: allCategoriesSelected }" @click="selectAllCategories">All</button>
+          <button
+            v-for="category in availableCategories"
+            :key="category.value"
+            type="button"
+            class="filter-tag"
+            :class="{ active: selectedCategories.includes(category.value) }"
+            :style="categoryTagStyle(category.value)"
+            @click="toggleCategory(category.value)"
+          >
+            {{ category.label }}
+          </button>
+        </section>
+
         <p v-if="allDenominator==='bitcoin' && !showFullBitcoin" class="notice">Bitcoin is hidden before 2017 by default because early annual averages are sparse and highly volatile. Use “Show full available history” to include all years.</p>
         <p v-if="costRebaseNotice" class="notice">{{ costRebaseNotice }}</p>
 
-        <article class="chart-card panel-shell" v-if="viewMode==='compare'">
-          <header><h2>Comparison chart</h2></header>
+        <article class="chart-card panel-shell">
+          <header><h2>Combined chart</h2></header>
           <div class="compare-layout compare-layout-single">
             <div class="compare-main">
               <div class="chart-wrap chart-wrap-lg"><div id="chart-compare" class="plotly-chart"></div></div>
+              <div class="chart-footer-controls">
+                <label>Range
+                  <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Date range selector">
+                    <option value="last10">Last 10 years</option>
+                    <option value="last20">Last 20 years</option>
+                    <option value="last30">Last 30 years</option>
+                    <option value="last40">Last 40 years</option>
+                    <option value="full">Full history</option>
+                  </select>
+                </label>
+              </div>
               <details class="data-table-panel">
                 <summary>Show chart data table</summary>
                 <div class="table-wrap">
@@ -113,51 +125,7 @@
           </div>
         </article>
 
-        <section v-else class="grid">
-          <article class="chart-card panel-shell" v-for="item in filteredItems" :key="item.key">
-            <header>
-              <div class="card-title-block">
-                <h2><a class="item-title-link" :href="singleChartUrl(item.key)">{{ item.name }}</a></h2>
-                <span class="category-badge" :style="categoryBadgeStyle(item.category, item.key)">{{ categoryLabel(item.category) }}</span>
-              </div>
-              <div class="card-actions">
-                <label>Priced in
-                  <select v-model="perChartDenominator[item.key]" @change="syncUrlAndRender">
-                    <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
-                  </select>
-                </label>
-              </div>
-            </header>
-            <dl class="stats-strip">
-              <div class="stat"><dt>CAGR (selected)</dt><dd>{{ chartStats(item.key).cagrSelected }}</dd></div>
-              <div class="stat"><dt>Total change</dt><dd>{{ chartStats(item.key).totalChange }}</dd></div>
-              <div class="stat"><dt>Best year</dt><dd>{{ chartStats(item.key).bestYear }}</dd></div>
-              <div class="stat"><dt>Worst year</dt><dd>{{ chartStats(item.key).worstYear }}</dd></div>
-              <div class="stat"><dt>Volatility (5Y log-return)</dt><dd>{{ chartStats(item.key).vol5y }}</dd></div>
-              <div class="stat"><dt>Max drawdown</dt><dd>{{ chartStats(item.key).maxDrawdown }}</dd></div>
-              <div class="stat"><dt>From historical peak</dt><dd>{{ chartStats(item.key).fromPeak }}</dd></div>
-              <div class="stat"><dt>Corr. vs priced-in asset</dt><dd>{{ chartStats(item.key).correlationToDenominator }}</dd></div>
-            </dl>
-            <div class="chart-wrap"><div :id="`chart-${item.key}`" class="plotly-chart"></div></div>
-            <details class="meta"><summary>What is being measured?</summary>
-              <ul>
-                <li>Unit basis: {{ item.metadata?.unit_basis }}</li>
-                <li>Geography: {{ item.metadata?.geography }}</li>
-                <li>Nominal/real: {{ item.metadata?.price_basis }}</li>
-                <li>Frequency: {{ item.metadata?.frequency }}</li>
-                <li>Last updated: {{ item.metadata?.last_updated }}</li>
-                <li>Confidence: {{ item.metadata?.source_confidence }}</li>
-              </ul>
-            </details>
-            <p class="lineage">{{ insightText(item.key) }}</p>
-            <details class="sources"><summary>Sources & lineage</summary>
-              <ul>
-                <li v-for="source in sourceSet(item.key)" :key="`${item.key}-${source.url}`"><span class="badge">{{ source.type || 'source' }}</span> <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a> ({{ source.date }}) — {{ source.note }}</li>
-              </ul>
-              <p class="lineage">{{ dataLineage(item.key) }}</p>
-            </details>
-          </article>
-        </section>
+
       </section>
       </div>
     </main>
