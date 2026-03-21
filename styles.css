@@ -77,6 +77,8 @@ a { color: inherit; }
   border-radius: 28px;
   box-shadow: var(--shadow);
   backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 30;
 }
 .brand-panel {
   display: block;
@@ -184,7 +186,13 @@ summary { cursor: pointer; }
 .compare-sidebar { border-left: 1px solid var(--border); padding-left: 1rem; }
 .checkbox-list { display: grid; gap: 0.55rem; max-height: 420px; overflow: auto; padding-right: 0.4rem; }
 .checkbox-list label { display: flex; align-items: center; gap: 0.45rem; background: var(--surface-soft); padding: 0.7rem 0.8rem; border-radius: 14px; border: 1px solid var(--border); }
-.checkbox-list input { margin-left: 0; }
+.checkbox-list input {
+  margin-left: 0;
+  width: 1rem;
+  height: 1rem;
+  min-height: 1rem;
+  flex: 0 0 auto;
+}
 .data-table-panel { margin-top: 0.85rem; }
 .table-wrap { overflow: auto; max-height: 320px; border: 1px solid var(--border); border-radius: 16px; }
 .narrow-table-wrap { max-width: 520px; }
@@ -231,7 +239,7 @@ summary { cursor: pointer; }
     position: absolute;
     top: calc(100% + 0.6rem);
     right: 0;
-    z-index: 20;
+    z-index: 80;
     min-width: min(320px, calc(100vw - 2rem));
     display: none;
     flex-direction: column;
@@ -254,7 +262,14 @@ summary { cursor: pointer; }
   .controls, .single-controls { flex-direction: column; align-items: stretch; }
   .controls > *, .single-controls > * { width: 100%; }
   .controls label, .single-controls label { display: grid; gap: 0.4rem; }
-  select, input, button { margin-left: 0; width: 100%; }
+  select, input:not([type='checkbox']):not([type='radio']), button { margin-left: 0; width: 100%; }
+  input[type='checkbox'], input[type='radio'] {
+    width: 1rem;
+    min-width: 1rem;
+    height: 1rem;
+    min-height: 1rem;
+    margin: 0;
+  }
   .card-actions { width: 100%; }
   .card-actions > * { flex: 1 1 auto; }
   .ratio-controls { display: grid; grid-template-columns: 1fr; }
