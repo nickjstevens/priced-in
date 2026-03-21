@@ -1,5 +1,9 @@
 const { createApp, nextTick } = Vue;
 
+const STORAGE_KEYS = {
+  theme: 'priced-in-theme',
+};
+
 function formatGbp(value) {
   if (value == null || Number.isNaN(value)) return '—';
   const usePennies = Math.abs(value) < 100;
@@ -75,7 +79,8 @@ createApp({
       useLogScale: false,
       showUsdOverlay: false,
       showFullBitcoin: false,
-      isDarkMode: false,
+      isDarkMode: true,
+      isMobileMenuOpen: false,
       isLoading: true,
       error: '',
       chart: null,
@@ -88,6 +93,11 @@ createApp({
     },
     shareUrl() {
       return new URL(`single.html?${this.toParams().toString()}`, window.location.origin).toString();
+    },
+    ratioPageUrl() {
+      const params = new URLSearchParams();
+      params.set('theme', this.isDarkMode ? 'dark' : 'light');
+      return `ratio.html?${params.toString()}`;
     },
   },
   methods: {
@@ -118,8 +128,16 @@ createApp({
     syncUrlAndRender() {
       const params = this.toParams();
       history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+      this.persistLocalState();
       this.applyTheme();
       this.renderChart();
+    },
+    persistLocalState() {
+      localStorage.setItem(STORAGE_KEYS.theme, this.isDarkMode ? 'dark' : 'light');
+    },
+    loadLocalState() {
+      const savedTheme = localStorage.getItem(STORAGE_KEYS.theme);
+      if (savedTheme === 'dark' || savedTheme === 'light') this.isDarkMode = savedTheme === 'dark';
     },
     rangeBounds() {
       if (this.selectedRange === 'last10') return [this.years[Math.max(0, this.years.length - 10)], this.years[this.years.length - 1]];
@@ -336,6 +354,12 @@ createApp({
       this.isDarkMode = !this.isDarkMode;
       this.syncUrlAndRender();
     },
+    toggleMobileMenu() {
+      this.isMobileMenuOpen = !this.isMobileMenuOpen;
+    },
+    closeMobileMenu() {
+      this.isMobileMenuOpen = false;
+    },
     applyTheme() {
       document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
     },
@@ -368,10 +392,15 @@ createApp({
     },
   },
   async mounted() {
+    this.loadLocalState();
     this.fromParams();
     this.applyTheme();
     await this.fetchPricingData();
     await nextTick();
     this.syncUrlAndRender();
+    window.addEventListener('resize', this.closeMobileMenu);
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.closeMobileMenu);
   },
 }).mount('#app');

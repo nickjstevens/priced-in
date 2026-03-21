@@ -10,39 +10,57 @@
   </head>
   <body data-page="ratio">
     <main id="app">
-      <div class="title-row">
-        <div>
-          <h1>Priced In — Relative Price Ratio</h1>
-          <p>Share a dedicated link for A ÷ B comparisons without the main dashboard tab state in the URL.</p>
-        </div>
-        <div class="title-actions">
-          <nav class="page-nav" aria-label="Main sections">
-            <a class="page-link" :class="{ active: currentPage === 'cost' }" href="index.html">Cost of Living</a>
-            <a class="page-link" :class="{ active: currentPage === 'ratio' }" :href="ratioPageUrl()">Relative Ratio</a>
-            <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">Assumptions & Caveats</a>
-          </nav>
-          <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
-            {{ isDarkMode ? '☀️ Light mode' : '🌙 Dark mode' }}
-          </button>
-        </div>
-      </div>
+      <div class="dashboard-shell">
+        <header class="app-header">
+          <a class="brand-panel" href="index.html" aria-label="Go to homepage">
+            <span class="brand-kicker">Pair analytics</span>
+            <h1>Priced In — Relative Price Ratio</h1>
+            <p>Share a dedicated link for A ÷ B comparisons without the main dashboard tab state in the URL.</p>
+          </a>
+          <div class="header-actions">
+            <button
+              class="menu-toggle"
+              type="button"
+              @click="toggleMobileMenu"
+              :aria-expanded="isMobileMenuOpen ? 'true' : 'false'"
+              aria-controls="site-menu"
+              aria-label="Toggle navigation menu"
+            >
+              <span></span><span></span><span></span>
+            </button>
+            <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
+              <nav class="page-nav" aria-label="Main sections">
+                <a class="page-link" :class="{ active: currentPage === 'cost' }" href="index.html">Cost of Living</a>
+                <a class="page-link" :class="{ active: currentPage === 'ratio' }" :href="ratioPageUrl()">Relative Ratio</a>
+                <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">Assumptions & Caveats</a>
+              </nav>
+              <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
+                <span class="theme-toggle-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+                <span>{{ isDarkMode ? 'Light mode' : 'Dark mode' }}</span>
+              </button>
+            </div>
+          </div>
+        </header>
 
-      <section v-if="isLoading" class="status-card">Loading pricing data from API… <span class="skeleton"></span></section>
-      <section v-else-if="error" class="status-card error">{{ error }}</section>
+        <section v-if="isLoading" class="status-card">Loading pricing data from API… <span class="skeleton"></span></section>
+        <section v-else-if="error" class="status-card error">{{ error }}</section>
 
-      <section v-else>
-        <section class="controls">
+        <section v-else>
+        <section class="controls panel-shell ratio-controls">
           <label>Item A
             <select v-model="spreadNumeratorItemKey" @change="syncUrlAndRender" aria-label="Item A selector">
               <option v-for="series in spreadSeriesOptions" :key="`spread-a-item-${series.key}`" :value="series.key" :class="series.optionClass">{{ series.name }}</option>
             </select>
           </label>
+          <button type="button" class="swap-button" @click="swapSpreadItems" aria-label="Swap Item A and Item B">
+            <span class="swap-button-icon">⇅</span>
+            <span class="swap-button-text">Swap pair</span>
+          </button>
           <label>Item B
             <select v-model="spreadDenominatorItemKey" @change="syncUrlAndRender" aria-label="Item B selector">
               <option v-for="series in spreadSeriesOptions" :key="`spread-b-item-${series.key}`" :value="series.key" :class="series.optionClass">{{ series.name }}</option>
             </select>
           </label>
-          <button type="button" class="swap-button" @click="swapSpreadItems" aria-label="Swap Item A and Item B">🔁 Swap</button>
           <label>Range
             <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Ratio range selector">
               <option value="last10">Last 10 years</option>
@@ -59,7 +77,7 @@
         </section>
 
         <p v-if="ratioRebaseNotice" class="notice">{{ ratioRebaseNotice }}</p>
-        <article class="chart-card tool-card">
+        <article class="chart-card tool-card panel-shell">
           <header><h2>Relative price ratio view</h2></header>
           <p class="lineage">Track one series directly against another as A ÷ B over time, use Swap to flip the pair, and optionally compare the ratio against the lead series' GBP price or the pair's 5Y rolling correlation.</p>
           <div class="ratio-stats">
@@ -86,6 +104,7 @@
           </details>
         </article>
       </section>
+      </div>
     </main>
     <script src="main.js"></script>
   </body>
