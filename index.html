@@ -81,17 +81,31 @@
           <div class="compare-layout compare-layout-single">
             <div class="compare-main">
               <div class="chart-wrap chart-wrap-lg"><div id="chart-compare" class="plotly-chart"></div></div>
-              <div class="chart-footer-controls">
-                <label>Range
-                  <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Date range selector">
-                    <option value="last10">Last 10 years</option>
-                    <option value="last20">Last 20 years</option>
-                    <option value="last30">Last 30 years</option>
-                    <option value="last40">Last 40 years</option>
-                    <option value="full">Full history</option>
-                  </select>
-                </label>
-              </div>
+              <p class="chart-modebar-hint">Use the chart modebar to switch time scales.</p>
+              <section class="data-table-panel summary-table-panel">
+                <h3>Selected item summary</h3>
+                <div class="table-wrap">
+                  <table class="data-table summary-table">
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th v-for="column in summaryTableColumns" :key="column.key">{{ column.label }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="row in summaryTableRows" :key="row.key">
+                        <th>
+                          <div class="summary-item-cell">
+                            <span>{{ row.name }}</span>
+                            <span class="category-badge" :style="categoryTagStyle(row.category)">{{ categoryDisplayLabel(row.category) }}</span>
+                          </div>
+                        </th>
+                        <td v-for="column in summaryTableColumns" :key="`${row.key}-${column.key}`">{{ row.stats[column.key] }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
               <section class="single-chart-grid" aria-label="Individual item charts">
                 <article v-for="(item, index) in filteredItems" :key="item.key" class="single-chart-card">
                   <a class="single-chart-heading" :href="singleChartUrl(item.key)">

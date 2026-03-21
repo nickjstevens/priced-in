@@ -54,15 +54,6 @@
             <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
           </select>
         </label>
-        <label>Range
-          <select v-model="selectedRange" @change="syncUrlAndRender">
-            <option value="last10">Last 10 years</option>
-            <option value="last20">Last 20 years</option>
-            <option value="last30">Last 30 years</option>
-            <option value="last40">Last 40 years</option>
-            <option value="full">Full history</option>
-          </select>
-        </label>
         <label v-if="denominator !== 'fiat'"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
         <label><input type="checkbox" v-model="showFullBitcoin" @change="syncUrlAndRender" /> Show full bitcoin history</label>
         <button @click="copyShareLink">Copy share link</button>
@@ -90,6 +81,7 @@
           <div class="stat"><dt>Corr. vs priced-in asset</dt><dd>{{ chartStats().correlationToDenominator }}</dd></div>
         </dl>
         <div class="chart-wrap"><div id="single-chart" class="plotly-chart"></div></div>
+        <p class="chart-modebar-hint">Use the chart modebar to switch time scales.</p>
         <details class="meta"><summary>What is being measured?</summary>
           <ul>
             <li>Unit basis: {{ currentItem.metadata?.unit_basis }}</li>
