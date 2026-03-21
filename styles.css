@@ -395,3 +395,18 @@ summary { cursor: pointer; }
 .yearly-table-wrap {
   max-height: min(70vh, 900px);
 }
+
+
+.modebar-text-button {
+  min-width: 2.25rem !important;
+  width: auto !important;
+  padding: 0 0.45rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 700;
+  line-height: 1.8rem !important;
+  color: var(--text-muted) !important;
+}
+
+.modebar-text-button:hover {
+  color: var(--text) !important;
+}
