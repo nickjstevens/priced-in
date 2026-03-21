@@ -374,3 +374,24 @@ summary { cursor: pointer; }
 .summary-table td.summary-cell-max.summary-cell-min {
   background: color-mix(in srgb, var(--accent) 12%, #ef4444 12%);
 }
+
+.instructions-panel {
+  margin-top: 0.85rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface-alt);
+}
+.instructions-panel summary {
+  font-weight: 700;
+}
+.instructions-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+  color: var(--text-muted);
+}
+.instructions-list p {
+  margin: 0;
+}
+.yearly-table-wrap {
+  max-height: min(70vh, 900px);
+}
