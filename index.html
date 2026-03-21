@@ -67,8 +67,6 @@
               <option value="full">Full history</option>
             </select>
           </label>
-          <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100</label>
-          <label><input type="checkbox" v-model="useLogScale" @change="syncUrlAndRender" /> Log scale</label>
           <label v-if="allDenominator !== 'fiat'"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
           <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
             {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}

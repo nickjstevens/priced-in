@@ -87,7 +87,7 @@ function plotlyLayoutBase(isDarkMode, useLogScale, extra = {}) {
     margin: { l: 56, r: 32, t: 24, b: 48 },
     font: { color: axisBase.color },
     legend: { orientation: 'h', y: 1.12, x: 0, font: { color: axisBase.color } },
-    hovermode: 'x unified',
+    hovermode: 'closest',
     xaxis: {
       ...axisBase,
       title: '',
@@ -105,8 +105,44 @@ function plotlyLayoutBase(isDarkMode, useLogScale, extra = {}) {
   };
 }
 
-function plotlyConfig() {
-  return { responsive: true, displayModeBar: false, scrollZoom: false };
+const PLOTLY_MODEBAR_ICON = {
+  log: {
+    width: 512,
+    height: 512,
+    path: 'M96 416h320v-32H128V96H96v320zm112-56h40V192h-28l-52 36 18 26 22-15v121zm104 0h96v-32h-58l34-38c18-20 24-32 24-50 0-30-23-52-57-52-27 0-47 13-60 35l27 16c7-12 17-19 32-19 15 0 25 8 25 21 0 9-3 17-15 30l-48 53v36z',
+  },
+  rebase: {
+    width: 512,
+    height: 512,
+    path: 'M96 96v320h320v-32H128V96H96zm80 224h64v-32h-64v32zm96-64h64v-32h-64v32zm96-64h64v-32h-64v32zM176 192h64v-32h-64v32z',
+  },
+};
+
+function plotlyConfig({ onToggleLogScale, onToggleRebase } = {}) {
+  const modeBarButtonsToAdd = [];
+  if (onToggleLogScale) {
+    modeBarButtonsToAdd.push({
+      name: 'Toggle log scale',
+      title: 'Toggle log scale',
+      icon: PLOTLY_MODEBAR_ICON.log,
+      click: onToggleLogScale,
+    });
+  }
+  if (onToggleRebase) {
+    modeBarButtonsToAdd.push({
+      name: 'Toggle rebase',
+      title: 'Toggle rebase to 100',
+      icon: PLOTLY_MODEBAR_ICON.rebase,
+      click: onToggleRebase,
+    });
+  }
+  return {
+    responsive: true,
+    displayModeBar: true,
+    displaylogo: false,
+    scrollZoom: false,
+    modeBarButtonsToAdd,
+  };
 }
 
 function attachPlotlyHoverHandlers(element, { onHover, onUnhover } = {}) {
@@ -530,6 +566,14 @@ createApp({
       this.applyTheme();
       this.syncUrlAndRender();
     },
+    toggleLogScale() {
+      this.useLogScale = !this.useLogScale;
+      this.syncUrlAndRender();
+    },
+    toggleRebase() {
+      this.rebased = !this.rebased;
+      this.syncUrlAndRender();
+    },
     toggleMobileMenu() {
       this.isMobileMenuOpen = !this.isMobileMenuOpen;
     },
@@ -599,7 +643,10 @@ createApp({
       const layout = this.plotlyLayout({
         yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
       });
-      Plotly.react(chartEl, traces, layout, plotlyConfig());
+      Plotly.react(chartEl, traces, layout, plotlyConfig({
+        onToggleLogScale: () => this.toggleLogScale(),
+        onToggleRebase: () => this.toggleRebase(),
+      }));
       this.charts[itemKey] = chartEl;
     },
     updateHoveredYear(chartKey, activeElements) {
@@ -621,7 +668,10 @@ createApp({
         trace.hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>';
         return trace;
       });
-      Plotly.react(chartEl, traces, this.plotlyLayout(), plotlyConfig());
+      Plotly.react(chartEl, traces, this.plotlyLayout(), plotlyConfig({
+        onToggleLogScale: () => this.toggleLogScale(),
+        onToggleRebase: () => this.toggleRebase(),
+      }));
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.compareHoveredYear = event?.points?.[0]?.x ?? null; },
         onUnhover: () => { this.compareHoveredYear = null; },
@@ -683,7 +733,10 @@ createApp({
         yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
         yaxis3: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', anchor: 'free', position: 1, range: [-1, 1], showgrid: false },
       });
-      Plotly.react(chartEl, traces, layout, plotlyConfig());
+      Plotly.react(chartEl, traces, layout, plotlyConfig({
+        onToggleLogScale: () => this.toggleLogScale(),
+        onToggleRebase: () => this.toggleRebase(),
+      }));
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.spreadHoveredYear = event?.points?.[0]?.x ?? null; },
         onUnhover: () => { this.spreadHoveredYear = null; },

@@ -70,8 +70,6 @@
               <option value="full">Full history</option>
             </select>
           </label>
-          <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100</label>
-          <label><input type="checkbox" v-model="useLogScale" @change="syncUrlAndRender" /> Log scale</label>
           <label><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
           <label v-if="canShowSpreadRollingCorrelation"><input type="checkbox" v-model="showSpreadRollingCorrelation" @change="syncUrlAndRender" /> Overlay 5Y rolling correlation</label>
         </section>
