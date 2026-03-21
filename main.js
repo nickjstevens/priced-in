@@ -73,12 +73,7 @@ const { createApp, nextTick } = Vue;
 createApp({
   data() {
     return {
-      tabs: [
-        { key: 'cost', label: 'Cost of Living' },
-        { key: 'ratio', label: 'Relative Price Ratio' },
-        { key: 'assumptions', label: 'Assumptions & Caveats' },
-      ],
-      activeTab: 'cost',
+      currentPage: document.body.dataset.page || 'cost',
       years: [], contextSeries: {}, items: [], denominators: [], charts: {},
       perChartDenominator: {}, allDenominator: 'fiat',
       viewMode: 'cards', selectedRange: 'full', rebased: false,
@@ -92,8 +87,19 @@ createApp({
     };
   },
   computed: {
+    categoryCounts() {
+      return this.items.reduce((counts, item) => {
+        if (item.category) counts[item.category] = (counts[item.category] || 0) + 1;
+        return counts;
+      }, {});
+    },
     availableCategories() {
-      return [...new Set(this.items.map((item) => item.category).filter(Boolean))].sort();
+      return Object.keys(this.categoryCounts)
+        .sort((a, b) => a.localeCompare(b))
+        .map((category) => ({ value: category, label: this.categoryDisplayLabel(category) }));
+    },
+    allCategoryLabel() {
+      return `All [${this.items.length}]`;
     },
     filteredItems() {
       const q = this.search.trim().toLowerCase();
@@ -101,12 +107,18 @@ createApp({
         && (!q || item.name.toLowerCase().includes(q) || item.category?.includes(q)));
     },
     spreadSeriesOptions() {
-      const itemSeries = this.items.map((item) => ({ key: item.key, name: item.name }));
+      const itemSeries = this.items.map((item) => ({ key: item.key, name: item.name, isDenominator: false }));
       const denominatorSeries = this.denominators.map((denom) => ({
         key: `context:${denom.value}`,
         name: denom.label,
+        isDenominator: true,
       }));
-      return [...itemSeries, ...denominatorSeries];
+      return [...itemSeries, ...denominatorSeries]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((series) => ({
+          ...series,
+          optionClass: series.isDenominator ? 'series-option series-option-denominator' : 'series-option series-option-item',
+        }));
     },
     compareAnalytics() {
       const keys = this.compareSelectionKeys;
@@ -207,6 +219,10 @@ createApp({
     categoryLabel(category) {
       return category.charAt(0).toUpperCase() + category.slice(1);
     },
+    categoryDisplayLabel(category) {
+      const count = this.categoryCounts[category] || 0;
+      return `${this.categoryLabel(category)} [${count}]`;
+    },
     seriesName(seriesKey) {
       if (!seriesKey) return '—';
       if (seriesKey.startsWith('context:')) return this.contextSeries[seriesKey.replace('context:', '')]?.label || seriesKey;
@@ -215,16 +231,11 @@ createApp({
     formatTableValue(value) {
       return value == null ? '—' : value.toFixed(3);
     },
-    setActiveTab(tabKey) {
-      this.activeTab = tabKey;
-      this.syncUrlAndRender();
-    },
     readUrlState() {
       const p = new URLSearchParams(location.search);
       this.allDenominator = p.get('denom') || 'fiat';
       this.selectedRange = p.get('range') || 'full';
       this.viewMode = p.get('mode') || 'cards';
-      this.activeTab = p.get('tab') || 'cost';
       this.rebased = p.get('rebased') === '1';
       this.useLogScale = p.get('log') === '1';
       this.showUsdOverlay = p.get('overlayUsd') === '1';
@@ -238,20 +249,24 @@ createApp({
     },
     async syncUrlAndRender() {
       const p = new URLSearchParams();
-      p.set('denom', this.allDenominator);
       p.set('range', this.selectedRange);
-      p.set('mode', this.viewMode);
-      p.set('tab', this.activeTab);
+      if (this.currentPage === 'cost') {
+        p.set('denom', this.allDenominator);
+        p.set('mode', this.viewMode);
+        if (this.compareKeys.length) p.set('items', this.compareKeys.join(','));
+      }
+      if (this.currentPage === 'ratio') {
+        if (this.spreadNumeratorItemKey) p.set('itemA', this.spreadNumeratorItemKey);
+        if (this.spreadDenominatorItemKey) p.set('itemB', this.spreadDenominatorItemKey);
+        if (this.invertSpread) p.set('invertRatio', '1');
+      }
       if (this.rebased) p.set('rebased', '1');
       if (this.useLogScale) p.set('log', '1');
       if (this.showUsdOverlay) p.set('overlayUsd', '1');
       if (this.showFullBitcoin) p.set('btcFull', '1');
-      if (this.compareKeys.length) p.set('items', this.compareKeys.join(','));
-      if (this.spreadNumeratorItemKey) p.set('itemA', this.spreadNumeratorItemKey);
-      if (this.spreadDenominatorItemKey) p.set('itemB', this.spreadDenominatorItemKey);
-      if (this.invertSpread) p.set('invertRatio', '1');
       p.set('theme', this.isDarkMode ? 'dark' : 'light');
-      history.replaceState({}, '', `${location.pathname}?${p.toString()}`);
+      const nextUrl = p.toString() ? `${location.pathname}?${p.toString()}` : location.pathname;
+      history.replaceState({}, '', nextUrl);
       this.persistLocalState();
       await nextTick();
       this.renderAll();
@@ -674,11 +689,11 @@ createApp({
         if (this.charts[key]) this.charts[key].destroy();
       });
       this.charts = {};
-      if (this.activeTab === 'cost') {
+      if (this.currentPage === 'cost') {
         if (this.viewMode === 'compare') this.renderCompareChart();
         else this.filteredItems.forEach((item) => this.renderChart(item.key));
       }
-      if (this.activeTab === 'ratio') this.renderSpreadChart();
+      if (this.currentPage === 'ratio') this.renderSpreadChart();
     },
     syncCompareSelectionToCategory() {
       this.compareKeys = [...this.filteredItems.map((item) => item.key)];
@@ -698,6 +713,19 @@ createApp({
     toggleCompare(key) {
       this.compareKeys = this.compareKeys.includes(key) ? this.compareKeys.filter((x) => x !== key) : [...this.compareKeys, key];
       this.syncUrlAndRender();
+    },
+    ratioPageUrl() {
+      const params = new URLSearchParams();
+      params.set('range', this.selectedRange);
+      if (this.rebased) params.set('rebased', '1');
+      if (this.useLogScale) params.set('log', '1');
+      if (this.showUsdOverlay) params.set('overlayUsd', '1');
+      if (this.showFullBitcoin) params.set('btcFull', '1');
+      if (this.spreadNumeratorItemKey) params.set('itemA', this.spreadNumeratorItemKey);
+      if (this.spreadDenominatorItemKey) params.set('itemB', this.spreadDenominatorItemKey);
+      if (this.invertSpread) params.set('invertRatio', '1');
+      params.set('theme', this.isDarkMode ? 'dark' : 'light');
+      return `ratio.html?${params.toString()}`;
     },
     singleChartUrl(itemKey) {
       const params = new URLSearchParams();
