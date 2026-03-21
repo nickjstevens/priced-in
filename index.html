@@ -116,14 +116,16 @@
         <section v-else class="grid">
           <article class="chart-card panel-shell" v-for="item in filteredItems" :key="item.key">
             <header>
-              <h2>{{ item.name }} <small>({{ categoryDisplayLabel(item.category) }})</small></h2>
+              <div class="card-title-block">
+                <h2><a class="item-title-link" :href="singleChartUrl(item.key)">{{ item.name }}</a></h2>
+                <span class="category-badge" :style="categoryBadgeStyle(item.category, item.key)">{{ categoryLabel(item.category) }}</span>
+              </div>
               <div class="card-actions">
                 <label>Priced in
                   <select v-model="perChartDenominator[item.key]" @change="syncUrlAndRender">
                     <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
                   </select>
                 </label>
-                <a class="share-link" :href="singleChartUrl(item.key)" target="_blank" rel="noopener noreferrer">Share</a>
               </div>
             </header>
             <dl class="stats-strip">

@@ -171,6 +171,38 @@ createApp({
     },
   },
   methods: {
+    categoryLabel(category) {
+      return category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Uncategorised';
+    },
+    categoryBadgeStyle(category, itemKey) {
+      const palettes = {
+        housing: { hue: 4, sat: 78, lightness: [40, 46, 52, 58, 64] },
+        utilities: { hue: 212, sat: 76, lightness: [40, 46, 52, 58, 64] },
+        food: { hue: 145, sat: 55, lightness: [34, 40, 46, 52, 58] },
+        transport: { hue: 265, sat: 62, lightness: [42, 48, 54, 60, 66] },
+        taxes: { hue: 24, sat: 82, lightness: [42, 48, 54, 60, 66] },
+        family: { hue: 332, sat: 68, lightness: [42, 48, 54, 60, 66] },
+        healthcare: { hue: 186, sat: 60, lightness: [38, 44, 50, 56, 62] },
+        finance: { hue: 48, sat: 88, lightness: [38, 44, 50, 56, 62] },
+        income: { hue: 122, sat: 48, lightness: [34, 40, 46, 52, 58] },
+        education: { hue: 286, sat: 56, lightness: [40, 46, 52, 58, 64] },
+        commodities: { hue: 198, sat: 28, lightness: [38, 44, 50, 56, 62] },
+      };
+      const fallback = { hue: 220, sat: 14, lightness: [44, 50, 56, 62, 68] };
+      const palette = palettes[category] || fallback;
+      const categoryItems = this.items.filter((item) => item.category === category).sort((a, b) => a.key.localeCompare(b.key));
+      const index = Math.max(0, categoryItems.findIndex((item) => item.key === itemKey));
+      const lightness = palette.lightness[index % palette.lightness.length];
+      const bgAlpha = this.isDarkMode ? 0.22 : 0.14;
+      const borderAlpha = this.isDarkMode ? 0.5 : 0.34;
+      const textLightness = this.isDarkMode ? Math.min(lightness + 26, 90) : Math.max(lightness - 18, 22);
+      return {
+        backgroundColor: `hsla(${palette.hue}, ${palette.sat}%, ${lightness}%, ${bgAlpha})`,
+        borderColor: `hsla(${palette.hue}, ${palette.sat}%, ${lightness}%, ${borderAlpha})`,
+        color: `hsl(${palette.hue}, ${palette.sat}%, ${textLightness}%)`,
+      };
+    },
+
     fromParams() {
       const p = new URLSearchParams(window.location.search);
       this.itemKey = p.get('item') || '';

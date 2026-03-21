@@ -73,8 +73,10 @@
 
       <article v-else-if="currentItem" class="chart-card single-page-chart panel-shell">
         <header>
-          <h2>{{ currentItem.name }} <small>({{ currentItem.category }})</small></h2>
-          <a class="share-link" :href="shareUrl" target="_blank" rel="noopener noreferrer">Open share URL</a>
+          <div class="card-title-block">
+            <h2><a class="item-title-link" :href="shareUrl">{{ currentItem.name }}</a></h2>
+            <span class="category-badge" :style="categoryBadgeStyle(currentItem.category, currentItem.key)">{{ categoryLabel(currentItem.category) }}</span>
+          </div>
         </header>
         <dl class="stats-strip">
           <div class="stat"><dt>CAGR (selected)</dt><dd>{{ chartStats().cagrSelected }}</dd></div>
