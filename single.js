@@ -49,7 +49,7 @@ const PLOTLY_MODEBAR_ICON = {
   },
 };
 
-function plotlyConfig({ onToggleLogScale, onToggleRebase } = {}) {
+function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [] } = {}) {
   const modeBarButtonsToAdd = [];
   if (onToggleLogScale) {
     modeBarButtonsToAdd.push({
@@ -67,6 +67,7 @@ function plotlyConfig({ onToggleLogScale, onToggleRebase } = {}) {
       click: onToggleRebase,
     });
   }
+  if (rangeButtons.length) modeBarButtonsToAdd.push(...rangeButtons);
   return {
     responsive: true,
     displayModeBar: true,
@@ -80,6 +81,14 @@ function plotlyConfig({ onToggleLogScale, onToggleRebase } = {}) {
 const STORAGE_KEYS = {
   theme: 'priced-in-theme',
 };
+
+const RANGE_OPTIONS = [
+  { value: 'last10', label: 'Last 10Y' },
+  { value: 'last20', label: 'Last 20Y' },
+  { value: 'last30', label: 'Last 30Y' },
+  { value: 'last40', label: 'Last 40Y' },
+  { value: 'full', label: 'Full' },
+];
 
 function formatGbp(value) {
   if (value == null || Number.isNaN(value)) return '—';
@@ -345,6 +354,7 @@ createApp({
       }), plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
+        rangeButtons: this.rangeModeBarButtons(),
       }));
       this.chart = chartEl;
     },
@@ -451,6 +461,19 @@ createApp({
     toggleRebase() {
       this.rebased = !this.rebased;
       this.syncUrlAndRender();
+    },
+    setSelectedRange(range) {
+      if (!RANGE_OPTIONS.some((option) => option.value === range) || this.selectedRange === range) return;
+      this.selectedRange = range;
+      this.syncUrlAndRender();
+    },
+    rangeModeBarButtons() {
+      return RANGE_OPTIONS.map((option) => ({
+        name: `Range: ${option.label}`,
+        title: `${this.selectedRange === option.value ? 'Active: ' : ''}Show ${option.label.toLowerCase()}`,
+        text: option.label,
+        click: () => this.setSelectedRange(option.value),
+      }));
     },
     toggleMobileMenu() {
       this.isMobileMenuOpen = !this.isMobileMenuOpen;

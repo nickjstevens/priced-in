@@ -3,6 +3,14 @@ const STORAGE_KEYS = {
   theme: 'priced-in-theme',
 };
 
+const RANGE_OPTIONS = [
+  { value: 'last10', label: 'Last 10Y' },
+  { value: 'last20', label: 'Last 20Y' },
+  { value: 'last30', label: 'Last 30Y' },
+  { value: 'last40', label: 'Last 40Y' },
+  { value: 'full', label: 'Full' },
+];
+
 function isValidDataset(payload) {
   return payload && Array.isArray(payload.years) && payload.contextSeries && Array.isArray(payload.items);
 }
@@ -126,7 +134,7 @@ const PLOTLY_MODEBAR_ICON = {
   },
 };
 
-function plotlyConfig({ onToggleLogScale, onToggleRebase } = {}) {
+function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [] } = {}) {
   const modeBarButtonsToAdd = [];
   if (onToggleLogScale) {
     modeBarButtonsToAdd.push({
@@ -144,6 +152,7 @@ function plotlyConfig({ onToggleLogScale, onToggleRebase } = {}) {
       click: onToggleRebase,
     });
   }
+  if (rangeButtons.length) modeBarButtonsToAdd.push(...rangeButtons);
   return {
     responsive: true,
     displayModeBar: true,
@@ -255,6 +264,25 @@ createApp({
         year,
         values: Object.fromEntries(this.compareTableColumns.map((column) => [column.key, (this.compareSeriesMap[column.key] || []).find((point) => point.year === year)?.value ?? null])),
       }));
+    },
+    summaryTableColumns() {
+      return [
+        { key: 'cagrSelected', label: 'CAGR' },
+        { key: 'totalChange', label: 'Total change' },
+        { key: 'bestYear', label: 'Best year' },
+        { key: 'worstYear', label: 'Worst year' },
+      ];
+    },
+    summaryTableRows() {
+      return this.filteredItems
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+        .map((item) => ({
+          key: item.key,
+          name: item.name,
+          category: item.category,
+          stats: this.chartStats(item.key),
+        }));
     },
     spreadSeries() {
       return this.visiblePairSeries(this.spreadNumeratorItemKey, this.spreadDenominatorItemKey);
@@ -620,6 +648,19 @@ createApp({
       this.rebased = !this.rebased;
       this.syncUrlAndRender();
     },
+    setSelectedRange(range) {
+      if (!RANGE_OPTIONS.some((option) => option.value === range) || this.selectedRange === range) return;
+      this.selectedRange = range;
+      this.syncUrlAndRender();
+    },
+    rangeModeBarButtons() {
+      return RANGE_OPTIONS.map((option) => ({
+        name: `Range: ${option.label}`,
+        title: `${this.selectedRange === option.value ? 'Active: ' : ''}Show ${option.label.toLowerCase()}`,
+        text: option.label,
+        click: () => this.setSelectedRange(option.value),
+      }));
+    },
     toggleMobileMenu() {
       this.isMobileMenuOpen = !this.isMobileMenuOpen;
     },
@@ -692,6 +733,7 @@ createApp({
       Plotly.react(chartEl, traces, layout, plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
+        rangeButtons: this.rangeModeBarButtons(),
       }));
       this.charts[itemKey] = chartEl;
     },
@@ -743,6 +785,7 @@ createApp({
       Plotly.react(chartEl, traces, this.plotlyLayout(), plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
+        rangeButtons: this.rangeModeBarButtons(),
       }));
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.compareHoveredYear = event?.points?.[0]?.x ?? null; },
@@ -810,6 +853,7 @@ createApp({
       Plotly.react(chartEl, sortedTraces, layout, plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
+        rangeButtons: this.rangeModeBarButtons(),
       }));
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.spreadHoveredYear = event?.points?.[0]?.x ?? null; },

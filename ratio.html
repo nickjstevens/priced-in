@@ -62,15 +62,6 @@
               <option v-for="series in spreadSeriesOptions" :key="`spread-b-item-${series.key}`" :value="series.key" :class="series.optionClass">{{ series.name }}</option>
             </select>
           </label>
-          <label>Range
-            <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Ratio range selector">
-              <option value="last10">Last 10 years</option>
-              <option value="last20">Last 20 years</option>
-              <option value="last30">Last 30 years</option>
-              <option value="last40">Last 40 years</option>
-              <option value="full">Full history</option>
-            </select>
-          </label>
           <label><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
           <label v-if="canShowSpreadRollingCorrelation"><input type="checkbox" v-model="showSpreadRollingCorrelation" @change="syncUrlAndRender" /> Overlay 5Y rolling correlation</label>
         </section>
@@ -85,6 +76,7 @@
             <div class="stat"><dt>Ratio from historical peak</dt><dd>{{ formatPercent(distanceFromPeak(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
           </div>
           <div class="chart-wrap chart-wrap-lg"><div id="chart-spread" class="plotly-chart"></div></div>
+          <p class="chart-modebar-hint">Use the chart modebar to switch time scales.</p>
           <details class="data-table-panel">
             <summary>Show chart data table</summary>
             <div class="table-wrap narrow-table-wrap">
