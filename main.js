@@ -91,8 +91,10 @@ function plotlyLayoutBase(isDarkMode, useLogScale, extra = {}) {
       yanchor: 'top',
       y: -0.2,
       x: 0,
+      traceorder: 'normal',
       font: { color: axisBase.color },
     },
+    showlegend: true,
     hovermode: 'closest',
     xaxis: {
       ...axisBase,
@@ -156,6 +158,10 @@ function attachPlotlyHoverHandlers(element, { onHover, onUnhover } = {}) {
   if (!element || !element.on) return;
   element.on('plotly_hover', onHover || (() => {}));
   element.on('plotly_unhover', onUnhover || (() => {}));
+}
+
+function sortLegendTraces(traces) {
+  return [...traces].sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || ''), undefined, { sensitivity: 'base' }));
 }
 
 createApp({
@@ -695,7 +701,9 @@ createApp({
       if (chartKey === 'spread') this.spreadHoveredYear = hoveredYear;
     },
     compareChartEntries() {
-      return this.filteredItems.map((item, idx) => ({ item, color: PALETTE[idx % PALETTE.length] }));
+      return [...this.filteredItems]
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+        .map((item, idx) => ({ item, color: PALETTE[idx % PALETTE.length] }));
     },
     renderMiniSingleCharts(entries, forcedStartYear) {
       entries.forEach(({ item, color }) => {
@@ -727,11 +735,11 @@ createApp({
       if (!chartEl) return;
       const entries = this.compareChartEntries();
       const forcedStartYear = this.costRebaseForcedStartYear();
-      const traces = entries.map(({ item, color }) => this.plotlyLineTrace({
+      const traces = sortLegendTraces(entries.map(({ item, color }) => this.plotlyLineTrace({
         name: `${item.name} (annual)`,
         points: this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear),
         color,
-      }));
+      })));
       Plotly.react(chartEl, traces, this.plotlyLayout(), plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
@@ -792,13 +800,14 @@ createApp({
           opacity: 0.7,
         });
         overlayTrace.hovertemplate = '%{fullData.name}: %{y:,.2f}<br>Year: %{x}<extra></extra>';
-        traces.unshift(overlayTrace);
+        traces.push(overlayTrace);
       }
+      const sortedTraces = sortLegendTraces(traces);
       const layout = this.plotlyLayout({
         yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
         yaxis3: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', anchor: 'free', position: 1, range: [-1, 1], showgrid: false },
       });
-      Plotly.react(chartEl, traces, layout, plotlyConfig({
+      Plotly.react(chartEl, sortedTraces, layout, plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
       }));

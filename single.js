@@ -21,13 +21,19 @@ function plotlyLayoutBase(isDarkMode, useLogScale, extra = {}) {
       yanchor: 'top',
       y: -0.2,
       x: 0,
+      traceorder: 'normal',
       font: { color: axisBase.color },
     },
+    showlegend: true,
     hovermode: 'closest',
     xaxis: { ...axisBase, nticks: 8, tickformat: 'd' },
     yaxis: { ...axisBase, type: useLogScale ? 'log' : 'linear', rangemode: useLogScale ? undefined : 'tozero' },
     ...extra,
   };
+}
+
+function sortLegendTraces(traces) {
+  return [...traces].sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || ''), undefined, { sensitivity: 'base' }));
 }
 
 const PLOTLY_MODEBAR_ICON = {
@@ -322,7 +328,7 @@ createApp({
         hovertemplate: '%{fullData.name}: %{y:.3f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.3f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.2f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.2f}<extra></extra>',
       }];
       if (this.showUsdOverlay && this.denominator !== 'fiat') {
-        traces.unshift({
+        traces.push({
           type: 'scatter',
           mode: 'lines+markers',
           name: `${this.currentItem.name} (GBP overlay)`,
@@ -334,7 +340,7 @@ createApp({
           hovertemplate: '%{fullData.name}: %{y:,.2f}<br>Year: %{x}<extra></extra>',
         });
       }
-      Plotly.react(chartEl, traces, this.plotlyLayout({
+      Plotly.react(chartEl, sortLegendTraces(traces), this.plotlyLayout({
         yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
       }), plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
