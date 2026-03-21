@@ -142,19 +142,9 @@ const PLOTLY_MODEBAR_ICON = {
     height: 512,
     path: 'M80 96h352v64H80V96zm64 128h224v64H144v-64zm64 128h96v64h-96v-64z',
   },
-  dragX: {
-    width: 512,
-    height: 512,
-    path: 'M64 240h320v-64l96 80-96 80v-64H64v-32zm0-96h32v224H64V144z',
-  },
-  dragY: {
-    width: 512,
-    height: 512,
-    path: 'M240 448V128h-64l80-96 80 96h-64v320h-32zm-96 0h224v32H144v-32z',
-  },
 };
 
-function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [], onOpenYearlyData, dragAxisButtons = [] } = {}) {
+function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [], onOpenYearlyData } = {}) {
   const modeBarButtonsToAdd = [];
   if (onToggleLogScale) {
     modeBarButtonsToAdd.push({
@@ -173,7 +163,6 @@ function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [], onO
     });
   }
   if (rangeButtons.length) modeBarButtonsToAdd.push(...rangeButtons);
-  if (dragAxisButtons.length) modeBarButtonsToAdd.push(...dragAxisButtons);
   if (onOpenYearlyData) {
     modeBarButtonsToAdd.push({
       name: 'Open yearly data',
@@ -219,7 +208,6 @@ createApp({
       spreadHoveredYear: null,
       summarySortKey: 'totalChange',
       summarySortDirection: 'desc',
-      compareDragAxis: 'x',
     };
   },
   computed: {
@@ -743,40 +731,26 @@ createApp({
         name: `Range: ${option.label}`,
         title: `${this.selectedRange === option.value ? 'Active: ' : ''}Show ${option.label.toLowerCase()}`,
         icon: PLOTLY_MODEBAR_ICON.range,
-        text: option.label,
+        text: option.value === 'full' ? 'Full' : option.label.replace(/^Last\s+/i, '').replace(/Y$/i, ''),
         click: () => this.setSelectedRange(option.value),
       }));
     },
-    compareDragAxisButtons() {
-      return [
-        {
-          name: 'Drag x-axis only',
-          title: `${this.compareDragAxis === 'x' ? 'Active: ' : ''}Lock drag interactions to the x-axis`,
-          icon: PLOTLY_MODEBAR_ICON.dragX,
-          click: () => this.setCompareDragAxis('x'),
-        },
-        {
-          name: 'Drag y-axis only',
-          title: `${this.compareDragAxis === 'y' ? 'Active: ' : ''}Lock drag interactions to the y-axis`,
-          icon: PLOTLY_MODEBAR_ICON.dragY,
-          click: () => this.setCompareDragAxis('y'),
-        },
-      ];
-    },
-    setCompareDragAxis(axis) {
-      if (!['x', 'y'].includes(axis) || this.compareDragAxis === axis) return;
-      this.compareDragAxis = axis;
-      const chartEl = this.charts.compare;
+    applyRangeButtonLabels(chartEl) {
       if (!chartEl) return;
-      Plotly.relayout(chartEl, {
-        'xaxis.fixedrange': axis === 'y',
-        'yaxis.fixedrange': axis === 'x',
+      chartEl.querySelectorAll('.modebar-btn').forEach((button) => {
+        const title = button.getAttribute('data-title') || button.getAttribute('title') || '';
+        const rangeButton = RANGE_OPTIONS.find((option) => title.includes(`Show ${option.label.toLowerCase()}`));
+        if (!rangeButton) return;
+        const label = rangeButton.value === 'full' ? 'Full' : rangeButton.label.replace(/^Last\s+/i, '').replace(/Y$/i, '');
+        button.classList.add('modebar-text-button');
+        button.textContent = label;
+        button.setAttribute('aria-label', title);
       });
     },
     compareChartLayout() {
       return this.plotlyLayout({
-        xaxis: { ...plotlyAxisBase(this.isDarkMode), title: '', tickmode: 'auto', nticks: 8, tickformat: 'd', fixedrange: this.compareDragAxis === 'y' },
-        yaxis: { ...plotlyAxisBase(this.isDarkMode), title: '', type: this.useLogScale ? 'log' : 'linear', rangemode: this.useLogScale ? undefined : 'tozero', fixedrange: this.compareDragAxis === 'x' },
+        xaxis: { ...plotlyAxisBase(this.isDarkMode), title: '', tickmode: 'auto', nticks: 8, tickformat: 'd' },
+        yaxis: { ...plotlyAxisBase(this.isDarkMode), title: '', type: this.useLogScale ? 'log' : 'linear', rangemode: this.useLogScale ? undefined : 'tozero' },
       });
     },
     openYearlyDataPage() {
@@ -865,7 +839,7 @@ createApp({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
         rangeButtons: this.rangeModeBarButtons(),
-      }));
+      })).then(() => this.applyRangeButtonLabels(chartEl));
       this.charts[itemKey] = chartEl;
     },
     updateHoveredYear(chartKey, activeElements) {
@@ -917,9 +891,8 @@ createApp({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
         rangeButtons: this.rangeModeBarButtons(),
-        dragAxisButtons: this.compareDragAxisButtons(),
         onOpenYearlyData: () => this.openYearlyDataPage(),
-      }));
+      })).then(() => this.applyRangeButtonLabels(chartEl));
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.compareHoveredYear = event?.points?.[0]?.x ?? null; },
         onUnhover: () => { this.compareHoveredYear = null; },
@@ -987,7 +960,7 @@ createApp({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
         rangeButtons: this.rangeModeBarButtons(),
-      }));
+      })).then(() => this.applyRangeButtonLabels(chartEl));
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.spreadHoveredYear = event?.points?.[0]?.x ?? null; },
         onUnhover: () => { this.spreadHoveredYear = null; },

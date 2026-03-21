@@ -360,7 +360,7 @@ createApp({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
         rangeButtons: this.rangeModeBarButtons(),
-      }));
+      })).then(() => this.applyRangeButtonLabels(chartEl));
       this.chart = chartEl;
     },
     chartStats() {
@@ -477,9 +477,21 @@ createApp({
         name: `Range: ${option.label}`,
         title: `${this.selectedRange === option.value ? 'Active: ' : ''}Show ${option.label.toLowerCase()}`,
         icon: PLOTLY_MODEBAR_ICON.range,
-        text: option.label,
+        text: option.value === 'full' ? 'Full' : option.label.replace(/^Last\s+/i, '').replace(/Y$/i, ''),
         click: () => this.setSelectedRange(option.value),
       }));
+    },
+    applyRangeButtonLabels(chartEl) {
+      if (!chartEl) return;
+      chartEl.querySelectorAll('.modebar-btn').forEach((button) => {
+        const title = button.getAttribute('data-title') || button.getAttribute('title') || '';
+        const rangeButton = RANGE_OPTIONS.find((option) => title.includes(`Show ${option.label.toLowerCase()}`));
+        if (!rangeButton) return;
+        const label = rangeButton.value === 'full' ? 'Full' : rangeButton.label.replace(/^Last\s+/i, '').replace(/Y$/i, '');
+        button.classList.add('modebar-text-button');
+        button.textContent = label;
+        button.setAttribute('aria-label', title);
+      });
     },
     toggleMobileMenu() {
       this.isMobileMenuOpen = !this.isMobileMenuOpen;
