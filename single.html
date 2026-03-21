@@ -6,7 +6,7 @@
     <title>Priced In — Single Chart</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   </head>
   <body>
     <main id="app" class="single-layout">
@@ -88,7 +88,7 @@
           <div class="stat"><dt>From historical peak</dt><dd>{{ chartStats().fromPeak }}</dd></div>
           <div class="stat"><dt>Corr. vs priced-in asset</dt><dd>{{ chartStats().correlationToDenominator }}</dd></div>
         </dl>
-        <div class="chart-wrap"><canvas id="single-chart"></canvas></div>
+        <div class="chart-wrap"><div id="single-chart" class="plotly-chart"></div></div>
         <details class="meta"><summary>What is being measured?</summary>
           <ul>
             <li>Unit basis: {{ currentItem.metadata?.unit_basis }}</li>

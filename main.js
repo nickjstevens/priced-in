@@ -70,6 +70,51 @@ function distanceFromPeak(points) {
 
 const { createApp, nextTick } = Vue;
 
+function plotlyAxisBase(isDarkMode) {
+  return {
+    color: isDarkMode ? '#cbd5e1' : '#334155',
+    gridcolor: isDarkMode ? 'rgba(148,163,184,0.22)' : 'rgba(51,65,85,0.16)',
+    zerolinecolor: isDarkMode ? 'rgba(148,163,184,0.16)' : 'rgba(51,65,85,0.12)',
+  };
+}
+
+function plotlyLayoutBase(isDarkMode, useLogScale, extra = {}) {
+  const axisBase = plotlyAxisBase(isDarkMode);
+  return {
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    autosize: true,
+    margin: { l: 56, r: 32, t: 24, b: 48 },
+    font: { color: axisBase.color },
+    legend: { orientation: 'h', y: 1.12, x: 0, font: { color: axisBase.color } },
+    hovermode: 'x unified',
+    xaxis: {
+      ...axisBase,
+      title: '',
+      tickmode: 'auto',
+      nticks: 8,
+      tickformat: 'd',
+    },
+    yaxis: {
+      ...axisBase,
+      title: '',
+      type: useLogScale ? 'log' : 'linear',
+      rangemode: useLogScale ? undefined : 'tozero',
+    },
+    ...extra,
+  };
+}
+
+function plotlyConfig() {
+  return { responsive: true, displayModeBar: false, scrollZoom: false };
+}
+
+function attachPlotlyHoverHandlers(element, { onHover, onUnhover } = {}) {
+  if (!element || !element.on) return;
+  element.on('plotly_hover', onHover || (() => {}));
+  element.on('plotly_unhover', onUnhover || (() => {}));
+}
+
 createApp({
   data() {
     return {
@@ -141,7 +186,7 @@ createApp({
       return { rollingCorrelation: rolling, averageCorrelation: avg, regime: this.currentRegime() };
     },
     compareSelectionKeys() {
-      return this.compareKeys.length ? this.compareKeys : this.filteredItems.map((x) => x.key);
+      return this.filteredItems.map((x) => x.key);
     },
     compareSeriesMap() {
       return Object.fromEntries(this.compareSelectionKeys.map((key) => {
@@ -497,59 +542,22 @@ createApp({
       if (confidence === 'low') return 'rgba(239, 68, 68, 0.6)';
       return 'rgba(245, 158, 11, 0.6)';
     },
-    chartOptions({ tooltipEnabled = true, hoverHandler = null, interactionMode = 'index', interactionIntersect = false } = {}) {
-      const axisColor = this.isDarkMode ? '#cbd5e1' : '#334155';
-      const gridColor = this.isDarkMode ? 'rgba(148,163,184,0.22)' : 'rgba(51,65,85,0.16)';
+    plotlyLayout(extra = {}) {
+      return plotlyLayoutBase(this.isDarkMode, this.useLogScale, extra);
+    },
+    plotlyLineTrace({ name, points, color, dash = 'solid', yaxis = 'y', customdata = [], opacity = 1 }) {
       return {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        interaction: { mode: interactionMode, intersect: interactionIntersect },
-        onHover: hoverHandler,
-        plugins: {
-          legend: { display: true, labels: { color: axisColor } },
-          tooltip: tooltipEnabled ? {
-            callbacks: {
-              title: (items) => (items[0] ? `Date: ${decimalYearToLabel(items[0].parsed.x)}` : ''),
-              label: (ctx) => {
-                const value = ctx.parsed.y;
-                const formattedValue = ctx.dataset?.valueFormat === 'gbp'
-                  ? formatGbp(value)
-                  : (value == null ? '—' : value.toFixed(3));
-                return `${ctx.dataset.label}: ${formattedValue}`;
-              },
-              afterLabel: (ctx) => {
-                const details = ctx.dataset?.hoverDetails?.[ctx.dataIndex];
-                if (!details) return null;
-                return [
-                  `Priced-in value: ${details.pricedInValue == null ? '—' : details.pricedInValue.toFixed(3)}`,
-                  `${details.numeratorLabel} (GBP): ${formatGbp(details.numeratorUsd)}`,
-                  `${details.denominatorLabel} (GBP): ${formatGbp(details.denominatorUsd)}`,
-                ];
-              },
-            },
-          } : { enabled: false },
-        },
-        scales: {
-          x: {
-            type: 'linear',
-            ticks: { autoSkip: true, maxTicksLimit: 8, color: axisColor, callback: (value) => decimalYearToLabel(Number(value)) },
-            grid: { color: gridColor },
-          },
-          y: {
-            type: this.useLogScale ? 'logarithmic' : 'linear',
-            beginAtZero: !this.useLogScale,
-            ticks: { color: axisColor },
-            grid: { color: gridColor },
-          },
-          yGbp: {
-            type: this.useLogScale ? 'logarithmic' : 'linear',
-            position: 'right',
-            display: false,
-            ticks: { color: axisColor },
-            grid: { drawOnChartArea: false },
-          },
-        },
+        type: 'scatter',
+        mode: 'lines+markers',
+        name,
+        x: points.map((point) => point.year),
+        y: points.map((point) => point.value),
+        line: { color, width: 2.5, dash, shape: 'linear' },
+        marker: { size: 6, color, opacity },
+        yaxis,
+        customdata,
+        hovertemplate: '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>',
+        opacity,
       };
     },
     renderChart(itemKey) {
@@ -560,40 +568,39 @@ createApp({
       const pts = this.visiblePairSeries(itemKey, `context:${denominator}`, forcedStartYear);
       const denominatorKey = `context:${denominator}`;
       const denominatorLabel = this.contextSeries[denominator]?.label || denominator;
-      const hoverDetails = pts.map((point) => ({
-        pricedInValue: point.value,
-        numeratorUsd: this.pointValueForSeries(itemKey, point.year),
-        denominatorUsd: this.pointValueForSeries(denominatorKey, point.year),
-        numeratorLabel: item.name,
-        denominatorLabel,
-      }));
-      const canvas = document.getElementById(`chart-${itemKey}`);
-      if (!canvas) return;
-      if (this.charts[itemKey]) this.charts[itemKey].destroy();
-      const datasets = [{
-        label: `${item.name} (annual)`,
-        data: this.toChartPoints(pts),
-        borderColor: PALETTE[0],
-        backgroundColor: 'rgba(31, 111, 235, 0.1)',
-        tension: 0.2,
-        pointRadius: pts.map((p) => (p.observed ? 3 : 2)),
-        pointBackgroundColor: pts.map((p) => (p.observed ? this.confidenceColor(item) : 'rgba(100,116,139,0.5)')),
-        hoverDetails,
-      }];
+      const chartEl = document.getElementById(`chart-${itemKey}`);
+      if (!chartEl) return;
+      const traces = [this.plotlyLineTrace({
+        name: `${item.name} (annual)`,
+        points: pts,
+        color: PALETTE[0],
+        customdata: pts.map((point) => ([
+          point.value,
+          this.pointValueForSeries(itemKey, point.year),
+          this.pointValueForSeries(denominatorKey, point.year),
+          item.name,
+          denominatorLabel,
+        ])),
+      })];
+      traces[0].hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.3f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.2f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.2f}<extra></extra>';
       if (this.showUsdOverlay && denominator !== 'fiat') {
-        datasets.unshift({
-          label: `${item.name} (GBP overlay)`,
-          data: this.toChartPoints(this.visibleOverlaySeries(itemKey, denominator, forcedStartYear)),
-          borderColor: 'rgba(100, 116, 139, 0.45)',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          pointHitRadius: 12,
-          tension: 0.2,
-          yAxisID: 'yGbp',
-          valueFormat: 'gbp',
+        const overlayPoints = this.visibleOverlaySeries(itemKey, denominator, forcedStartYear);
+        const overlayTrace = this.plotlyLineTrace({
+          name: `${item.name} (GBP overlay)`,
+          points: overlayPoints,
+          color: 'rgba(100, 116, 139, 0.65)',
+          dash: 'dash',
+          yaxis: 'y2',
+          opacity: 0.7,
         });
+        overlayTrace.hovertemplate = `%{fullData.name}: %{y:,.2f}<br>Year: %{x}<extra></extra>`;
+        traces.unshift(overlayTrace);
       }
-      this.charts[itemKey] = new Chart(canvas, { type: 'line', data: { datasets }, options: this.chartOptions() });
+      const layout = this.plotlyLayout({
+        yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
+      });
+      Plotly.react(chartEl, traces, layout, plotlyConfig());
+      this.charts[itemKey] = chartEl;
     },
     updateHoveredYear(chartKey, activeElements) {
       const hoveredYear = activeElements?.length ? Math.round(activeElements[0].element.$context.parsed.x) : null;
@@ -601,29 +608,25 @@ createApp({
       if (chartKey === 'spread') this.spreadHoveredYear = hoveredYear;
     },
     renderCompareChart() {
-      const datasets = this.compareSelectionKeys.map((key, idx) => {
+      const chartEl = document.getElementById('chart-compare');
+      if (!chartEl) return;
+      const traces = this.compareSelectionKeys.map((key, idx) => {
         const item = this.items.find((x) => x.key === key);
         const pts = this.compareSeriesMap[key] || [];
-        return {
-          label: `${item.name} (annual)`,
-          data: this.toChartPoints(pts),
-          borderColor: PALETTE[idx % PALETTE.length],
-          tension: 0.2,
-          pointRadius: 2,
-        };
+        const trace = this.plotlyLineTrace({
+          name: `${item.name} (annual)`,
+          points: pts,
+          color: PALETTE[idx % PALETTE.length],
+        });
+        trace.hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>';
+        return trace;
       });
-      const canvas = document.getElementById('chart-compare');
-      if (!canvas) return;
-      if (this.charts.compare) this.charts.compare.destroy();
-      const options = this.chartOptions({
-        tooltipEnabled: false,
-        hoverHandler: (_event, activeElements) => this.updateHoveredYear('compare', activeElements),
+      Plotly.react(chartEl, traces, this.plotlyLayout(), plotlyConfig());
+      attachPlotlyHoverHandlers(chartEl, {
+        onHover: (event) => { this.compareHoveredYear = event?.points?.[0]?.x ?? null; },
+        onUnhover: () => { this.compareHoveredYear = null; },
       });
-      this.charts.compare = new Chart(canvas, {
-        type: 'line',
-        data: { datasets },
-        options,
-      });
+      this.charts.compare = chartEl;
     },
     swapSpreadItems() {
       [this.spreadNumeratorItemKey, this.spreadDenominatorItemKey] = [this.spreadDenominatorItemKey, this.spreadNumeratorItemKey];
@@ -633,79 +636,59 @@ createApp({
       return seriesKey === 'context:fiat';
     },
     renderSpreadChart() {
-      const canvas = document.getElementById('chart-spread');
-      if (!canvas) return;
-      if (this.charts.spread) this.charts.spread.destroy();
+      const chartEl = document.getElementById('chart-spread');
+      if (!chartEl) return;
       const pts = this.spreadSeries;
       const numeratorKey = this.spreadNumeratorItemKey;
       const denominatorKey = this.spreadDenominatorItemKey;
-      const hoverDetails = pts.map((point) => ({
-        pricedInValue: point.value,
-        numeratorUsd: this.pointValueForSeries(numeratorKey, point.year),
-        denominatorUsd: this.pointValueForSeries(denominatorKey, point.year),
-        numeratorLabel: this.seriesName(numeratorKey),
-        denominatorLabel: this.seriesName(denominatorKey),
-      }));
-      const datasets = [{
-        label: this.ratioSeriesLabel,
-        data: this.toChartPoints(pts),
-        borderColor: '#7c3aed',
-        tension: 0.2,
-        pointRadius: 2,
-        pointHoverRadius: 6,
-        pointHitRadius: 18,
-        hoverDetails,
-      }];
+      const traces = [this.plotlyLineTrace({
+        name: this.ratioSeriesLabel,
+        points: pts,
+        color: '#7c3aed',
+        customdata: pts.map((point) => ([
+          point.value,
+          this.pointValueForSeries(numeratorKey, point.year),
+          this.pointValueForSeries(denominatorKey, point.year),
+          this.seriesName(numeratorKey),
+          this.seriesName(denominatorKey),
+        ])),
+      })];
+      traces[0].hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.3f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.2f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.2f}<extra></extra>';
       const rollingCorrelation = this.spreadRollingCorrelation || [];
       if (this.showSpreadRollingCorrelation && rollingCorrelation.length) {
-        datasets.push({
-          label: '5Y rolling correlation (A vs B)',
-          data: this.toChartPoints(rollingCorrelation),
-          borderColor: this.isDarkMode ? '#f8fafc' : '#0f172a',
-          backgroundColor: this.isDarkMode ? 'rgba(248,250,252,0.18)' : 'rgba(15,23,42,0.08)',
-          borderDash: [6, 4],
-          borderWidth: 2,
-          yAxisID: 'y1',
-          tension: 0.2,
-          pointRadius: 0,
+        const corrTrace = this.plotlyLineTrace({
+          name: '5Y rolling correlation (A vs B)',
+          points: rollingCorrelation,
+          color: this.isDarkMode ? '#f8fafc' : '#0f172a',
+          dash: 'dash',
+          yaxis: 'y3',
         });
+        corrTrace.hovertemplate = '%{fullData.name}: %{y:.2f}<br>Year: %{x}<extra></extra>';
+        traces.push(corrTrace);
       }
       if (this.showUsdOverlay) {
-        const overlayKey = this.spreadNumeratorItemKey;
-        datasets.unshift({
-          label: `${this.seriesName(overlayKey)} (GBP overlay)`,
-          data: this.toChartPoints(this.visibleOverlaySeries(overlayKey, 'fiat')),
-          borderColor: 'rgba(100, 116, 139, 0.45)',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          tension: 0.2,
-          yAxisID: 'yGbp',
-          valueFormat: 'gbp',
+        const overlayPoints = this.visibleOverlaySeries(this.spreadNumeratorItemKey, 'fiat');
+        const overlayTrace = this.plotlyLineTrace({
+          name: `${this.seriesName(this.spreadNumeratorItemKey)} (GBP overlay)`,
+          points: overlayPoints,
+          color: 'rgba(100, 116, 139, 0.65)',
+          dash: 'dash',
+          yaxis: 'y2',
+          opacity: 0.7,
         });
+        overlayTrace.hovertemplate = '%{fullData.name}: %{y:,.2f}<br>Year: %{x}<extra></extra>';
+        traces.unshift(overlayTrace);
       }
-      const options = this.chartOptions({
-        tooltipEnabled: true,
-        hoverHandler: (_event, activeElements) => this.updateHoveredYear('spread', activeElements),
-        interactionMode: 'nearest',
-        interactionIntersect: false,
+      const layout = this.plotlyLayout({
+        yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
+        yaxis3: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', anchor: 'free', position: 1, range: [-1, 1], showgrid: false },
       });
-      this.charts.spread = new Chart(canvas, {
-        type: 'line',
-        data: { datasets },
-        options: {
-          ...options,
-          scales: {
-            ...options.scales,
-            y1: {
-              position: 'right',
-              min: -1,
-              max: 1,
-              grid: { drawOnChartArea: false },
-              ticks: { color: this.isDarkMode ? '#e2e8f0' : '#0f172a' },
-            },
-          },
-        },
+      Plotly.react(chartEl, traces, layout, plotlyConfig());
+      attachPlotlyHoverHandlers(chartEl, {
+        onHover: (event) => { this.spreadHoveredYear = event?.points?.[0]?.x ?? null; },
+        onUnhover: () => { this.spreadHoveredYear = null; },
       });
+      this.charts.spread = chartEl;
     },
     currentRegime() {
       const rf = this.contextSeries.real_fiat?.values || [];
@@ -720,7 +703,7 @@ createApp({
     },
     renderAll() {
       Object.keys(this.charts).forEach((key) => {
-        if (this.charts[key]) this.charts[key].destroy();
+        if (this.charts[key]) Plotly.purge(this.charts[key]);
       });
       this.charts = {};
       if (this.currentPage === 'cost') {
@@ -734,15 +717,10 @@ createApp({
         this.renderSpreadChart();
       }
     },
-    syncCompareSelectionToCategory() {
-      this.compareKeys = [...this.filteredItems.map((item) => item.key)];
-    },
     onViewModeChange() {
-      if (this.viewMode === 'compare') this.syncCompareSelectionToCategory();
       this.syncUrlAndRender();
     },
     onCategoryChange() {
-      if (this.viewMode === 'compare') this.syncCompareSelectionToCategory();
       this.syncUrlAndRender();
     },
     applyToAll() {

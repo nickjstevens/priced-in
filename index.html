@@ -6,7 +6,7 @@
     <title>Priced In — Cost of Living Explorer</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   </head>
   <body data-page="cost">
     <main id="app">
@@ -89,9 +89,9 @@
 
         <article class="chart-card panel-shell" v-if="viewMode==='compare'">
           <header><h2>Comparison chart</h2></header>
-          <div class="compare-layout">
+          <div class="compare-layout compare-layout-single">
             <div class="compare-main">
-              <div class="chart-wrap chart-wrap-lg"><canvas id="chart-compare"></canvas></div>
+              <div class="chart-wrap chart-wrap-lg"><div id="chart-compare" class="plotly-chart"></div></div>
               <details class="data-table-panel">
                 <summary>Show chart data table</summary>
                 <div class="table-wrap">
@@ -112,12 +112,6 @@
                 </div>
               </details>
             </div>
-            <aside class="compare-sidebar">
-              <h3>Items on chart</h3>
-              <div class="checkbox-list">
-                <label v-for="item in filteredItems" :key="item.key"><input type="checkbox" :checked="compareKeys.includes(item.key)" @change="toggleCompare(item.key)" /> {{ item.name }}</label>
-              </div>
-            </aside>
           </div>
         </article>
 
@@ -144,7 +138,7 @@
               <div class="stat"><dt>From historical peak</dt><dd>{{ chartStats(item.key).fromPeak }}</dd></div>
               <div class="stat"><dt>Corr. vs priced-in asset</dt><dd>{{ chartStats(item.key).correlationToDenominator }}</dd></div>
             </dl>
-            <div class="chart-wrap"><canvas :id="`chart-${item.key}`"></canvas></div>
+            <div class="chart-wrap"><div :id="`chart-${item.key}`" class="plotly-chart"></div></div>
             <details class="meta"><summary>What is being measured?</summary>
               <ul>
                 <li>Unit basis: {{ item.metadata?.unit_basis }}</li>
