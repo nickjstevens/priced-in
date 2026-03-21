@@ -181,6 +181,10 @@ h2, h3 { margin: 0; }
 summary { cursor: pointer; }
 .lineage { color: var(--text-muted); }
 .tool-card, .assumptions-card { margin-bottom: 1rem; }
+.card-title-block { display: grid; gap: 0.45rem; min-width: 0; }
+.item-title-link { text-decoration: none; color: inherit; }
+.item-title-link:hover { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 0.16em; }
+.category-badge { display: inline-flex; align-items: center; width: fit-content; padding: 0.28rem 0.7rem; border-radius: 999px; border: 1px solid var(--border); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 .card-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .compare-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
 .data-table-panel { margin-top: 0.85rem; }
