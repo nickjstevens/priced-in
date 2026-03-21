@@ -221,6 +221,7 @@ summary { cursor: pointer; }
 
 @media (max-width: 900px) {
   .compare-layout { grid-template-columns: 1fr; }
+  .single-chart-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 820px) {
@@ -275,6 +276,8 @@ summary { cursor: pointer; }
 
 .category-tags { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 1rem; }
 .filter-tag {
+  flex: 0 0 auto;
+  width: auto;
   min-height: 0;
   margin-left: 0;
   padding: 0.28rem 0.7rem;
@@ -287,6 +290,35 @@ summary { cursor: pointer; }
 .filter-tag.active {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 32%, transparent);
   border-color: var(--accent);
+}
+
+.single-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.single-chart-card {
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-alt);
+}
+.single-chart-heading {
+  display: block;
+  margin-bottom: 0.65rem;
+  text-decoration: none;
+}
+.single-chart-heading h3 {
+  font-size: 1rem;
+}
+.single-chart-heading p {
+  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.sparkline-wrap {
+  height: 180px;
 }
 .chart-footer-controls { display: flex; justify-content: flex-end; margin-top: 1rem; }
 .chart-footer-controls label { min-width: 11rem; }
