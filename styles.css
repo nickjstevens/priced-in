@@ -337,3 +337,40 @@ summary { cursor: pointer; }
 .summary-table th:first-child {
   min-width: 220px;
 }
+
+.summary-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+}
+
+.summary-sort-button:hover,
+.summary-sort-button:focus-visible {
+  color: var(--accent);
+  outline: none;
+}
+
+.summary-sort-indicator {
+  min-width: 0.8rem;
+  color: var(--text-muted);
+}
+
+.summary-table td.summary-cell-max {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.summary-table td.summary-cell-min {
+  background: color-mix(in srgb, #ef4444 18%, transparent);
+}
+
+.summary-table td.summary-cell-max.summary-cell-min {
+  background: color-mix(in srgb, var(--accent) 12%, #ef4444 12%);
+}
