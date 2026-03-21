@@ -166,7 +166,7 @@ createApp({
       perChartDenominator: {}, allDenominator: 'fiat',
       viewMode: 'compare', selectedRange: 'full', rebased: false,
       useLogScale: false, showUsdOverlay: false, showSpreadRollingCorrelation: false,
-      showFullBitcoin: false, compareKeys: [], search: '', selectedCategories: [], selectedItemKey: 'all',
+      showFullBitcoin: false, compareKeys: [], search: '', selectedCategory: 'all', selectedItemKey: 'all',
       isLoading: true, error: '',
       spreadNumeratorItemKey: '', spreadDenominatorItemKey: '',
       isDarkMode: true,
@@ -187,16 +187,16 @@ createApp({
         .sort((a, b) => a.localeCompare(b))
         .map((category) => ({ value: category, label: this.categoryDisplayLabel(category) }));
     },
-    allCategoriesSelected() {
-      return this.selectedCategories.length === this.availableCategories.length;
+    categoryFilteredItems() {
+      return this.items.filter((item) => this.selectedCategory === 'all' || item.category === this.selectedCategory);
     },
     itemOptions() {
       const q = this.search.trim().toLowerCase();
-      return this.items.filter((item) => (!this.selectedCategories.length || this.selectedCategories.includes(item.category))
-        && (!q || item.name.toLowerCase().includes(q) || item.category?.includes(q)));
+      return this.categoryFilteredItems.filter((item) => !q || item.name.toLowerCase().includes(q) || item.category?.includes(q));
     },
     filteredItems() {
-      return this.itemOptions;
+      if (this.selectedItemKey === 'all') return this.itemOptions;
+      return this.itemOptions.filter((item) => item.key === this.selectedItemKey);
     },
     spreadSeriesOptions() {
       const itemSeries = this.items.map((item) => ({ key: item.key, name: item.name, isDenominator: false }));
@@ -360,8 +360,7 @@ createApp({
       this.showSpreadRollingCorrelation = p.get('overlayCorr') === '1';
       this.showFullBitcoin = p.get('btcFull') === '1';
       this.compareKeys = (p.get('items') || '').split(',').filter(Boolean);
-      const categories = (p.get('categories') || '').split(',').filter(Boolean);
-      this.selectedCategories = categories;
+      this.selectedCategory = p.get('category') || 'all';
       this.selectedItemKey = p.get('item') || 'all';
       this.spreadNumeratorItemKey = p.get('itemA') || '';
       this.spreadDenominatorItemKey = p.get('itemB') || '';
@@ -380,7 +379,7 @@ createApp({
       if (this.currentPage === 'cost') {
         p.set('denom', this.allDenominator);
         if (this.compareKeys.length) p.set('items', this.compareKeys.join(','));
-        if (this.selectedCategories.length && !this.allCategoriesSelected) p.set('categories', this.selectedCategories.join(','));
+        if (this.selectedCategory && this.selectedCategory !== 'all') p.set('category', this.selectedCategory);
         if (this.selectedItemKey && this.selectedItemKey !== 'all') p.set('item', this.selectedItemKey);
       }
       if (this.currentPage === 'ratio') {
@@ -710,16 +709,16 @@ createApp({
           mode: 'lines',
           markerSize: 0,
           lineWidth: 2,
-          hovertemplate: `${item.name}: %{y:.3f}<br>Year: %{x}<extra></extra>`,
+          hovertemplate: '<extra></extra>',
         });
         const layout = this.plotlyLayout({
-          margin: { l: 24, r: 12, t: 8, b: 24 },
+          margin: { l: 18, r: 10, t: 8, b: 18 },
           showlegend: false,
-          xaxis: { ...plotlyAxisBase(this.isDarkMode), showgrid: false, showticklabels: false, zeroline: false },
-          yaxis: { ...plotlyAxisBase(this.isDarkMode), type: this.useLogScale ? 'log' : 'linear', showgrid: false, showticklabels: false, zeroline: false },
-          hovermode: 'closest',
+          xaxis: { ...plotlyAxisBase(this.isDarkMode), showgrid: false, showticklabels: false, zeroline: false, fixedrange: true },
+          yaxis: { ...plotlyAxisBase(this.isDarkMode), type: this.useLogScale ? 'log' : 'linear', showgrid: false, showticklabels: false, zeroline: false, fixedrange: true },
+          hovermode: false,
         });
-        Plotly.react(chartEl, [trace], layout, { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false });
+        Plotly.react(chartEl, [trace], layout, { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false, staticPlot: true });
         this.charts[`single-${item.key}`] = chartEl;
       });
     },
@@ -841,23 +840,15 @@ createApp({
     categoryTagStyle(category) {
       return this.categoryBadgeStyle(category, this.items.find((item) => item.category === category)?.key);
     },
-    selectAllCategories() {
-      this.selectedCategories = this.availableCategories.map((category) => category.value);
-      this.selectedItemKey = 'all';
-      this.syncUrlAndRender();
-    },
-    toggleCategory(category) {
-      if (this.selectedCategories.includes(category)) this.selectedCategories = this.selectedCategories.filter((value) => value !== category);
-      else this.selectedCategories = [...this.selectedCategories, category];
-      if (!this.selectedCategories.length) this.selectedCategories = this.availableCategories.map((entry) => entry.value);
+    onCategorySelectionChange() {
       if (this.selectedItemKey !== 'all' && !this.itemOptions.some((item) => item.key === this.selectedItemKey)) this.selectedItemKey = 'all';
       this.syncUrlAndRender();
     },
     onItemSelectionChange() {
-      if (this.selectedItemKey && this.selectedItemKey !== 'all') {
-        window.location.href = this.singleChartUrl(this.selectedItemKey);
-        return;
-      }
+      this.syncUrlAndRender();
+    },
+    onSearchInput() {
+      if (this.selectedItemKey !== 'all' && !this.itemOptions.some((item) => item.key === this.selectedItemKey)) this.selectedItemKey = 'all';
       this.syncUrlAndRender();
     },
     applyToAll() {
@@ -913,7 +904,7 @@ createApp({
         this.items = payload.items;
         this.denominators = Object.entries(this.contextSeries).map(([value, d]) => ({ value, label: d.label }));
         this.perChartDenominator = Object.fromEntries(this.items.map((item) => [item.key, this.allDenominator]));
-        if (!this.selectedCategories.length) this.selectedCategories = this.availableCategories.map((category) => category.value);
+        if (this.selectedCategory !== 'all' && !this.availableCategories.some((category) => category.value === this.selectedCategory)) this.selectedCategory = 'all';
         if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);
         if (!this.spreadNumeratorItemKey) this.spreadNumeratorItemKey = this.items[0]?.key || '';
         if (!this.spreadDenominatorItemKey) this.spreadDenominatorItemKey = this.denominators[0] ? `context:${this.denominators[0].value}` : (this.items[1]?.key || this.items[0]?.key || '');
@@ -929,7 +920,7 @@ createApp({
     this.readUrlState();
     this.applyTheme();
     await this.fetchPricingData();
-    if (!this.selectedCategories.length) this.selectedCategories = this.availableCategories.map((category) => category.value);
+    if (this.selectedCategory !== 'all' && !this.availableCategories.some((category) => category.value === this.selectedCategory)) this.selectedCategory = 'all';
     if (this.selectedItemKey !== 'all' && !this.itemOptions.some((item) => item.key === this.selectedItemKey)) this.selectedItemKey = 'all';
     await nextTick();
     this.renderAll();
