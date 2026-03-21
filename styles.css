@@ -297,7 +297,8 @@ summary { cursor: pointer; }
   margin-top: 0.45rem;
 }
 .sparkline-wrap {
-  height: 148px;
+  aspect-ratio: 1 / 1.618;
+  min-height: 148px;
   pointer-events: none;
 }
 .chart-footer-controls { display: flex; justify-content: flex-end; margin-top: 1rem; }
