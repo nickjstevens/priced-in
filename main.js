@@ -630,18 +630,18 @@ createApp({
     plotlyLayout(extra = {}) {
       return plotlyLayoutBase(this.isDarkMode, this.useLogScale, extra);
     },
-    plotlyLineTrace({ name, points, color, dash = 'solid', yaxis = 'y', customdata = [], opacity = 1 }) {
+    plotlyLineTrace({ name, points, color, dash = 'solid', yaxis = 'y', customdata = [], opacity = 1, mode = 'lines+markers', markerSize = 6, lineWidth = 2.5, hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>' }) {
       return {
         type: 'scatter',
-        mode: 'lines+markers',
+        mode,
         name,
         x: points.map((point) => point.year),
         y: points.map((point) => point.value),
-        line: { color, width: 2.5, dash, shape: 'linear' },
-        marker: { size: 6, color, opacity },
+        line: { color, width: lineWidth, dash, shape: 'linear' },
+        marker: { size: markerSize, color, opacity },
         yaxis,
         customdata,
-        hovertemplate: '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>',
+        hovertemplate,
         opacity,
       };
     },
@@ -695,22 +695,44 @@ createApp({
       if (chartKey === 'compare') this.compareHoveredYear = hoveredYear;
       if (chartKey === 'spread') this.spreadHoveredYear = hoveredYear;
     },
+    compareChartEntries() {
+      return this.filteredItems.map((item, idx) => ({ item, color: PALETTE[idx % PALETTE.length] }));
+    },
+    renderMiniSingleCharts(entries, forcedStartYear) {
+      entries.forEach(({ item, color }) => {
+        const chartEl = document.getElementById(`chart-single-${item.key}`);
+        if (!chartEl) return;
+        const points = this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear);
+        const trace = this.plotlyLineTrace({
+          name: item.name,
+          points,
+          color,
+          mode: 'lines',
+          markerSize: 0,
+          lineWidth: 2,
+          hovertemplate: `${item.name}: %{y:.3f}<br>Year: %{x}<extra></extra>`,
+        });
+        const layout = this.plotlyLayout({
+          margin: { l: 24, r: 12, t: 8, b: 24 },
+          showlegend: false,
+          xaxis: { ...plotlyAxisBase(this.isDarkMode), showgrid: false, showticklabels: false, zeroline: false },
+          yaxis: { ...plotlyAxisBase(this.isDarkMode), type: this.useLogScale ? 'log' : 'linear', showgrid: false, showticklabels: false, zeroline: false },
+          hovermode: 'closest',
+        });
+        Plotly.react(chartEl, [trace], layout, { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false });
+        this.charts[`single-${item.key}`] = chartEl;
+      });
+    },
     renderCompareChart() {
       const chartEl = document.getElementById('chart-compare');
       if (!chartEl) return;
-      const keys = this.filteredItems.map((item) => item.key);
+      const entries = this.compareChartEntries();
       const forcedStartYear = this.costRebaseForcedStartYear();
-      const traces = keys.map((key, idx) => {
-        const item = this.items.find((x) => x.key === key);
-        const pts = this.visiblePairSeries(key, `context:${this.allDenominator}`, forcedStartYear);
-        const trace = this.plotlyLineTrace({
-          name: `${item.name} (annual)`,
-          points: pts,
-          color: PALETTE[idx % PALETTE.length],
-        });
-        trace.hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>';
-        return trace;
-      });
+      const traces = entries.map(({ item, color }) => this.plotlyLineTrace({
+        name: `${item.name} (annual)`,
+        points: this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear),
+        color,
+      }));
       Plotly.react(chartEl, traces, this.plotlyLayout(), plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
@@ -720,6 +742,7 @@ createApp({
         onUnhover: () => { this.compareHoveredYear = null; },
       });
       this.charts.compare = chartEl;
+      this.renderMiniSingleCharts(entries, forcedStartYear);
     },
     swapSpreadItems() {
       [this.spreadNumeratorItemKey, this.spreadDenominatorItemKey] = [this.spreadDenominatorItemKey, this.spreadNumeratorItemKey];

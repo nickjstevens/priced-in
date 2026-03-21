@@ -102,6 +102,17 @@
                   </select>
                 </label>
               </div>
+              <section class="single-chart-grid" aria-label="Individual item charts">
+                <article v-for="(item, index) in filteredItems" :key="item.key" class="single-chart-card">
+                  <a class="single-chart-heading" :href="singleChartUrl(item.key)">
+                    <div>
+                      <h3>{{ item.name }}</h3>
+                      <p>{{ categoryDisplayLabel(item.category) }}</p>
+                    </div>
+                  </a>
+                  <div class="sparkline-wrap"><div :id="`chart-single-${item.key}`" class="plotly-chart"></div></div>
+                </article>
+              </section>
               <details class="data-table-panel">
                 <summary>Show chart data table</summary>
                 <div class="table-wrap">
