@@ -77,7 +77,7 @@ createApp({
       years: [], contextSeries: {}, items: [], denominators: [], charts: {},
       perChartDenominator: {}, allDenominator: 'fiat',
       viewMode: 'cards', selectedRange: 'full', rebased: false,
-      useLogScale: false, showUsdOverlay: false,
+      useLogScale: false, showUsdOverlay: false, showSpreadRollingCorrelation: false,
       showFullBitcoin: false, compareKeys: [], search: '', categoryFilter: 'all',
       isLoading: true, error: '',
       spreadNumeratorItemKey: '', spreadDenominatorItemKey: '', invertSpread: false,
@@ -239,6 +239,7 @@ createApp({
       this.rebased = p.get('rebased') === '1';
       this.useLogScale = p.get('log') === '1';
       this.showUsdOverlay = p.get('overlayUsd') === '1';
+      this.showSpreadRollingCorrelation = p.get('overlayCorr') === '1';
       this.showFullBitcoin = p.get('btcFull') === '1';
       this.invertSpread = p.get('invertRatio') === '1';
       this.compareKeys = (p.get('items') || '').split(',').filter(Boolean);
@@ -263,6 +264,7 @@ createApp({
       if (this.rebased) p.set('rebased', '1');
       if (this.useLogScale) p.set('log', '1');
       if (this.showUsdOverlay) p.set('overlayUsd', '1');
+      if (this.showSpreadRollingCorrelation) p.set('overlayCorr', '1');
       if (this.showFullBitcoin) p.set('btcFull', '1');
       p.set('theme', this.isDarkMode ? 'dark' : 'light');
       const nextUrl = p.toString() ? `${location.pathname}?${p.toString()}` : location.pathname;
@@ -485,14 +487,14 @@ createApp({
       if (confidence === 'low') return 'rgba(239, 68, 68, 0.6)';
       return 'rgba(245, 158, 11, 0.6)';
     },
-    chartOptions({ tooltipEnabled = true, hoverHandler = null } = {}) {
+    chartOptions({ tooltipEnabled = true, hoverHandler = null, interactionMode = 'index', interactionIntersect = false } = {}) {
       const axisColor = this.isDarkMode ? '#cbd5e1' : '#334155';
       const gridColor = this.isDarkMode ? 'rgba(148,163,184,0.22)' : 'rgba(51,65,85,0.16)';
       return {
         responsive: true,
         maintainAspectRatio: false,
         animation: false,
-        interaction: { mode: 'index', intersect: false },
+        interaction: { mode: interactionMode, intersect: interactionIntersect },
         onHover: hoverHandler,
         plugins: {
           legend: { display: true, labels: { color: axisColor } },
@@ -617,15 +619,25 @@ createApp({
       if (!canvas) return;
       if (this.charts.spread) this.charts.spread.destroy();
       const pts = this.spreadSeries;
+      const numeratorKey = this.invertSpread ? this.spreadDenominatorItemKey : this.spreadNumeratorItemKey;
+      const denominatorKey = this.invertSpread ? this.spreadNumeratorItemKey : this.spreadDenominatorItemKey;
+      const hoverDetails = pts.map((point) => ({
+        pricedInValue: point.value,
+        numeratorUsd: this.pointValueForSeries(numeratorKey, point.year),
+        denominatorUsd: this.pointValueForSeries(denominatorKey, point.year),
+        numeratorLabel: this.seriesName(numeratorKey),
+        denominatorLabel: this.seriesName(denominatorKey),
+      }));
       const datasets = [{
         label: this.ratioSeriesLabel,
         data: this.toChartPoints(pts),
         borderColor: '#7c3aed',
         tension: 0.2,
         pointRadius: 2,
+        hoverDetails,
       }];
       const rollingCorrelation = this.spreadRollingCorrelation || [];
-      if (rollingCorrelation.length) {
+      if (this.showSpreadRollingCorrelation && rollingCorrelation.length) {
         datasets.push({
           label: '5Y rolling correlation (A vs B)',
           data: this.toChartPoints(rollingCorrelation),
@@ -652,8 +664,10 @@ createApp({
         });
       }
       const options = this.chartOptions({
-        tooltipEnabled: false,
+        tooltipEnabled: true,
         hoverHandler: (_event, activeElements) => this.updateHoveredYear('spread', activeElements),
+        interactionMode: 'nearest',
+        interactionIntersect: true,
       });
       this.charts.spread = new Chart(canvas, {
         type: 'line',
@@ -720,6 +734,7 @@ createApp({
       if (this.rebased) params.set('rebased', '1');
       if (this.useLogScale) params.set('log', '1');
       if (this.showUsdOverlay) params.set('overlayUsd', '1');
+      if (this.showSpreadRollingCorrelation) params.set('overlayCorr', '1');
       if (this.showFullBitcoin) params.set('btcFull', '1');
       if (this.spreadNumeratorItemKey) params.set('itemA', this.spreadNumeratorItemKey);
       if (this.spreadDenominatorItemKey) params.set('itemB', this.spreadDenominatorItemKey);
