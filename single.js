@@ -1,5 +1,33 @@
 const { createApp, nextTick } = Vue;
 
+function plotlyAxisBase(isDarkMode) {
+  return {
+    color: isDarkMode ? '#cbd5e1' : '#334155',
+    gridcolor: isDarkMode ? 'rgba(148,163,184,0.22)' : 'rgba(51,65,85,0.16)',
+    zerolinecolor: isDarkMode ? 'rgba(148,163,184,0.16)' : 'rgba(51,65,85,0.12)',
+  };
+}
+
+function plotlyLayoutBase(isDarkMode, useLogScale, extra = {}) {
+  const axisBase = plotlyAxisBase(isDarkMode);
+  return {
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    autosize: true,
+    margin: { l: 56, r: 32, t: 24, b: 48 },
+    font: { color: axisBase.color },
+    legend: { orientation: 'h', y: 1.12, x: 0, font: { color: axisBase.color } },
+    hovermode: 'x unified',
+    xaxis: { ...axisBase, nticks: 8, tickformat: 'd' },
+    yaxis: { ...axisBase, type: useLogScale ? 'log' : 'linear', rangemode: useLogScale ? undefined : 'tozero' },
+    ...extra,
+  };
+}
+
+function plotlyConfig() {
+  return { responsive: true, displayModeBar: false, scrollZoom: false };
+}
+
 const STORAGE_KEYS = {
   theme: 'priced-in-theme',
 };
@@ -186,77 +214,48 @@ createApp({
     toChartPoints(points) {
       return points.map((point) => ({ x: pointLabelToDecimalYear(point.year), y: point.value }));
     },
-    chartOptions() {
-      const axisColor = this.isDarkMode ? '#cbd5e1' : '#334155';
-      const gridColor = this.isDarkMode ? 'rgba(148,163,184,0.22)' : 'rgba(51,65,85,0.16)';
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { labels: { color: axisColor } },
-          tooltip: {
-            callbacks: {
-              title: (items) => (items[0] ? `Date: ${decimalYearToLabel(items[0].parsed.x)}` : ''),
-              label: (ctx) => {
-                const value = ctx.parsed.y;
-                const formattedValue = ctx.dataset?.valueFormat === 'gbp'
-                  ? formatGbp(value)
-                  : (value == null ? '—' : value.toFixed(3));
-                return `${ctx.dataset.label}: ${formattedValue}`;
-              },
-              afterLabel: (ctx) => {
-                const details = ctx.dataset?.hoverDetails?.[ctx.dataIndex];
-                if (!details) return null;
-                return [
-                  `Priced-in value: ${details.pricedInValue == null ? '—' : details.pricedInValue.toFixed(3)}`,
-                  `${details.numeratorLabel} (GBP): ${formatGbp(details.numeratorUsd)}`,
-                  `${details.denominatorLabel} (GBP): ${formatGbp(details.denominatorUsd)}`,
-                ];
-              },
-            },
-          },
-        },
-        scales: {
-          x: { type: 'linear', ticks: { color: axisColor, callback: (value) => decimalYearToLabel(Number(value)) }, grid: { color: gridColor } },
-          y: { type: this.useLogScale ? 'logarithmic' : 'linear', beginAtZero: !this.useLogScale, ticks: { color: axisColor }, grid: { color: gridColor } },
-          yGbp: { type: this.useLogScale ? 'logarithmic' : 'linear', position: 'right', display: false, grid: { drawOnChartArea: false }, ticks: { color: axisColor } },
-        },
-      };
+    plotlyLayout(extra = {}) {
+      return plotlyLayoutBase(this.isDarkMode, this.useLogScale, extra);
     },
     renderChart() {
       if (!this.currentItem) return;
       const points = this.visiblePairSeries(this.currentItem.key, `context:${this.denominator}`);
-      const hoverDetails = points.map((point) => ({
-        pricedInValue: point.value,
-        numeratorUsd: this.pointValueForSeries(this.currentItem.key, point.year),
-        denominatorUsd: this.pointValueForSeries(`context:${this.denominator}`, point.year),
-        numeratorLabel: this.currentItem.name,
-        denominatorLabel: this.contextSeries[this.denominator]?.label || this.denominator,
-      }));
-      const datasets = [{
-        label: `${this.currentItem.name} priced in ${this.contextSeries[this.denominator]?.label || this.denominator} (annual)`,
-        data: this.toChartPoints(points),
-        borderColor: '#1f6feb',
-        tension: 0.2,
-        hoverDetails,
+      const chartEl = document.getElementById('single-chart');
+      if (!chartEl) return;
+      const traces = [{
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: `${this.currentItem.name} priced in ${this.contextSeries[this.denominator]?.label || this.denominator} (annual)`,
+        x: points.map((point) => point.year),
+        y: points.map((point) => point.value),
+        line: { color: '#1f6feb', width: 2.5 },
+        marker: { size: 6, color: '#1f6feb' },
+        customdata: points.map((point) => ([
+          point.value,
+          this.pointValueForSeries(this.currentItem.key, point.year),
+          this.pointValueForSeries(`context:${this.denominator}`, point.year),
+          this.currentItem.name,
+          this.contextSeries[this.denominator]?.label || this.denominator,
+        ])),
+        hovertemplate: '%{fullData.name}: %{y:.3f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.3f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.2f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.2f}<extra></extra>',
       }];
       if (this.showUsdOverlay && this.denominator !== 'fiat') {
-        datasets.push({
-          label: `${this.currentItem.name} (GBP overlay)`,
-          data: this.toChartPoints(this.visibleOverlaySeries(this.currentItem.key)),
-          borderColor: 'rgba(249, 115, 22, 0.45)',
-          borderDash: [5, 5],
-          yAxisID: 'yGbp',
-          tension: 0.2,
-          valueFormat: 'gbp',
+        traces.unshift({
+          type: 'scatter',
+          mode: 'lines+markers',
+          name: `${this.currentItem.name} (GBP overlay)`,
+          x: this.visibleOverlaySeries(this.currentItem.key).map((point) => point.year),
+          y: this.visibleOverlaySeries(this.currentItem.key).map((point) => point.value),
+          line: { color: 'rgba(249, 115, 22, 0.6)', width: 2, dash: 'dash' },
+          marker: { size: 5, color: 'rgba(249, 115, 22, 0.6)' },
+          yaxis: 'y2',
+          hovertemplate: '%{fullData.name}: %{y:,.2f}<br>Year: %{x}<extra></extra>',
         });
       }
-      const canvas = document.getElementById('single-chart');
-      if (!canvas) return;
-      if (this.chart) this.chart.destroy();
-      const options = this.chartOptions();
-      this.chart = new Chart(canvas, { type: 'line', data: { datasets }, options });
+      Plotly.react(chartEl, traces, this.plotlyLayout({
+        yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
+      }), plotlyConfig());
+      this.chart = chartEl;
     },
     chartStats() {
       const item = this.currentItem;

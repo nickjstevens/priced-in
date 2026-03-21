@@ -6,7 +6,7 @@
     <title>Priced In — Relative Price Ratio</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   </head>
   <body data-page="ratio">
     <main id="app">
@@ -85,7 +85,7 @@
             <div class="stat"><dt>Ratio max drawdown</dt><dd>{{ formatPercent(maxDrawdown(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
             <div class="stat"><dt>Ratio from historical peak</dt><dd>{{ formatPercent(distanceFromPeak(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
           </div>
-          <div class="chart-wrap chart-wrap-lg"><canvas id="chart-spread"></canvas></div>
+          <div class="chart-wrap chart-wrap-lg"><div id="chart-spread" class="plotly-chart"></div></div>
           <details class="data-table-panel">
             <summary>Show chart data table</summary>
             <div class="table-wrap narrow-table-wrap">
