@@ -48,6 +48,12 @@
 
         <section v-else>
         <section class="controls panel-shell">
+          <label>Category
+            <select v-model="selectedCategory" @change="onCategorySelectionChange" aria-label="Category selector">
+              <option value="all">All</option>
+              <option v-for="category in availableCategories" :key="category.value" :value="category.value">{{ category.label }}</option>
+            </select>
+          </label>
           <label>Item
             <select v-model="selectedItemKey" @change="onItemSelectionChange" aria-label="Item selector">
               <option value="all">All</option>
@@ -64,23 +70,8 @@
             {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
           </button>
           <label class="search">Search
-            <input v-model="search" @input="syncUrlAndRender" placeholder="house, tuition, eggs…" aria-label="Search items" />
+            <input v-model="search" @input="onSearchInput" placeholder="house, tuition, eggs…" aria-label="Search items" />
           </label>
-        </section>
-
-        <section class="category-tags panel-shell" aria-label="Category filters">
-          <button type="button" class="filter-tag" :class="{ active: allCategoriesSelected }" @click="selectAllCategories">All</button>
-          <button
-            v-for="category in availableCategories"
-            :key="category.value"
-            type="button"
-            class="filter-tag"
-            :class="{ active: selectedCategories.includes(category.value) }"
-            :style="categoryTagStyle(category.value)"
-            @click="toggleCategory(category.value)"
-          >
-            {{ category.label }}
-          </button>
         </section>
 
         <p v-if="allDenominator==='bitcoin' && !showFullBitcoin" class="notice">Bitcoin is hidden before 2017 by default because early annual averages are sparse and highly volatile. Use “Show full available history” to include all years.</p>
@@ -107,7 +98,7 @@
                   <a class="single-chart-heading" :href="singleChartUrl(item.key)">
                     <div>
                       <h3>{{ item.name }}</h3>
-                      <p>{{ categoryDisplayLabel(item.category) }}</p>
+                      <span class="category-badge" :style="categoryTagStyle(item.category)">{{ categoryDisplayLabel(item.category) }}</span>
                     </div>
                   </a>
                   <div class="sparkline-wrap"><div :id="`chart-single-${item.key}`" class="plotly-chart"></div></div>
