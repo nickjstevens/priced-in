@@ -38,9 +38,9 @@ body { font-family: Inter, system-ui, sans-serif; margin: 0; background: var(--b
 #app, .doc { max-width: 1280px; margin: 0 auto; padding: 1rem; }
 .title-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .title-actions { display: flex; align-items: center; gap: .6rem; }
-.tabs { display: flex; gap: .75rem; margin: 1rem 0; flex-wrap: wrap; }
-.tab-btn { margin-left: 0; padding: .7rem 1rem; font-weight: 700; }
-.tab-btn.active { background: var(--tab-active); border-color: #3b82f6; }
+.page-nav { display: flex; gap: .75rem; flex-wrap: wrap; }
+.page-link { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: .7rem 1rem; border: 1px solid var(--input-border); border-radius: 8px; background: var(--surface-alt); color: var(--text); text-decoration: none; font-weight: 700; }
+.page-link.active { background: var(--tab-active); border-color: #3b82f6; }
 .controls, .single-controls { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: .8rem; margin-bottom: 1rem; }
 label { font-size: .9rem; font-weight: 600; }
 select, input, button { margin-left: .35rem; padding: .45rem; border-radius: 8px; border: 1px solid var(--input-border); background: var(--surface-alt); color: var(--text); }
@@ -86,3 +86,8 @@ header { display: flex; justify-content: space-between; gap: .6rem; align-items:
   .title-row, header { flex-direction: column; align-items: flex-start; }
   .grid { grid-template-columns: 1fr; }
 }
+
+.series-option-denominator { color: #1d4ed8; }
+.series-option-item { color: #b45309; }
+:root[data-theme='dark'] .series-option-denominator { color: #93c5fd; }
+:root[data-theme='dark'] .series-option-item { color: #fcd34d; }

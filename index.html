@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   </head>
-  <body>
+  <body data-page="cost">
     <main id="app">
       <div class="title-row">
         <div>
@@ -16,210 +16,138 @@
           <p>Compare UK costs priced in nominal £, real £, gold, salary, median salary, hours worked, and bitcoin.</p>
         </div>
         <div class="title-actions">
+          <nav class="page-nav" aria-label="Main sections">
+            <a class="page-link" :class="{ active: currentPage === 'cost' }" href="index.html">Cost of Living</a>
+            <a class="page-link" :class="{ active: currentPage === 'ratio' }" :href="ratioPageUrl">Relative Ratio</a>
+            <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">Assumptions & Caveats</a>
+          </nav>
           <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
             {{ isDarkMode ? '☀️ Light mode' : '🌙 Dark mode' }}
           </button>
         </div>
       </div>
 
-      <nav class="tabs" aria-label="Main sections">
-        <button v-for="tab in tabs" :key="tab.key" type="button" class="tab-btn" :class="{ active: activeTab === tab.key }" @click="setActiveTab(tab.key)">
-          {{ tab.label }}
-        </button>
-      </nav>
-
       <section v-if="isLoading" class="status-card">Loading pricing data from API… <span class="skeleton"></span></section>
       <section v-else-if="error" class="status-card error">{{ error }}</section>
 
       <section v-else>
-        <section v-if="activeTab==='cost'">
-          <section class="controls">
-            <label>Mode
-              <select v-model="viewMode" @change="onViewModeChange" aria-label="View mode">
-                <option value="cards">One chart per item</option>
-                <option value="compare">Compare items on one chart</option>
-              </select>
-            </label>
-            <label>Denominator
-              <select v-model="allDenominator" @change="applyToAll" aria-label="Denominator selector">
-                <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
-              </select>
-            </label>
-            <label>Range
-              <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Date range selector">
-                <option value="last10">Last 10 years</option>
-                <option value="last20">Last 20 years</option>
-                <option value="last30">Last 30 years</option>
-                <option value="last40">Last 40 years</option>
-                <option value="full">Full history</option>
-              </select>
-            </label>
-            <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100</label>
-            <label><input type="checkbox" v-model="useLogScale" @change="syncUrlAndRender" /> Log scale</label>
-            <label v-if="allDenominator !== 'fiat'"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
-            <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
-              {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
-            </button>
-            <label>Category
-              <select v-model="categoryFilter" @change="onCategoryChange">
-                <option value="all">All</option>
-                <option v-for="category in availableCategories" :key="category" :value="category">{{ categoryLabel(category) }}</option>
-              </select>
-            </label>
-            <label class="search">Search
-              <input v-model="search" @input="syncUrlAndRender" placeholder="house, tuition, eggs…" aria-label="Search items" />
-            </label>
-          </section>
-
-          <p v-if="allDenominator==='bitcoin' && !showFullBitcoin" class="notice">Bitcoin is hidden before 2017 by default because early annual averages are sparse and highly volatile. Use “Show full available history” to include all years.</p>
-          <p v-if="costRebaseNotice" class="notice">{{ costRebaseNotice }}</p>
-
-          <article class="chart-card" v-if="viewMode==='compare'">
-            <header><h2>Comparison chart</h2></header>
-            <p class="lineage">5Y avg correlation (first two series): {{ compareAnalytics.averageCorrelation == null ? '—' : compareAnalytics.averageCorrelation.toFixed(2) }} · Regime: {{ compareAnalytics.regime }}</p>
-            <div class="compare-layout">
-              <div class="compare-main">
-                <div class="chart-wrap chart-wrap-lg"><canvas id="chart-compare"></canvas></div>
-                <details class="data-table-panel">
-                  <summary>Show chart data table</summary>
-                  <div class="table-wrap">
-                    <table class="data-table">
-                      <thead>
-                        <tr>
-                          <th>Year</th>
-                          <th v-for="column in compareTableColumns" :key="column.key">{{ column.name }}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="row in compareTableRows" :key="row.year" :class="{ active: compareHoveredYear === row.year }">
-                          <th>{{ row.year }}</th>
-                          <td v-for="column in compareTableColumns" :key="`${row.year}-${column.key}`">{{ formatTableValue(row.values[column.key]) }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </details>
-              </div>
-              <aside class="compare-sidebar">
-                <h3>Items on chart</h3>
-                <div class="checkbox-list">
-                  <label v-for="item in filteredItems" :key="item.key"><input type="checkbox" :checked="compareKeys.includes(item.key)" @change="toggleCompare(item.key)" /> {{ item.name }}</label>
-                </div>
-              </aside>
-            </div>
-          </article>
-
-          <section v-else class="grid">
-            <article class="chart-card" v-for="item in filteredItems" :key="item.key">
-              <header>
-                <h2>{{ item.name }} <small>({{ item.category }})</small></h2>
-                <div class="card-actions">
-                  <label>Priced in
-                    <select v-model="perChartDenominator[item.key]" @change="syncUrlAndRender">
-                      <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
-                    </select>
-                  </label>
-                  <a class="share-link" :href="singleChartUrl(item.key)" target="_blank" rel="noopener noreferrer">Share</a>
-                </div>
-              </header>
-              <dl class="stats-strip">
-                <div class="stat"><dt>CAGR (selected)</dt><dd>{{ chartStats(item.key).cagrSelected }}</dd></div>
-                <div class="stat"><dt>Total change</dt><dd>{{ chartStats(item.key).totalChange }}</dd></div>
-                <div class="stat"><dt>Best year</dt><dd>{{ chartStats(item.key).bestYear }}</dd></div>
-                <div class="stat"><dt>Worst year</dt><dd>{{ chartStats(item.key).worstYear }}</dd></div>
-                <div class="stat"><dt>Volatility (5Y log-return)</dt><dd>{{ chartStats(item.key).vol5y }}</dd></div>
-                <div class="stat"><dt>Max drawdown</dt><dd>{{ chartStats(item.key).maxDrawdown }}</dd></div>
-                <div class="stat"><dt>From historical peak</dt><dd>{{ chartStats(item.key).fromPeak }}</dd></div>
-                <div class="stat"><dt>Corr. vs priced-in asset</dt><dd>{{ chartStats(item.key).correlationToDenominator }}</dd></div>
-              </dl>
-              <div class="chart-wrap"><canvas :id="`chart-${item.key}`"></canvas></div>
-              <details class="meta"><summary>What is being measured?</summary>
-                <ul>
-                  <li>Unit basis: {{ item.metadata?.unit_basis }}</li>
-                  <li>Geography: {{ item.metadata?.geography }}</li>
-                  <li>Nominal/real: {{ item.metadata?.price_basis }}</li>
-                  <li>Frequency: {{ item.metadata?.frequency }}</li>
-                  <li>Last updated: {{ item.metadata?.last_updated }}</li>
-                  <li>Confidence: {{ item.metadata?.source_confidence }}</li>
-                </ul>
-              </details>
-              <p class="lineage">{{ insightText(item.key) }}</p>
-              <details class="sources"><summary>Sources & lineage</summary>
-                <ul>
-                  <li v-for="source in sourceSet(item.key)" :key="`${item.key}-${source.url}`"><span class="badge">{{ source.type || 'source' }}</span> <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a> ({{ source.date }}) — {{ source.note }}</li>
-                </ul>
-                <p class="lineage">{{ dataLineage(item.key) }}</p>
-              </details>
-            </article>
-          </section>
+        <section class="controls">
+          <label>Mode
+            <select v-model="viewMode" @change="onViewModeChange" aria-label="View mode">
+              <option value="cards">One chart per item</option>
+              <option value="compare">Compare items on one chart</option>
+            </select>
+          </label>
+          <label>Denominator
+            <select v-model="allDenominator" @change="applyToAll" aria-label="Denominator selector">
+              <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
+            </select>
+          </label>
+          <label>Range
+            <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Date range selector">
+              <option value="last10">Last 10 years</option>
+              <option value="last20">Last 20 years</option>
+              <option value="last30">Last 30 years</option>
+              <option value="last40">Last 40 years</option>
+              <option value="full">Full history</option>
+            </select>
+          </label>
+          <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100</label>
+          <label><input type="checkbox" v-model="useLogScale" @change="syncUrlAndRender" /> Log scale</label>
+          <label v-if="allDenominator !== 'fiat'"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
+          <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
+            {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
+          </button>
+          <label>Category
+            <select v-model="categoryFilter" @change="onCategoryChange">
+              <option value="all">{{ allCategoryLabel }}</option>
+              <option v-for="category in availableCategories" :key="category.value" :value="category.value">{{ category.label }}</option>
+            </select>
+          </label>
+          <label class="search">Search
+            <input v-model="search" @input="syncUrlAndRender" placeholder="house, tuition, eggs…" aria-label="Search items" />
+          </label>
         </section>
 
-        <section v-else-if="activeTab==='ratio'">
-          <section class="controls">
-            <label>Item A
-              <select v-model="spreadNumeratorItemKey" @change="syncUrlAndRender">
-                <option v-for="series in spreadSeriesOptions" :key="`spread-a-item-${series.key}`" :value="series.key">{{ series.name }}</option>
-              </select>
-            </label>
-            <label>Item B
-              <select v-model="spreadDenominatorItemKey" @change="syncUrlAndRender">
-                <option v-for="series in spreadSeriesOptions" :key="`spread-b-item-${series.key}`" :value="series.key">{{ series.name }}</option>
-              </select>
-            </label>
-            <label>Range
-              <select v-model="selectedRange" @change="syncUrlAndRender" aria-label="Ratio range selector">
-                <option value="last10">Last 10 years</option>
-                <option value="last20">Last 20 years</option>
-                <option value="last30">Last 30 years</option>
-                <option value="last40">Last 40 years</option>
-                <option value="full">Full history</option>
-              </select>
-            </label>
-            <label><input type="checkbox" v-model="rebased" @change="syncUrlAndRender" /> Rebase to 100</label>
-            <label><input type="checkbox" v-model="useLogScale" @change="syncUrlAndRender" /> Log scale</label>
-            <label><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
-            <label><input type="checkbox" v-model="invertSpread" @change="syncUrlAndRender" /> Invert ratio</label>
-          </section>
+        <p v-if="allDenominator==='bitcoin' && !showFullBitcoin" class="notice">Bitcoin is hidden before 2017 by default because early annual averages are sparse and highly volatile. Use “Show full available history” to include all years.</p>
+        <p v-if="costRebaseNotice" class="notice">{{ costRebaseNotice }}</p>
 
-          <p v-if="ratioRebaseNotice" class="notice">{{ ratioRebaseNotice }}</p>
-          <article class="chart-card tool-card">
-            <header><h2>Relative price ratio view</h2></header>
-            <p class="lineage">Track one series directly against another as A ÷ B over time, or toggle inversion to view B ÷ A. The dashed line shows the 5Y rolling correlation between the two underlying GBP series.</p>
-            <div class="ratio-stats">
-              <div class="stat"><dt>Pair correlation (A vs B)</dt><dd>{{ spreadCorrelation == null ? '—' : spreadCorrelation.toFixed(2) }}</dd></div>
-              <div class="stat"><dt>Ratio max drawdown</dt><dd>{{ formatPercent(maxDrawdown(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
-              <div class="stat"><dt>Ratio from historical peak</dt><dd>{{ formatPercent(distanceFromPeak(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
+        <article class="chart-card" v-if="viewMode==='compare'">
+          <header><h2>Comparison chart</h2></header>
+          <div class="compare-layout">
+            <div class="compare-main">
+              <div class="chart-wrap chart-wrap-lg"><canvas id="chart-compare"></canvas></div>
+              <details class="data-table-panel">
+                <summary>Show chart data table</summary>
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Year</th>
+                        <th v-for="column in compareTableColumns" :key="column.key">{{ column.name }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="row in compareTableRows" :key="row.year" :class="{ active: compareHoveredYear === row.year }">
+                        <th>{{ row.year }}</th>
+                        <td v-for="column in compareTableColumns" :key="`${row.year}-${column.key}`">{{ formatTableValue(row.values[column.key]) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
             </div>
-            <div class="chart-wrap chart-wrap-lg"><canvas id="chart-spread"></canvas></div>
-            <details class="data-table-panel">
-              <summary>Show chart data table</summary>
-              <div class="table-wrap narrow-table-wrap">
-                <table class="data-table">
-                  <thead>
-                    <tr><th>Year</th><th>{{ ratioSeriesLabel }}</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="row in spreadTableRows" :key="row.year" :class="{ active: spreadHoveredYear === row.year }">
-                      <th>{{ row.year }}</th>
-                      <td>{{ formatTableValue(row.value) }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+            <aside class="compare-sidebar">
+              <h3>Items on chart</h3>
+              <div class="checkbox-list">
+                <label v-for="item in filteredItems" :key="item.key"><input type="checkbox" :checked="compareKeys.includes(item.key)" @change="toggleCompare(item.key)" /> {{ item.name }}</label>
               </div>
+            </aside>
+          </div>
+        </article>
+
+        <section v-else class="grid">
+          <article class="chart-card" v-for="item in filteredItems" :key="item.key">
+            <header>
+              <h2>{{ item.name }} <small>({{ categoryDisplayLabel(item.category) }})</small></h2>
+              <div class="card-actions">
+                <label>Priced in
+                  <select v-model="perChartDenominator[item.key]" @change="syncUrlAndRender">
+                    <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
+                  </select>
+                </label>
+                <a class="share-link" :href="singleChartUrl(item.key)" target="_blank" rel="noopener noreferrer">Share</a>
+              </div>
+            </header>
+            <dl class="stats-strip">
+              <div class="stat"><dt>CAGR (selected)</dt><dd>{{ chartStats(item.key).cagrSelected }}</dd></div>
+              <div class="stat"><dt>Total change</dt><dd>{{ chartStats(item.key).totalChange }}</dd></div>
+              <div class="stat"><dt>Best year</dt><dd>{{ chartStats(item.key).bestYear }}</dd></div>
+              <div class="stat"><dt>Worst year</dt><dd>{{ chartStats(item.key).worstYear }}</dd></div>
+              <div class="stat"><dt>Volatility (5Y log-return)</dt><dd>{{ chartStats(item.key).vol5y }}</dd></div>
+              <div class="stat"><dt>Max drawdown</dt><dd>{{ chartStats(item.key).maxDrawdown }}</dd></div>
+              <div class="stat"><dt>From historical peak</dt><dd>{{ chartStats(item.key).fromPeak }}</dd></div>
+              <div class="stat"><dt>Corr. vs priced-in asset</dt><dd>{{ chartStats(item.key).correlationToDenominator }}</dd></div>
+            </dl>
+            <div class="chart-wrap"><canvas :id="`chart-${item.key}`"></canvas></div>
+            <details class="meta"><summary>What is being measured?</summary>
+              <ul>
+                <li>Unit basis: {{ item.metadata?.unit_basis }}</li>
+                <li>Geography: {{ item.metadata?.geography }}</li>
+                <li>Nominal/real: {{ item.metadata?.price_basis }}</li>
+                <li>Frequency: {{ item.metadata?.frequency }}</li>
+                <li>Last updated: {{ item.metadata?.last_updated }}</li>
+                <li>Confidence: {{ item.metadata?.source_confidence }}</li>
+              </ul>
+            </details>
+            <p class="lineage">{{ insightText(item.key) }}</p>
+            <details class="sources"><summary>Sources & lineage</summary>
+              <ul>
+                <li v-for="source in sourceSet(item.key)" :key="`${item.key}-${source.url}`"><span class="badge">{{ source.type || 'source' }}</span> <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a> ({{ source.date }}) — {{ source.note }}</li>
+              </ul>
+              <p class="lineage">{{ dataLineage(item.key) }}</p>
             </details>
           </article>
-        </section>
-
-        <section v-else class="chart-card assumptions-card">
-          <header><h2>Assumptions & caveats</h2></header>
-          <ul>
-            <li>Coverage is annual 1950–2025 for all items and denominators except bitcoin, which is intentionally sparse before market launch years.</li>
-            <li>Denominators include nominal GBP, CPI-adjusted real GBP, gold, average salary, median salary, hours worked at median wage, and bitcoin.</li>
-            <li>Where official annual series begin after 1950, the app back-casts earlier years using CPI-adjusted anchor points and conservative real-trend assumptions; inspect each card’s source notes before drawing strong conclusions.</li>
-            <li>Point colours follow source confidence metadata: high (official/statutory), medium (benchmark market + standard transformations), low (proxy reconstruction).</li>
-            <li>Most values are nominal unless the “Real GBP” denominator is selected.</li>
-            <li>Sources include official, market, and derived series with lineage notes in the app.</li>
-          </ul>
         </section>
       </section>
     </main>
