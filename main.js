@@ -916,14 +916,6 @@ createApp({
       Plotly.react(chartEl, [trace], layout, { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false, staticPlot: true });
       this.charts[chartKey] = chartEl;
     },
-    renderMiniSingleCharts(entries, forcedStartYear) {
-      entries.forEach(({ item, color }) => {
-        const chartEl = document.getElementById(`chart-single-${item.key}`);
-        if (!chartEl) return;
-        const points = this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear);
-        this.renderCompactSparkline(chartEl, points, color, `single-${item.key}`, { height: 92, margins: { l: 8, r: 8, t: 6, b: 6 }, lineWidth: 2 });
-      });
-    },
     renderSummaryTableSparklines(entries, forcedStartYear) {
       entries.forEach(({ item, color }) => {
         const chartEl = document.getElementById(`summary-sparkline-${item.key}`);
@@ -964,7 +956,6 @@ createApp({
         onUnhover: () => { this.compareHoveredYear = null; },
       });
       this.charts.compare = chartEl;
-      this.renderMiniSingleCharts(entries, forcedStartYear);
       this.renderSummaryTableSparklines(entries, forcedStartYear);
     },
     swapSpreadItems() {
