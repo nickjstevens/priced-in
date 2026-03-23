@@ -211,7 +211,7 @@ summary { cursor: pointer; }
 .card-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .compare-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
 .data-table-panel { margin-top: 0.85rem; }
-.table-wrap { overflow: auto; max-height: min(75vh, 960px); border: 1px solid var(--border); border-radius: 16px; }
+.table-wrap { overflow: auto; max-height: min(75vh, 960px); border: 1px solid var(--border); border-radius: 16px; -webkit-overflow-scrolling: touch; }
 .narrow-table-wrap { max-width: 520px; }
 .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .data-table th, .data-table td { padding: 0.65rem 0.8rem; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
@@ -454,3 +454,5 @@ summary { cursor: pointer; }
     width: min(140px, 100%);
   }
 }
+
+.summary-table-wrap { overscroll-behavior: contain; touch-action: pan-x pan-y; }

@@ -68,7 +68,7 @@
               <option v-for="item in itemOptions" :key="item.key" :value="item.key">{{ item.name }}</option>
             </select>
           </label>
-          <label v-if="allDenominator !== 'fiat'"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
+          <label v-if="canShowCompareGbpOverlay"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
           <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
             {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
           </button>
@@ -94,7 +94,7 @@
               </details>
               <section class="data-table-panel summary-table-panel">
                 <h3>Selected item summary</h3>
-                <div class="table-wrap">
+                <div class="table-wrap summary-table-wrap" ref="summaryTableWrap">
                   <table class="data-table summary-table">
                     <thead>
                       <tr>

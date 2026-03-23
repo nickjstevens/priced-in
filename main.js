@@ -380,8 +380,14 @@ createApp({
       }
       return rolling;
     },
-    canShowSpreadRollingCorrelation() {
+    canShowCompareGbpOverlay() {
+      return this.allDenominator !== 'fiat';
+    },
+    canShowSpreadGbpOverlay() {
       return !this.isGbpSeries(this.spreadNumeratorItemKey) && !this.isGbpSeries(this.spreadDenominatorItemKey);
+    },
+    canShowSpreadRollingCorrelation() {
+      return this.canShowSpreadGbpOverlay;
     },
     costRebaseNotice() {
       if (!this.rebased) return '';
@@ -491,8 +497,12 @@ createApp({
       if (theme === 'dark' || theme === 'light') this.isDarkMode = theme === 'dark';
     },
     async syncUrlAndRender() {
-      if (this.currentPage === 'ratio' && !this.canShowSpreadRollingCorrelation) {
-        this.showSpreadRollingCorrelation = false;
+      if (this.currentPage === 'cost' && !this.canShowCompareGbpOverlay) {
+        this.showUsdOverlay = false;
+      }
+      if (this.currentPage === 'ratio') {
+        if (!this.canShowSpreadGbpOverlay) this.showUsdOverlay = false;
+        if (!this.canShowSpreadRollingCorrelation) this.showSpreadRollingCorrelation = false;
       }
       const p = new URLSearchParams();
       p.set('range', this.selectedRange);
@@ -508,7 +518,7 @@ createApp({
       }
       if (this.rebased) p.set('rebased', '1');
       if (this.useLogScale) p.set('log', '1');
-      if (this.showUsdOverlay) p.set('overlayUsd', '1');
+      if (this.showUsdOverlay && ((this.currentPage === 'cost' && this.canShowCompareGbpOverlay) || (this.currentPage === 'ratio' && this.canShowSpreadGbpOverlay))) p.set('overlayUsd', '1');
       if (this.showSpreadRollingCorrelation) p.set('overlayCorr', '1');
       if (this.showFullBitcoin) p.set('btcFull', '1');
       p.set('theme', this.isDarkMode ? 'dark' : 'light');
@@ -961,6 +971,44 @@ createApp({
       [this.spreadNumeratorItemKey, this.spreadDenominatorItemKey] = [this.spreadDenominatorItemKey, this.spreadNumeratorItemKey];
       this.syncUrlAndRender();
     },
+    bindDirectionalTablePan() {
+      const wrap = this.$refs.summaryTableWrap;
+      if (!wrap || wrap.dataset.panLockBound === '1') return;
+      wrap.dataset.panLockBound = '1';
+      let startX = 0;
+      let startY = 0;
+      let startScrollLeft = 0;
+      let startScrollTop = 0;
+      let lockedAxis = null;
+      const reset = () => { lockedAxis = null; };
+      wrap.addEventListener('touchstart', (event) => {
+        const touch = event.touches?.[0];
+        if (!touch) return;
+        startX = touch.clientX;
+        startY = touch.clientY;
+        startScrollLeft = wrap.scrollLeft;
+        startScrollTop = wrap.scrollTop;
+        lockedAxis = null;
+      }, { passive: true });
+      wrap.addEventListener('touchmove', (event) => {
+        const touch = event.touches?.[0];
+        if (!touch) return;
+        const deltaX = touch.clientX - startX;
+        const deltaY = touch.clientY - startY;
+        if (!lockedAxis) {
+          if (Math.abs(deltaX) < 8 && Math.abs(deltaY) < 8) return;
+          lockedAxis = Math.abs(deltaX) > Math.abs(deltaY) ? 'x' : 'y';
+        }
+        event.preventDefault();
+        if (lockedAxis === 'x') {
+          wrap.scrollLeft = startScrollLeft - deltaX;
+        } else {
+          wrap.scrollTop = startScrollTop - deltaY;
+        }
+      }, { passive: false });
+      wrap.addEventListener('touchend', reset, { passive: true });
+      wrap.addEventListener('touchcancel', reset, { passive: true });
+    },
     isGbpSeries(seriesKey) {
       return seriesKey === 'context:fiat';
     },
@@ -1046,7 +1094,8 @@ createApp({
         this.renderCompareChart();
       }
       if (this.currentPage === 'ratio') {
-        if (this.isGbpSeries(this.spreadNumeratorItemKey) || this.isGbpSeries(this.spreadDenominatorItemKey)) {
+        if (!this.canShowSpreadGbpOverlay) {
+          this.showUsdOverlay = false;
           this.showSpreadRollingCorrelation = false;
         }
         this.renderSpreadChart();
@@ -1176,6 +1225,7 @@ createApp({
     if (this.selectedCategory !== 'all' && !this.availableCategories.some((category) => category.value === this.selectedCategory)) this.selectedCategory = 'all';
     if (this.selectedItemKey !== 'all' && !this.itemOptions.some((item) => item.key === this.selectedItemKey)) this.selectedItemKey = 'all';
     await nextTick();
+    this.bindDirectionalTablePan();
     this.renderAll();
   },
 }).mount('#app');

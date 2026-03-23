@@ -62,7 +62,7 @@
               <option v-for="series in spreadSeriesOptions" :key="`spread-b-item-${series.key}`" :value="series.key" :class="series.optionClass">{{ series.name }}</option>
             </select>
           </label>
-          <label><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
+          <label v-if="canShowSpreadGbpOverlay"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
           <label v-if="canShowSpreadRollingCorrelation"><input type="checkbox" v-model="showSpreadRollingCorrelation" @change="syncUrlAndRender" /> Overlay 5Y rolling correlation</label>
         </section>
 
