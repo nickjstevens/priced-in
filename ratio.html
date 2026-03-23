@@ -71,28 +71,12 @@
           <header><h2>Relative price ratio view</h2></header>
           <p class="lineage">Track one series directly against another as A ÷ B over time, use Swap to flip the pair, and optionally compare the ratio against the lead series' GBP price or the pair's 5Y rolling correlation.</p>
           <div class="ratio-stats">
-            <div class="stat"><dt>Pair correlation (A vs B)</dt><dd>{{ spreadCorrelation == null ? '—' : spreadCorrelation.toFixed(2) }}</dd></div>
+            <div class="stat"><dt>Pair correlation (A vs B)</dt><dd>{{ spreadCorrelation == null ? '—' : spreadCorrelation.toFixed(1) }}</dd></div>
             <div class="stat"><dt>Ratio max drawdown</dt><dd>{{ formatPercent(maxDrawdown(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
             <div class="stat"><dt>Ratio from historical peak</dt><dd>{{ formatPercent(distanceFromPeak(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
           </div>
           <div class="chart-wrap chart-wrap-lg"><div id="chart-spread" class="plotly-chart"></div></div>
-          <p class="chart-modebar-hint">Use the chart modebar to switch time scales.</p>
-          <details class="data-table-panel">
-            <summary>Show chart data table</summary>
-            <div class="table-wrap narrow-table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr><th>Year</th><th>{{ ratioSeriesLabel }}</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in spreadTableRows" :key="row.year" :class="{ active: spreadHoveredYear === row.year }">
-                    <th>{{ row.year }}</th>
-                    <td>{{ formatTableValue(row.value) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </details>
+          <details class="instructions-panel panel-shell"><summary>Instructions</summary><div class="instructions-list"><p>Use the chart modebar to switch time scales.</p><p>Use the yearly data button in the modebar to open the annual ratio table view with CSV export.</p><p>Log scale and rebase toggles are also available in the modebar for faster comparisons.</p></div></details>
         </article>
       </section>
       </div>

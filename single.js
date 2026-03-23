@@ -47,6 +47,11 @@ const PLOTLY_MODEBAR_ICON = {
     height: 512,
     path: 'M96 96v320h320v-32H128V96H96zm80 224h64v-32h-64v32zm96-64h64v-32h-64v32zm96-64h64v-32h-64v32zM176 192h64v-32h-64v32z',
   },
+  yearly: {
+    width: 512,
+    height: 512,
+    path: 'M112 64h64v48h160V64h64v48h48v336H64V112h48V64zm272 112H128v208h256V176zm-32 48v32H160v-32h192zm-80 64v32H160v-32h112z',
+  },
   range: {
     width: 512,
     height: 512,
@@ -54,7 +59,7 @@ const PLOTLY_MODEBAR_ICON = {
   },
 };
 
-function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [] } = {}) {
+function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [], onOpenYearlyData } = {}) {
   const modeBarButtonsToAdd = [];
   if (onToggleLogScale) {
     modeBarButtonsToAdd.push({
@@ -73,6 +78,14 @@ function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [] } = 
     });
   }
   if (rangeButtons.length) modeBarButtonsToAdd.push(...rangeButtons);
+  if (onOpenYearlyData) {
+    modeBarButtonsToAdd.push({
+      name: 'Open yearly data',
+      title: 'Open yearly data table in a dedicated page',
+      icon: PLOTLY_MODEBAR_ICON.yearly,
+      click: onOpenYearlyData,
+    });
+  }
   return {
     responsive: true,
     displayModeBar: true,
@@ -97,8 +110,7 @@ const RANGE_OPTIONS = [
 
 function formatGbp(value) {
   if (value == null || Number.isNaN(value)) return '—';
-  const usePennies = Math.abs(value) < 100;
-  const fractionDigits = usePennies ? 2 : 0;
+  const fractionDigits = 1;
   return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
@@ -110,7 +122,7 @@ function formatGbp(value) {
 function formatPercent(value) {
   if (value == null || Number.isNaN(value)) return '—';
   const sign = value > 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
+  return `${sign}${value.toFixed(1)}%`;
 }
 
 function maxDrawdown(points) {
@@ -339,7 +351,7 @@ createApp({
           this.currentItem.name,
           this.contextSeries[this.denominator]?.label || this.denominator,
         ])),
-        hovertemplate: '%{fullData.name}: %{y:.3f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.3f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.2f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.2f}<extra></extra>',
+        hovertemplate: '%{fullData.name}: %{y:.1f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.1f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.1f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.1f}<extra></extra>',
       }];
       if (this.showUsdOverlay && this.denominator !== 'fiat') {
         traces.push({
@@ -351,7 +363,7 @@ createApp({
           line: { color: 'rgba(249, 115, 22, 0.6)', width: 2, dash: 'dash' },
           marker: { size: 5, color: 'rgba(249, 115, 22, 0.6)' },
           yaxis: 'y2',
-          hovertemplate: '%{fullData.name}: %{y:,.2f}<br>Year: %{x}<extra></extra>',
+          hovertemplate: '%{fullData.name}: %{y:,.1f}<br>Year: %{x}<extra></extra>',
         });
       }
       Plotly.react(chartEl, sortLegendTraces(traces), this.plotlyLayout({
@@ -360,6 +372,7 @@ createApp({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
         rangeButtons: this.rangeModeBarButtons(),
+        onOpenYearlyData: () => this.openYearlyDataPage(),
       })).then(() => this.applyRangeButtonLabels(chartEl));
       this.chart = chartEl;
     },
@@ -402,7 +415,7 @@ createApp({
         vol5y: formatPercent(volatility),
         maxDrawdown: formatPercent(maxDrawdown(pts)),
         fromPeak: formatPercent(distanceFromPeak(pts)),
-        correlationToDenominator: corr == null ? '—' : corr.toFixed(2),
+        correlationToDenominator: corr == null ? '—' : corr.toFixed(1),
       };
     },
     rollingVolatility() {
@@ -492,6 +505,21 @@ createApp({
         button.textContent = label;
         button.setAttribute('aria-label', title);
       });
+    },
+
+    openYearlyDataPage() {
+      window.open(`yearly.html?${this.buildYearlyDataParams().toString()}`, '_blank', 'noopener');
+    },
+    buildYearlyDataParams() {
+      const params = new URLSearchParams();
+      params.set('mode', 'single');
+      if (this.itemKey) params.set('item', this.itemKey);
+      params.set('denom', this.denominator);
+      params.set('range', this.selectedRange);
+      if (this.rebased) params.set('rebased', '1');
+      if (this.showFullBitcoin) params.set('btcFull', '1');
+      params.set('theme', this.isDarkMode ? 'dark' : 'light');
+      return params;
     },
     toggleMobileMenu() {
       this.isMobileMenuOpen = !this.isMobileMenuOpen;

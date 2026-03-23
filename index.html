@@ -114,6 +114,7 @@
                         <th>
                           <div class="summary-item-cell">
                             <span>{{ row.name }}</span>
+                            <a class="open-link-icon" :href="singleChartUrl(row.key)" :aria-label="`Open ${row.name} single chart in a new page`" title="Open single chart" target="_blank" rel="noopener noreferrer">↗</a>
                             <span class="category-badge" :style="categoryTagStyle(row.category)">{{ categoryDisplayLabel(row.category) }}</span>
                           </div>
                         </th>
@@ -129,12 +130,15 @@
               </section>
               <section class="single-chart-grid" aria-label="Individual item charts">
                 <article v-for="(item, index) in filteredItems" :key="item.key" class="single-chart-card">
-                  <a class="single-chart-heading" :href="singleChartUrl(item.key)">
+                  <div class="single-chart-heading">
                     <div>
-                      <h3>{{ item.name }}</h3>
+                      <div class="heading-with-link">
+                        <h3>{{ item.name }}</h3>
+                        <a class="open-link-icon" :href="singleChartUrl(item.key)" :aria-label="`Open ${item.name} single chart in a new page`" title="Open single chart" target="_blank" rel="noopener noreferrer">↗</a>
+                      </div>
                       <span class="category-badge" :style="categoryTagStyle(item.category)">{{ categoryDisplayLabel(item.category) }}</span>
                     </div>
-                  </a>
+                  </div>
                   <div class="sparkline-wrap"><div :id="`chart-single-${item.key}`" class="plotly-chart"></div></div>
                 </article>
               </section>

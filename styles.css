@@ -301,6 +301,33 @@ summary { cursor: pointer; }
   margin-bottom: 0.65rem;
   text-decoration: none;
 }
+.heading-with-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+.open-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--input-border);
+  background: var(--surface-soft);
+  color: var(--accent-strong);
+  text-decoration: none;
+  font-size: 1rem;
+  line-height: 1;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.open-link-icon:hover,
+.open-link-icon:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
 .single-chart-heading h3 {
   font-size: 1rem;
 }
@@ -314,12 +341,6 @@ summary { cursor: pointer; }
 }
 .chart-footer-controls { display: flex; justify-content: flex-end; margin-top: 1rem; }
 .chart-footer-controls label { min-width: 11rem; }
-
-.chart-modebar-hint {
-  margin: 0.75rem 0 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
 
 .summary-table-panel {
   margin-top: 1rem;
