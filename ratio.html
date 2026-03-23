@@ -75,6 +75,9 @@
             <div class="stat"><dt>Ratio max drawdown</dt><dd>{{ formatPercent(maxDrawdown(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
             <div class="stat"><dt>Ratio from historical peak</dt><dd>{{ formatPercent(distanceFromPeak(spreadSeries.filter((p) => p.value != null))) }}</dd></div>
           </div>
+          <div class="chart-header-tags" v-if="rebased">
+            <span class="category-badge rebased-badge" :style="rebasedTagStyle()">Rebased</span>
+          </div>
           <div class="chart-wrap chart-wrap-lg"><div id="chart-spread" class="plotly-chart"></div></div>
           <details class="instructions-panel panel-shell"><summary>Instructions</summary><div class="instructions-list"><p>Use the chart modebar to switch time scales.</p><p>Use the yearly data button in the modebar to open the annual ratio table view with CSV export.</p><p>Log scale and rebase toggles are also available in the modebar for faster comparisons.</p></div></details>
         </article>

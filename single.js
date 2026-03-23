@@ -214,6 +214,16 @@ createApp({
     categoryLabel(category) {
       return category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Uncategorised';
     },
+    rebasedBadgeStyle() {
+      const hue = this.isDarkMode ? 178 : 192;
+      const bgAlpha = this.isDarkMode ? 0.22 : 0.16;
+      const borderAlpha = this.isDarkMode ? 0.48 : 0.32;
+      return {
+        backgroundColor: `hsla(${hue}, 88%, 46%, ${bgAlpha})`,
+        borderColor: `hsla(${hue}, 88%, 46%, ${borderAlpha})`,
+        color: this.isDarkMode ? 'hsl(178, 90%, 78%)' : 'hsl(192, 78%, 28%)',
+      };
+    },
     categoryBadgeStyle(category, itemKey) {
       const palettes = {
         housing: { hue: 4, sat: 78, lightness: [40, 46, 52, 58, 64] },

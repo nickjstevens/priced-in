@@ -205,6 +205,7 @@ createApp({
       isMobileMenuOpen: false,
       compareHoveredYear: null,
       spreadHoveredYear: null,
+      hiddenCompareSeriesKeys: [],
       summarySortKey: 'totalChange',
       summarySortDirection: 'desc',
     };
@@ -229,8 +230,10 @@ createApp({
       return this.categoryFilteredItems.filter((item) => !q || item.name.toLowerCase().includes(q) || item.category?.includes(q));
     },
     filteredItems() {
-      if (this.selectedItemKey === 'all') return this.itemOptions;
-      return this.itemOptions.filter((item) => item.key === this.selectedItemKey);
+      return this.selectedItemKey === 'all' ? this.itemOptions : this.itemOptions.filter((item) => item.key === this.selectedItemKey);
+    },
+    visibleFilteredItems() {
+      return this.filteredItems.filter((item) => !this.hiddenCompareSeriesKeys.includes(item.key));
     },
     spreadSeriesOptions() {
       const itemSeries = this.items.map((item) => ({ key: item.key, name: item.name, isDenominator: false }));
@@ -266,7 +269,7 @@ createApp({
       return { rollingCorrelation: rolling, averageCorrelation: avg, regime: this.currentRegime() };
     },
     compareSelectionKeys() {
-      return this.filteredItems.map((x) => x.key);
+      return this.visibleFilteredItems.map((x) => x.key);
     },
     compareSeriesMap() {
       return Object.fromEntries(this.compareSelectionKeys.map((key) => {
@@ -294,7 +297,7 @@ createApp({
     },
     summaryTableExtremes() {
       return this.summaryTableColumns.reduce((extremes, column) => {
-        const values = this.filteredItems
+        const values = this.visibleFilteredItems
           .map((item) => this.chartStats(item.key).raw?.[column.key])
           .filter((value) => Number.isFinite(value));
         extremes[column.key] = {
@@ -306,7 +309,7 @@ createApp({
     },
     summaryTableRows() {
       const collator = new Intl.Collator(undefined, { sensitivity: 'base' });
-      return this.filteredItems
+      return this.visibleFilteredItems
         .map((item) => ({
           key: item.key,
           name: item.name,
@@ -544,7 +547,7 @@ createApp({
       }).filter((year) => year != null);
     },
     costRebaseSeriesKeys() {
-      return this.viewMode === 'compare' ? this.compareSelectionKeys : this.filteredItems.map((item) => item.key);
+      return this.filteredItems.map((item) => item.key);
     },
     costRebaseForcedStartYear() {
       if (!this.rebased) return null;
@@ -896,17 +899,26 @@ createApp({
       if (!chartEl) return;
       const entries = this.compareChartEntries();
       const forcedStartYear = this.costRebaseForcedStartYear();
-      const traces = sortLegendTraces(entries.map(({ item, color }) => this.plotlyLineTrace({
-        name: `${item.name} (annual)`,
-        points: this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear),
-        color,
-      })));
+      const traces = sortLegendTraces(entries.map(({ item, color }) => {
+        const trace = this.plotlyLineTrace({
+          name: `${item.name} (annual)`,
+          points: this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear),
+          color,
+        });
+        trace.meta = { itemKey: item.key };
+        if (this.hiddenCompareSeriesKeys.includes(item.key)) trace.visible = 'legendonly';
+        return trace;
+      }));
       Plotly.react(chartEl, traces, this.compareChartLayout(), plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
         rangeButtons: this.rangeModeBarButtons(),
         onOpenYearlyData: () => this.openYearlyDataPage(),
-      })).then(() => this.applyRangeButtonLabels(chartEl));
+      })).then(() => {
+        this.applyRangeButtonLabels(chartEl);
+        this.syncCompareLegendState(chartEl);
+      });
+      this.attachCompareLegendHandlers(chartEl);
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.compareHoveredYear = event?.points?.[0]?.x ?? null; },
         onUnhover: () => { this.compareHoveredYear = null; },
@@ -1010,6 +1022,40 @@ createApp({
     },
     onViewModeChange() {
       this.syncUrlAndRender();
+    },
+
+    rebasedTagStyle() {
+      const hue = this.isDarkMode ? 178 : 192;
+      const bgAlpha = this.isDarkMode ? 0.22 : 0.16;
+      const borderAlpha = this.isDarkMode ? 0.48 : 0.32;
+      return {
+        backgroundColor: `hsla(${hue}, 88%, 46%, ${bgAlpha})`,
+        borderColor: `hsla(${hue}, 88%, 46%, ${borderAlpha})`,
+        color: this.isDarkMode ? 'hsl(178, 90%, 78%)' : 'hsl(192, 78%, 28%)',
+      };
+    },
+    syncCompareLegendState(chartEl) {
+      if (!chartEl?.data) return;
+      const hiddenKeys = chartEl.data
+        .filter((trace) => trace?.meta?.itemKey && trace.visible === 'legendonly')
+        .map((trace) => trace.meta.itemKey);
+      const nextHidden = [...new Set(hiddenKeys)].sort();
+      const currentHidden = [...this.hiddenCompareSeriesKeys].sort();
+      if (JSON.stringify(nextHidden) === JSON.stringify(currentHidden)) return;
+      this.hiddenCompareSeriesKeys = nextHidden;
+      this.renderMiniSingleCharts(this.compareChartEntries(), this.costRebaseForcedStartYear());
+    },
+    attachCompareLegendHandlers(chartEl) {
+      if (!chartEl?.on) return;
+      chartEl.on('plotly_restyle', () => {
+        requestAnimationFrame(() => this.syncCompareLegendState(chartEl));
+      });
+      chartEl.on('plotly_legendclick', () => {
+        requestAnimationFrame(() => this.syncCompareLegendState(chartEl));
+      });
+      chartEl.on('plotly_legenddoubleclick', () => {
+        requestAnimationFrame(() => this.syncCompareLegendState(chartEl));
+      });
     },
     categoryTagStyle(category) {
       return this.categoryBadgeStyle(category, this.items.find((item) => item.category === category)?.key);

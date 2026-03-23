@@ -81,9 +81,12 @@
           <div class="stat"><dt>From historical peak</dt><dd>{{ chartStats().fromPeak }}</dd></div>
           <div class="stat"><dt>Corr. vs priced-in asset</dt><dd>{{ chartStats().correlationToDenominator }}</dd></div>
         </dl>
+        <div class="chart-header-tags" v-if="rebased">
+          <span class="category-badge rebased-badge" :style="rebasedBadgeStyle()">Rebased</span>
+        </div>
         <div class="chart-wrap"><div id="single-chart" class="plotly-chart"></div></div>
         <details class="instructions-panel panel-shell"><summary>Instructions</summary><div class="instructions-list"><p>Use the chart modebar to switch time scales.</p><p>Use the yearly data button in the modebar to open the annual table view with CSV export.</p><p>Log scale and rebase toggles are also available in the modebar for faster comparisons.</p></div></details>
-        <details class="meta"><summary>What is being measured?</summary>
+        <details class="instructions-panel panel-shell meta-panel"><summary>What is being measured?</summary>
           <ul>
             <li>Unit basis: {{ currentItem.metadata?.unit_basis }}</li>
             <li>Geography: {{ currentItem.metadata?.geography }}</li>
@@ -93,7 +96,7 @@
             <li>Confidence: {{ currentItem.metadata?.source_confidence }}</li>
           </ul>
         </details>
-        <details class="sources"><summary>Sources & lineage</summary>
+        <details class="instructions-panel panel-shell sources-panel"><summary>Sources & lineage</summary>
           <ul>
             <li v-for="source in sourceSet()" :key="`${currentItem.key}-${source.url}`"><span class="badge">{{ source.type || 'source' }}</span> <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a> ({{ source.date }}) — {{ source.note }}</li>
           </ul>
