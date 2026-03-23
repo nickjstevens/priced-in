@@ -817,7 +817,7 @@ createApp({
     plotlyLayout(extra = {}) {
       return plotlyLayoutBase(this.isDarkMode, this.useLogScale, extra);
     },
-    plotlyLineTrace({ name, points, color, dash = 'solid', yaxis = 'y', customdata = [], opacity = 1, mode = 'lines+markers', markerSize = 6, lineWidth = 2.5, hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>' }) {
+    plotlyLineTrace({ name, points, color, dash = 'solid', yaxis = 'y', customdata = [], opacity = 1, mode = 'lines', markerSize = 6, lineWidth = 2.5, hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>' }) {
       return {
         type: 'scatter',
         mode,
@@ -825,7 +825,6 @@ createApp({
         x: points.map((point) => point.year),
         y: points.map((point) => point.value),
         line: { color, width: lineWidth, dash, shape: 'linear' },
-        marker: { size: markerSize, color, opacity },
         yaxis,
         customdata,
         hovertemplate,
@@ -1156,6 +1155,7 @@ createApp({
         this.contextSeries = payload.contextSeries;
         this.items = payload.items;
         this.denominators = Object.entries(this.contextSeries).map(([value, d]) => ({ value, label: d.label }));
+        if (!this.contextSeries[this.allDenominator]) this.allDenominator = this.denominators[0]?.value || 'fiat';
         this.perChartDenominator = Object.fromEntries(this.items.map((item) => [item.key, this.allDenominator]));
         if (this.selectedCategory !== 'all' && !this.availableCategories.some((category) => category.value === this.selectedCategory)) this.selectedCategory = 'all';
         if (!this.compareKeys.length) this.compareKeys = this.items.slice(0, 3).map((i) => i.key);
