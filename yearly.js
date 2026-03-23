@@ -56,9 +56,12 @@ createApp({
       return 'Yearly data table';
     },
     descriptionText() {
-      if (this.mode === 'single') return 'This view follows the same denominator, time range, rebasing, and bitcoin-history settings as the single chart page.';
-      if (this.mode === 'ratio') return 'This view follows the same pair selection, time range, rebasing, and bitcoin-history settings as the ratio chart page.';
-      return 'This view follows the same denominator, time range, rebasing, and bitcoin-history settings as the main compare chart.';
+      const denominatorLabel = this.contextSeries[this.allDenominator]?.label || this.allDenominator;
+      const rebaseLabel = this.rebased ? 'rebased to 100 at the first shared visible year' : 'shown in raw priced-in terms';
+      const bitcoinLabel = this.showFullBitcoin ? 'includes full bitcoin history' : 'uses the default bitcoin history window';
+      if (this.mode === 'single') return `Yearly values for ${this.seriesName(this.itemKey)} priced in ${denominatorLabel}, ${rebaseLabel}, across the ${this.selectedRange} range, and ${bitcoinLabel}.`;
+      if (this.mode === 'ratio') return `Yearly values for ${this.ratioLabel}, ${rebaseLabel}, across the ${this.selectedRange} range, and ${bitcoinLabel}.`;
+      return `Yearly values for the selected items priced in ${denominatorLabel}, ${rebaseLabel}, across the ${this.selectedRange} range, and ${bitcoinLabel}.`;
     },
     backUrl() {
       const params = new URLSearchParams();

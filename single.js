@@ -32,6 +32,25 @@ function plotlyLayoutBase(isDarkMode, useLogScale, extra = {}) {
   };
 }
 
+function rebaseReferenceLine(isDarkMode, enabled) {
+  if (!enabled) return [];
+  return [{
+    type: 'line',
+    xref: 'paper',
+    x0: 0,
+    x1: 1,
+    yref: 'y',
+    y0: 100,
+    y1: 100,
+    line: {
+      color: isDarkMode ? 'rgba(45, 212, 191, 0.85)' : 'rgba(8, 145, 178, 0.8)',
+      width: 1.5,
+      dash: 'dot',
+    },
+    layer: 'above',
+  }];
+}
+
 function sortLegendTraces(traces) {
   return [...traces].sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || ''), undefined, { sensitivity: 'base' }));
 }
@@ -377,6 +396,7 @@ createApp({
         });
       }
       Plotly.react(chartEl, sortLegendTraces(traces), this.plotlyLayout({
+        shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
         yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
       }), plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),

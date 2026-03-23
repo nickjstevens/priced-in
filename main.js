@@ -120,6 +120,25 @@ function plotlyLayoutBase(isDarkMode, useLogScale, extra = {}) {
   };
 }
 
+function rebaseReferenceLine(isDarkMode, enabled) {
+  if (!enabled) return [];
+  return [{
+    type: 'line',
+    xref: 'paper',
+    x0: 0,
+    x1: 1,
+    yref: 'y',
+    y0: 100,
+    y1: 100,
+    line: {
+      color: isDarkMode ? 'rgba(45, 212, 191, 0.85)' : 'rgba(8, 145, 178, 0.8)',
+      width: 1.5,
+      dash: 'dot',
+    },
+    layer: 'above',
+  }];
+}
+
 const PLOTLY_MODEBAR_ICON = {
   log: {
     width: 512,
@@ -850,6 +869,7 @@ createApp({
         traces.unshift(overlayTrace);
       }
       const layout = this.plotlyLayout({
+        shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
         yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
       });
       Plotly.react(chartEl, traces, layout, plotlyConfig({
@@ -869,29 +889,47 @@ createApp({
         .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
         .map((item, idx) => ({ item, color: PALETTE[idx % PALETTE.length] }));
     },
+    renderCompactSparkline(chartEl, points, color, chartKey, { height = 92, margins = { l: 8, r: 8, t: 6, b: 6 }, lineWidth = 2, useArea = false } = {}) {
+      if (!chartEl) return;
+      const trace = this.plotlyLineTrace({
+        name: chartKey,
+        points,
+        color,
+        mode: 'lines',
+        markerSize: 0,
+        lineWidth,
+        hovertemplate: '<extra></extra>',
+      });
+      if (useArea) {
+        trace.fill = 'tozeroy';
+        trace.fillcolor = this.isDarkMode ? 'rgba(31, 111, 235, 0.08)' : 'rgba(31, 111, 235, 0.12)';
+      }
+      const layout = this.plotlyLayout({
+        margin: margins,
+        height,
+        showlegend: false,
+        shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
+        xaxis: { ...plotlyAxisBase(this.isDarkMode), showgrid: false, showticklabels: false, zeroline: false, fixedrange: true },
+        yaxis: { ...plotlyAxisBase(this.isDarkMode), type: this.useLogScale ? 'log' : 'linear', showgrid: false, showticklabels: false, zeroline: false, fixedrange: true },
+        hovermode: false,
+      });
+      Plotly.react(chartEl, [trace], layout, { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false, staticPlot: true });
+      this.charts[chartKey] = chartEl;
+    },
     renderMiniSingleCharts(entries, forcedStartYear) {
       entries.forEach(({ item, color }) => {
         const chartEl = document.getElementById(`chart-single-${item.key}`);
         if (!chartEl) return;
         const points = this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear);
-        const trace = this.plotlyLineTrace({
-          name: item.name,
-          points,
-          color,
-          mode: 'lines',
-          markerSize: 0,
-          lineWidth: 2,
-          hovertemplate: '<extra></extra>',
-        });
-        const layout = this.plotlyLayout({
-          margin: { l: 18, r: 10, t: 8, b: 18 },
-          showlegend: false,
-          xaxis: { ...plotlyAxisBase(this.isDarkMode), showgrid: false, showticklabels: false, zeroline: false, fixedrange: true },
-          yaxis: { ...plotlyAxisBase(this.isDarkMode), type: this.useLogScale ? 'log' : 'linear', showgrid: false, showticklabels: false, zeroline: false, fixedrange: true },
-          hovermode: false,
-        });
-        Plotly.react(chartEl, [trace], layout, { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false, staticPlot: true });
-        this.charts[`single-${item.key}`] = chartEl;
+        this.renderCompactSparkline(chartEl, points, color, `single-${item.key}`, { height: 92, margins: { l: 8, r: 8, t: 6, b: 6 }, lineWidth: 2 });
+      });
+    },
+    renderSummaryTableSparklines(entries, forcedStartYear) {
+      entries.forEach(({ item, color }) => {
+        const chartEl = document.getElementById(`summary-sparkline-${item.key}`);
+        if (!chartEl) return;
+        const points = this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear);
+        this.renderCompactSparkline(chartEl, points, color, `summary-${item.key}`, { height: 34, margins: { l: 2, r: 2, t: 2, b: 2 }, lineWidth: 1.6 });
       });
     },
     renderCompareChart() {
@@ -909,7 +947,9 @@ createApp({
         if (this.hiddenCompareSeriesKeys.includes(item.key)) trace.visible = 'legendonly';
         return trace;
       }));
-      Plotly.react(chartEl, traces, this.compareChartLayout(), plotlyConfig({
+      const layout = this.compareChartLayout();
+      layout.shapes = rebaseReferenceLine(this.isDarkMode, this.rebased);
+      Plotly.react(chartEl, traces, layout, plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
         rangeButtons: this.rangeModeBarButtons(),
@@ -925,6 +965,7 @@ createApp({
       });
       this.charts.compare = chartEl;
       this.renderMiniSingleCharts(entries, forcedStartYear);
+      this.renderSummaryTableSparklines(entries, forcedStartYear);
     },
     swapSpreadItems() {
       [this.spreadNumeratorItemKey, this.spreadDenominatorItemKey] = [this.spreadDenominatorItemKey, this.spreadNumeratorItemKey];
@@ -979,6 +1020,7 @@ createApp({
       }
       const sortedTraces = sortLegendTraces(traces);
       const layout = this.plotlyLayout({
+        shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
         yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
         yaxis3: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', anchor: 'free', position: 1, range: [-1, 1], showgrid: false },
       });
