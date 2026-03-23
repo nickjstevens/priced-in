@@ -80,6 +80,9 @@
         <article class="chart-card panel-shell">
           <div class="compare-layout compare-layout-single">
             <div class="compare-main">
+              <div class="chart-header-tags" v-if="rebased">
+                <span class="category-badge rebased-badge" :style="rebasedTagStyle()">Rebased</span>
+              </div>
               <div class="chart-wrap chart-wrap-lg"><div id="chart-compare" class="plotly-chart"></div></div>
               <details class="instructions-panel panel-shell">
                 <summary>Instructions</summary>
@@ -129,14 +132,17 @@
                 </div>
               </section>
               <section class="single-chart-grid" aria-label="Individual item charts">
-                <article v-for="(item, index) in filteredItems" :key="item.key" class="single-chart-card">
+                <article v-for="(item, index) in visibleFilteredItems" :key="item.key" class="single-chart-card">
                   <div class="single-chart-heading">
                     <div>
                       <div class="heading-with-link">
                         <h3>{{ item.name }}</h3>
                         <a class="open-link-icon" :href="singleChartUrl(item.key)" :aria-label="`Open ${item.name} single chart in a new page`" title="Open single chart" target="_blank" rel="noopener noreferrer">↗</a>
                       </div>
-                      <span class="category-badge" :style="categoryTagStyle(item.category)">{{ categoryDisplayLabel(item.category) }}</span>
+                      <div class="single-chart-tags">
+                        <span class="category-badge" :style="categoryTagStyle(item.category)">{{ categoryDisplayLabel(item.category) }}</span>
+                        <span v-if="rebased" class="category-badge rebased-badge" :style="rebasedTagStyle()">Rebased</span>
+                      </div>
                     </div>
                   </div>
                   <div class="sparkline-wrap"><div :id="`chart-single-${item.key}`" class="plotly-chart"></div></div>

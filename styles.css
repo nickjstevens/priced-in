@@ -334,9 +334,24 @@ summary { cursor: pointer; }
 .single-chart-heading .category-badge {
   margin-top: 0.45rem;
 }
+.single-chart-tags,
+.chart-header-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+.chart-header-tags {
+  margin: 0 0 0.65rem;
+}
+.rebased-badge {
+  background-image: linear-gradient(135deg, rgba(45, 212, 191, 0.14), rgba(59, 130, 246, 0.12));
+}
 .sparkline-wrap {
   aspect-ratio: 1 / 1.618;
   min-height: 148px;
+  max-width: 200px;
+  width: 100%;
   pointer-events: none;
 }
 .chart-footer-controls { display: flex; justify-content: flex-end; margin-top: 1rem; }
@@ -430,4 +445,39 @@ summary { cursor: pointer; }
 
 .modebar-text-button:hover {
   color: var(--text) !important;
+}
+
+.single-chart-card {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 901px) {
+  .single-chart-card {
+    align-items: flex-start;
+  }
+}
+
+.meta-panel,
+.sources-panel {
+  margin-top: 0.85rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface-alt);
+}
+
+.meta-panel summary,
+.sources-panel summary {
+  font-weight: 700;
+}
+
+.meta-panel ul,
+.sources-panel ul {
+  margin: 0.85rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.sources-panel .lineage {
+  margin-top: 0.85rem;
 }
