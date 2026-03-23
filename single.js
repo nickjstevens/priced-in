@@ -210,6 +210,9 @@ createApp({
     };
   },
   computed: {
+    canShowGbpOverlay() {
+      return this.denominator !== 'fiat';
+    },
     currentItem() {
       return this.items.find((item) => item.key === this.itemKey) || null;
     },
@@ -291,12 +294,13 @@ createApp({
       p.set('range', this.selectedRange);
       if (this.rebased) p.set('rebased', '1');
       if (this.useLogScale) p.set('log', '1');
-      if (this.showUsdOverlay) p.set('overlayUsd', '1');
+      if (this.showUsdOverlay && this.canShowGbpOverlay) p.set('overlayUsd', '1');
       if (this.showFullBitcoin) p.set('btcFull', '1');
       p.set('theme', this.isDarkMode ? 'dark' : 'light');
       return p;
     },
     syncUrlAndRender() {
+      if (!this.canShowGbpOverlay) this.showUsdOverlay = false;
       const params = this.toParams();
       history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
       this.persistLocalState();

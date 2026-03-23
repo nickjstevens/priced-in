@@ -171,7 +171,7 @@
       "series_basis": "calendar_year_average"
     },
     "gold": {
-      "label": "Gold (LBMA annual average, USD/oz)",
+      "label": "Gold (USD/oz)",
       "unit": "oz",
       "values": [
         35,
@@ -365,7 +365,7 @@
       "series_basis": "calendar_year_average"
     },
     "real_fiat": {
-      "label": "Real GBP (CPI-adjusted)",
+      "label": "GBP, CPI-adjusted (£)",
       "unit": "real £ (2025)",
       "values": [
         0.1384,
