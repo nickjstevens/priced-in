@@ -16,6 +16,30 @@
             <h1>Priced In — Yearly Data</h1>
             <p>Review the selected yearly table in detail and export it to CSV.</p>
           </a>
+          <div class="header-actions">
+            <button
+              class="menu-toggle"
+              type="button"
+              @click="toggleMobileMenu"
+              :aria-expanded="isMobileMenuOpen ? 'true' : 'false'"
+              aria-controls="site-menu"
+              aria-label="Toggle navigation menu"
+            >
+              <span></span><span></span><span></span>
+            </button>
+            <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
+              <nav class="page-nav" aria-label="Main sections">
+                <a class="page-link" href="index.html">Cost of Living</a>
+                <a class="page-link" :href="mode === 'single' ? backUrl : 'single.html?item=house&denom=fiat&theme=' + theme">Single Item</a>
+                <a class="page-link" :href="mode === 'ratio' ? backUrl : 'ratio.html?theme=' + theme">Relative Ratio</a>
+                <a class="page-link" href="assumptions.html">Assumptions & Caveats</a>
+              </nav>
+              <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`">
+                <span class="theme-toggle-icon">{{ theme === 'dark' ? '☀️' : '🌙' }}</span>
+                <span>{{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
+              </button>
+            </div>
+          </div>
         </header>
 
         <section v-if="isLoading" class="status-card">Loading pricing data… <span class="skeleton"></span></section>
@@ -24,11 +48,11 @@
         <section v-else class="chart-card panel-shell">
           <header>
             <div class="card-title-block">
-              <h2>Yearly data table</h2>
-              <p class="lineage">This view follows the same denominator, time range, rebasing, and bitcoin-history settings as the main compare chart.</p>
+              <h2>{{ titleText }}</h2>
+              <p class="lineage">{{ descriptionText }}</p>
             </div>
             <div class="card-actions">
-              <a class="page-link" :href="backUrl">← Back to dashboard</a>
+              <a class="page-link" :href="backUrl">← Back to chart</a>
               <button type="button" @click="downloadCsv">Download CSV</button>
             </div>
           </header>

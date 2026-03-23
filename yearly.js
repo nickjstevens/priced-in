@@ -17,12 +17,19 @@ createApp({
       rebased: false,
       showFullBitcoin: false,
       selectedKeys: [],
+      itemKey: '',
+      mode: 'compare',
+      numeratorKey: '',
+      denominatorKey: '',
+      isMobileMenuOpen: false,
       theme: 'dark',
     };
   },
   computed: {
     compareTableColumns() {
-      return this.selectedKeys.map((key) => ({ key, name: this.items.find((item) => item.key === key)?.name || key }));
+      if (this.mode === 'single') return this.itemKey ? [{ key: this.itemKey, name: this.seriesName(this.itemKey) }] : [];
+      if (this.mode === 'ratio') return [{ key: 'ratio', name: this.ratioLabel }];
+      return this.selectedKeys.map((key) => ({ key, name: this.seriesName(key) }));
     },
     compareTableRows() {
       const years = [...new Set(this.compareTableColumns.flatMap((column) => (this.seriesMap[column.key] || []).map((point) => point.year)))].sort((a, b) => a - b);
@@ -32,16 +39,56 @@ createApp({
       }));
     },
     seriesMap() {
-      return Object.fromEntries(this.selectedKeys.map((key) => [key, this.visiblePairSeries(key, `context:${this.allDenominator}`, this.costRebaseForcedStartYear())]));
+      if (this.mode === 'single') {
+        return this.itemKey ? { [this.itemKey]: this.visiblePairSeries(this.itemKey, `context:${this.allDenominator}`, this.costRebaseForcedStartYear([this.itemKey], this.allDenominator)) } : {};
+      }
+      if (this.mode === 'ratio') {
+        return { ratio: this.visiblePairSeries(this.numeratorKey, this.denominatorKey, this.costRebaseForcedStartYear([this.numeratorKey, this.denominatorKey])) };
+      }
+      return Object.fromEntries(this.selectedKeys.map((key) => [key, this.visiblePairSeries(key, `context:${this.allDenominator}`, this.costRebaseForcedStartYear(this.selectedKeys, this.allDenominator))]));
+    },
+    ratioLabel() {
+      return `${this.seriesName(this.numeratorKey)} / ${this.seriesName(this.denominatorKey)}`;
+    },
+    titleText() {
+      if (this.mode === 'single') return this.seriesName(this.itemKey);
+      if (this.mode === 'ratio') return this.ratioLabel;
+      return 'Yearly data table';
+    },
+    descriptionText() {
+      if (this.mode === 'single') return 'This view follows the same denominator, time range, rebasing, and bitcoin-history settings as the single chart page.';
+      if (this.mode === 'ratio') return 'This view follows the same pair selection, time range, rebasing, and bitcoin-history settings as the ratio chart page.';
+      return 'This view follows the same denominator, time range, rebasing, and bitcoin-history settings as the main compare chart.';
     },
     backUrl() {
-      const search = window.location.search || '';
-      return `index.html${search}`;
+      const params = new URLSearchParams();
+      params.set('range', this.selectedRange);
+      if (this.rebased) params.set('rebased', '1');
+      if (this.showFullBitcoin) params.set('btcFull', '1');
+      params.set('theme', this.theme);
+      if (this.mode === 'single') {
+        params.set('denom', this.allDenominator);
+        if (this.itemKey) params.set('item', this.itemKey);
+        return `single.html?${params.toString()}`;
+      }
+      if (this.mode === 'ratio') {
+        if (this.numeratorKey) params.set('itemA', this.numeratorKey);
+        if (this.denominatorKey) params.set('itemB', this.denominatorKey);
+        return `ratio.html?${params.toString()}`;
+      }
+      params.set('denom', this.allDenominator);
+      if (this.selectedKeys.length) params.set('items', this.selectedKeys.join(','));
+      return `index.html?${params.toString()}`;
     },
   },
   methods: {
     formatTableValue(value) {
-      return value == null ? '—' : value.toFixed(3);
+      return value == null ? '—' : value.toFixed(1);
+    },
+    seriesName(seriesKey) {
+      if (!seriesKey) return '—';
+      if (seriesKey.startsWith('context:')) return this.contextSeries[seriesKey.replace('context:', '')]?.label || seriesKey;
+      return this.items.find((item) => item.key === seriesKey)?.name || seriesKey;
     },
     readParams() {
       const p = new URLSearchParams(window.location.search);
@@ -50,6 +97,10 @@ createApp({
       this.rebased = p.get('rebased') === '1';
       this.showFullBitcoin = p.get('btcFull') === '1';
       this.selectedKeys = (p.get('items') || '').split(',').filter(Boolean);
+      this.itemKey = p.get('item') || '';
+      this.mode = p.get('mode') || 'compare';
+      this.numeratorKey = p.get('itemA') || '';
+      this.denominatorKey = p.get('itemB') || '';
       this.theme = p.get('theme') === 'light' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', this.theme);
     },
@@ -66,6 +117,7 @@ createApp({
       return this.items.find((item) => item.key === seriesKey)?.values || [];
     },
     convertSeries(item, denominator) {
+      if (!item) return [];
       return item.values.map((price, idx) => {
         const d = this.contextSeries[denominator]?.values?.[idx];
         if (price == null || d == null || d === 0) return null;
@@ -75,13 +127,16 @@ createApp({
     rebaseStartYears(seriesKeys, denominator = null) {
       const [fromYear, toYear] = this.rangeBounds();
       return seriesKeys.map((seriesKey) => {
-        const values = denominator ? this.convertSeries(this.items.find((item) => item.key === seriesKey), denominator) : this.annualSeriesValuesForKey(seriesKey);
+        if (!seriesKey) return null;
+        const values = denominator && !seriesKey.startsWith('context:')
+          ? this.convertSeries(this.items.find((item) => item.key === seriesKey), denominator)
+          : this.annualSeriesValuesForKey(seriesKey);
         return this.years.find((year, idx) => year >= fromYear && year <= toYear && values[idx] != null);
       }).filter((year) => year != null);
     },
-    costRebaseForcedStartYear() {
+    costRebaseForcedStartYear(seriesKeys, denominator = null) {
       if (!this.rebased) return null;
-      const starts = this.rebaseStartYears(this.selectedKeys, this.allDenominator);
+      const starts = this.rebaseStartYears(seriesKeys, denominator);
       return starts.length ? Math.max(...starts) : null;
     },
     applySeriesTransforms(points, forcedStartYear = null) {
@@ -101,7 +156,7 @@ createApp({
         if (numeratorValue == null || denominatorValue == null || denominatorValue === 0) return { year, value: null, observed: false };
         return { year, value: numeratorValue / denominatorValue, observed: true };
       }).filter((point) => point.year >= fromYear && point.year <= toYear && point.observed);
-      if (denominatorKey === 'context:bitcoin' && !this.showFullBitcoin) points = points.filter((point) => point.year >= 2017);
+      if ((denominatorKey === 'context:bitcoin' || numeratorKey === 'context:bitcoin') && !this.showFullBitcoin) points = points.filter((point) => point.year >= 2017);
       return this.applySeriesTransforms(points, forcedStartYear);
     },
     downloadCsv() {
@@ -115,9 +170,16 @@ createApp({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `priced-in-yearly-${this.allDenominator}-${this.selectedRange}.csv`;
+      link.download = `priced-in-yearly-${this.mode}-${this.allDenominator}-${this.selectedRange}.csv`;
       link.click();
       URL.revokeObjectURL(url);
+    },
+    toggleTheme() {
+      this.theme = this.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', this.theme);
+    },
+    toggleMobileMenu() {
+      this.isMobileMenuOpen = !this.isMobileMenuOpen;
     },
     async fetchData() {
       this.isLoading = true;
@@ -130,7 +192,12 @@ createApp({
         this.years = payload.years;
         this.contextSeries = payload.contextSeries;
         this.items = payload.items;
-        if (!this.selectedKeys.length) this.selectedKeys = this.items.slice(0, 3).map((item) => item.key);
+        if (this.mode === 'single' && (!this.itemKey || !this.items.some((item) => item.key === this.itemKey))) this.itemKey = this.items[0]?.key || '';
+        if (this.mode === 'ratio') {
+          if (!this.numeratorKey) this.numeratorKey = this.items[0]?.key || '';
+          if (!this.denominatorKey) this.denominatorKey = this.items[1]?.key || this.items[0]?.key || '';
+        }
+        if (this.mode === 'compare' && !this.selectedKeys.length) this.selectedKeys = this.items.slice(0, 3).map((item) => item.key);
       } catch (err) {
         this.error = `Unable to load pricing data: ${err.message}`;
       } finally {

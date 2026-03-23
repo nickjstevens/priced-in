@@ -18,13 +18,12 @@ function isValidDataset(payload) {
 function formatPercent(value) {
   if (value == null || Number.isNaN(value)) return '—';
   const sign = value > 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
+  return `${sign}${value.toFixed(1)}%`;
 }
 
 function formatGbp(value) {
   if (value == null || Number.isNaN(value)) return '—';
-  const usePennies = Math.abs(value) < 100;
-  const fractionDigits = usePennies ? 2 : 0;
+  const fractionDigits = 1;
   return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
@@ -446,7 +445,7 @@ createApp({
       return this.items.find((item) => item.key === seriesKey)?.name || seriesKey;
     },
     formatTableValue(value) {
-      return value == null ? '—' : value.toFixed(3);
+      return value == null ? '—' : value.toFixed(1);
     },
     readUrlState() {
       const p = new URLSearchParams(location.search);
@@ -678,7 +677,7 @@ createApp({
         vol5y: formatPercent(volatility),
         maxDrawdown: formatPercent(maxDrawdown(pts)),
         fromPeak: formatPercent(distanceFromPeak(pts)),
-        correlationToDenominator: corr == null ? '—' : corr.toFixed(2),
+        correlationToDenominator: corr == null ? '—' : corr.toFixed(1),
         raw: {
           cagrSelected: cagr,
           totalChange: total,
@@ -756,11 +755,26 @@ createApp({
     openYearlyDataPage() {
       window.open(`yearly.html?${this.buildYearlyDataParams().toString()}`, '_blank', 'noopener');
     },
+    openRatioYearlyDataPage() {
+      window.open(`yearly.html?${this.buildRatioYearlyDataParams().toString()}`, '_blank', 'noopener');
+    },
     buildYearlyDataParams() {
       const params = new URLSearchParams();
+      params.set('mode', 'compare');
       params.set('denom', this.allDenominator);
       params.set('range', this.selectedRange);
       if (this.compareSelectionKeys.length) params.set('items', this.compareSelectionKeys.join(','));
+      if (this.rebased) params.set('rebased', '1');
+      if (this.showFullBitcoin) params.set('btcFull', '1');
+      params.set('theme', this.isDarkMode ? 'dark' : 'light');
+      return params;
+    },
+    buildRatioYearlyDataParams() {
+      const params = new URLSearchParams();
+      params.set('mode', 'ratio');
+      params.set('range', this.selectedRange);
+      if (this.spreadNumeratorItemKey) params.set('itemA', this.spreadNumeratorItemKey);
+      if (this.spreadDenominatorItemKey) params.set('itemB', this.spreadDenominatorItemKey);
       if (this.rebased) params.set('rebased', '1');
       if (this.showFullBitcoin) params.set('btcFull', '1');
       params.set('theme', this.isDarkMode ? 'dark' : 'light');
@@ -818,7 +832,7 @@ createApp({
           denominatorLabel,
         ])),
       })];
-      traces[0].hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.3f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.2f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.2f}<extra></extra>';
+      traces[0].hovertemplate = '%{fullData.name}: %{y:.1f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.1f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.1f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.1f}<extra></extra>';
       if (this.showUsdOverlay && denominator !== 'fiat') {
         const overlayPoints = this.visibleOverlaySeries(itemKey, denominator, forcedStartYear);
         const overlayTrace = this.plotlyLineTrace({
@@ -829,7 +843,7 @@ createApp({
           yaxis: 'y2',
           opacity: 0.7,
         });
-        overlayTrace.hovertemplate = `%{fullData.name}: %{y:,.2f}<br>Year: %{x}<extra></extra>`;
+        overlayTrace.hovertemplate = `%{fullData.name}: %{y:,.1f}<br>Year: %{x}<extra></extra>`;
         traces.unshift(overlayTrace);
       }
       const layout = this.plotlyLayout({
@@ -925,7 +939,7 @@ createApp({
           this.seriesName(denominatorKey),
         ])),
       })];
-      traces[0].hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.3f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.2f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.2f}<extra></extra>';
+      traces[0].hovertemplate = '%{fullData.name}: %{y:.1f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.1f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.1f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.1f}<extra></extra>';
       const rollingCorrelation = this.spreadRollingCorrelation || [];
       if (this.showSpreadRollingCorrelation && rollingCorrelation.length) {
         const corrTrace = this.plotlyLineTrace({
@@ -935,7 +949,7 @@ createApp({
           dash: 'dash',
           yaxis: 'y3',
         });
-        corrTrace.hovertemplate = '%{fullData.name}: %{y:.2f}<br>Year: %{x}<extra></extra>';
+        corrTrace.hovertemplate = '%{fullData.name}: %{y:.1f}<br>Year: %{x}<extra></extra>';
         traces.push(corrTrace);
       }
       if (this.showUsdOverlay) {
@@ -948,7 +962,7 @@ createApp({
           yaxis: 'y2',
           opacity: 0.7,
         });
-        overlayTrace.hovertemplate = '%{fullData.name}: %{y:,.2f}<br>Year: %{x}<extra></extra>';
+        overlayTrace.hovertemplate = '%{fullData.name}: %{y:,.1f}<br>Year: %{x}<extra></extra>';
         traces.push(overlayTrace);
       }
       const sortedTraces = sortLegendTraces(traces);
@@ -960,6 +974,7 @@ createApp({
         onToggleLogScale: () => this.toggleLogScale(),
         onToggleRebase: () => this.toggleRebase(),
         rangeButtons: this.rangeModeBarButtons(),
+        onOpenYearlyData: () => this.openRatioYearlyDataPage(),
       })).then(() => this.applyRangeButtonLabels(chartEl));
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.spreadHoveredYear = event?.points?.[0]?.x ?? null; },
