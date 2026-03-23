@@ -5,7 +5,7 @@ Vue + Chart.js app for exploring UK cost-of-living series in multiple denominato
 ## Features
 
 - Per-item cards and a **comparison mode** (multiple items on one chart)
-- Denominator switching: nominal GBP, real GBP (CPI-adjusted), gold, average salary, median salary, hours worked, bitcoin
+- Denominator switching: nominal GBP, real GBP (CPI-adjusted), gold, hours worked, bitcoin
 - Rebased/indexed mode (start of selected range = 100)
 - Global date ranges and shareable deep links via URL params
 - Bitcoin-specific UX for sparse early history + full-history toggle

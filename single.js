@@ -367,12 +367,11 @@ createApp({
       if (!chartEl) return;
       const traces = [{
         type: 'scatter',
-        mode: 'lines+markers',
+        mode: 'lines',
         name: `${this.currentItem.name} priced in ${this.contextSeries[this.denominator]?.label || this.denominator} (annual)`,
         x: points.map((point) => point.year),
         y: points.map((point) => point.value),
         line: { color: '#1f6feb', width: 2.5 },
-        marker: { size: 6, color: '#1f6feb' },
         customdata: points.map((point) => ([
           point.value,
           this.pointValueForSeries(this.currentItem.key, point.year),
@@ -385,12 +384,11 @@ createApp({
       if (this.showUsdOverlay && this.denominator !== 'fiat') {
         traces.push({
           type: 'scatter',
-          mode: 'lines+markers',
+          mode: 'lines',
           name: `${this.currentItem.name} (GBP overlay)`,
           x: this.visibleOverlaySeries(this.currentItem.key).map((point) => point.year),
           y: this.visibleOverlaySeries(this.currentItem.key).map((point) => point.value),
           line: { color: 'rgba(249, 115, 22, 0.6)', width: 2, dash: 'dash' },
-          marker: { size: 5, color: 'rgba(249, 115, 22, 0.6)' },
           yaxis: 'y2',
           hovertemplate: '%{fullData.name}: %{y:,.1f}<br>Year: %{x}<extra></extra>',
         });
