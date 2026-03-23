@@ -116,9 +116,12 @@
                       <tr v-for="row in summaryTableRows" :key="row.key">
                         <th>
                           <div class="summary-item-cell">
-                            <span>{{ row.name }}</span>
-                            <a class="open-link-icon" :href="singleChartUrl(row.key)" :aria-label="`Open ${row.name} single chart in a new page`" title="Open single chart" target="_blank" rel="noopener noreferrer">↗</a>
-                            <span class="category-badge" :style="categoryTagStyle(row.category)">{{ categoryDisplayLabel(row.category) }}</span>
+                            <div class="summary-item-heading">
+                              <span>{{ row.name }}</span>
+                              <a class="open-link-icon" :href="singleChartUrl(row.key)" :aria-label="`Open ${row.name} single chart in a new page`" title="Open single chart" target="_blank" rel="noopener noreferrer">↗</a>
+                              <span class="category-badge" :style="categoryTagStyle(row.category)">{{ categoryDisplayLabel(row.category) }}</span>
+                            </div>
+                            <div :id="`summary-sparkline-${row.key}`" class="summary-row-sparkline"></div>
                           </div>
                         </th>
                         <td
