@@ -255,7 +255,7 @@ createApp({
       return this.denominatorSeriesType() === 'context' && this.denominatorSeriesKey() !== 'fiat';
     },
     canSwapPair() {
-      return this.denominatorSeriesType() === 'item';
+      return this.denominatorSeriesType() === 'item' && this.denominatorSeriesKey() !== this.itemKey;
     },
     currentItem() {
       return this.items.find((item) => item.key === this.itemKey) || null;
@@ -454,7 +454,7 @@ createApp({
     renderChart() {
       if (!this.currentItem) return;
       this.chartZoomed = false;
-      const points = this.visiblePairSeries(this.currentItem.key, `context:${this.denominator}`);
+      const points = this.visiblePairSeries(this.currentItem.key);
       const hoverStatsByPoint = this.rebasedHoverStats(points);
       const chartEl = document.getElementById('single-chart');
       if (!chartEl) return;
@@ -529,7 +529,9 @@ createApp({
         if (c < worst.c) worst = { y: pts[i].year, c };
       }
       const volatility = this.rollingVolatility().latest;
-      const latestValue = this.formatHoverValueLine(last.value, item.values[this.years.indexOf(last.year)]);
+      const latestValue = this.rebased
+        ? '—'
+        : this.formatHoverValueLine(last.value, item.values[this.years.indexOf(last.year)]);
       return {
         cagrSelected: formatPercent(cagr),
         totalChange: formatPercent(total),
@@ -590,7 +592,7 @@ createApp({
       const denominatorType = this.denominatorSeriesType();
       const label = this.denominatorSeriesLabel();
       if (denominatorType === 'item') return `A rising line means ${this.currentItem?.name || 'the numerator series'} is becoming more expensive relative to ${label}.`;
-      return `A rising line means ${this.currentItem?.name || 'the priced-in series'} is losing purchasing power when measured in ${label}.`;
+      return `A rising line means the ${label} purchasing power of ${this.currentItem?.name || 'the priced-in series'} is falling.`;
     },
     goldAlternativeText() {
       if (this.denominatorSeriesType() !== 'context') return '';
@@ -612,7 +614,7 @@ createApp({
       const yearSpan = last.year - first.year;
       const cagr = yearSpan > 0 ? (((last.value / first.value) ** (1 / yearSpan) - 1) * 100) : null;
       const direction = totalChange >= 0 ? 'rose' : 'fell';
-      return `If you had measured this against gold instead, ${item.name} ${direction} ${Math.abs(totalChange).toFixed(1)}% over the same period, with a CAGR of ${formatPercent(cagr)}.`;
+      return `If this was priced in gold instead, ${item.name} ${direction} ${Math.abs(totalChange).toFixed(1)}% over the same period, with a CAGR of ${formatPercent(cagr)}.`;
     },
     sourceSet() {
       const denominatorSources = this.denominatorSeriesType() === 'item'
@@ -627,10 +629,12 @@ createApp({
       return lineage.length ? `Lineage: ${lineage.join(' → ')}` : '';
     },
     swapPair() {
-      if (!this.canSwapPair) return;
+      if (this.denominatorSeriesType() !== 'item') return;
       const denominatorItemKey = this.denominatorSeriesKey();
-      this.denominator = `item:${this.itemKey}`;
+      if (!denominatorItemKey || denominatorItemKey === this.itemKey) return;
+      const previousItemKey = this.itemKey;
       this.itemKey = denominatorItemKey;
+      this.denominator = `item:${previousItemKey}`;
       this.syncUrlAndRender();
     },
     toggleTheme() {
