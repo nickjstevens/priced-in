@@ -903,19 +903,40 @@ createApp({
         opacity,
       };
     },
+    shouldUseSatsAxis(pointGroups = []) {
+      if (this.rebased) return false;
+      const values = pointGroups
+        .flatMap((points) => points || [])
+        .map((point) => point?.value)
+        .filter((value) => value != null && Number.isFinite(value));
+      if (!values.length) return false;
+      return values.every((value) => Math.abs(value) < 0.001);
+    },
+    scalePointsForDisplay(points, { useSatsAxis = false } = {}) {
+      if (!useSatsAxis) return points;
+      return points.map((point) => ({ ...point, value: point.value == null ? null : point.value * 100000000 }));
+    },
+    satsAxisConfig() {
+      return {
+        title: 'sats',
+        tickformat: ',.0f',
+      };
+    },
     renderChart(itemKey) {
       const item = this.items.find((x) => x.key === itemKey);
       const denominator = this.perChartDenominator[itemKey] || this.allDenominator;
       if (!item) return;
       const forcedStartYear = denominator === this.allDenominator ? this.costRebaseForcedStartYear() : null;
       const pts = this.visiblePairSeries(itemKey, `context:${denominator}`, forcedStartYear);
+      const useSatsAxis = denominator === 'bitcoin' && this.shouldUseSatsAxis([pts]);
+      const displayPts = this.scalePointsForDisplay(pts, { useSatsAxis });
       const denominatorKey = `context:${denominator}`;
       const denominatorLabel = this.contextSeries[denominator]?.label || denominator;
       const chartEl = document.getElementById(`chart-${itemKey}`);
       if (!chartEl) return;
       const traces = [this.plotlyLineTrace({
         name: `${item.name} (annual)`,
-        points: pts,
+        points: displayPts,
         color: PALETTE[0],
         customdata: pts.map((point) => ([
           this.buildHoverLabel({
@@ -944,6 +965,13 @@ createApp({
       }
       const layout = this.plotlyLayout({
         shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
+        yaxis: {
+          ...plotlyAxisBase(this.isDarkMode),
+          title: '',
+          type: this.useLogScale ? 'log' : 'linear',
+          rangemode: this.useLogScale ? undefined : 'tozero',
+          ...(useSatsAxis ? this.satsAxisConfig() : {}),
+        },
         yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
       });
       Plotly.react(chartEl, traces, layout, plotlyConfig({
@@ -1003,11 +1031,17 @@ createApp({
       if (!chartEl) return;
       const entries = this.compareChartEntries();
       const forcedStartYear = this.costRebaseForcedStartYear();
+      const rawSeriesByItemKey = new Map(entries.map(({ item }) => [
+        item.key,
+        this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear),
+      ]));
+      const useSatsAxis = this.allDenominator === 'bitcoin' && this.shouldUseSatsAxis([...rawSeriesByItemKey.values()]);
       const traces = sortLegendTraces(entries.map(({ item, color }) => {
-        const points = this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear);
+        const points = rawSeriesByItemKey.get(item.key) || [];
+        const displayPoints = this.scalePointsForDisplay(points, { useSatsAxis });
         const trace = this.plotlyLineTrace({
           name: `${item.name} (annual)`,
-          points,
+          points: displayPoints,
           color,
           customdata: points.map((point) => ([
             this.buildHoverLabel({
@@ -1026,6 +1060,7 @@ createApp({
         return trace;
       }));
       const layout = this.compareChartLayout();
+      if (useSatsAxis) layout.yaxis = { ...layout.yaxis, ...this.satsAxisConfig() };
       layout.shapes = rebaseReferenceLine(this.isDarkMode, this.rebased);
       Plotly.react(chartEl, traces, layout, plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),
@@ -1095,9 +1130,11 @@ createApp({
       const pts = this.spreadSeries;
       const numeratorKey = this.spreadNumeratorItemKey;
       const denominatorKey = this.spreadDenominatorItemKey;
+      const useSatsAxis = denominatorKey === 'context:bitcoin' && this.shouldUseSatsAxis([pts]);
+      const displayPts = this.scalePointsForDisplay(pts, { useSatsAxis });
       const traces = [this.plotlyLineTrace({
         name: this.ratioSeriesLabel,
-        points: pts,
+        points: displayPts,
         color: '#7c3aed',
         customdata: pts.map((point) => ([
           this.buildHoverLabel({
@@ -1139,6 +1176,13 @@ createApp({
       const sortedTraces = sortLegendTraces(traces);
       const layout = this.plotlyLayout({
         shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
+        yaxis: {
+          ...plotlyAxisBase(this.isDarkMode),
+          title: '',
+          type: this.useLogScale ? 'log' : 'linear',
+          rangemode: this.useLogScale ? undefined : 'tozero',
+          ...(useSatsAxis ? this.satsAxisConfig() : {}),
+        },
         yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
         yaxis3: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', anchor: 'free', position: 1, range: [-1, 1], showgrid: false },
       });
