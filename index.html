@@ -31,8 +31,7 @@
             <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" :class="{ active: currentPage === 'cost' }" href="index.html">Cost of Living</a>
-                <a class="page-link" :href="singleItemMenuUrl()">Single Item</a>
-                <a class="page-link" :class="{ active: currentPage === 'ratio' }" :href="ratioPageUrl()">Relative Ratio</a>
+                <a class="page-link" :href="singleItemMenuUrl()">Single Series</a>
                 <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">Assumptions & Caveats</a>
               </nav>
               <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
@@ -87,11 +86,12 @@
               <p v-if="compareChartZoomed" class="notice">Double-click the chart to zoom back out.</p>
               <div class="chart-wrap chart-wrap-lg"><div id="chart-compare" class="plotly-chart"></div></div>
               <details class="instructions-panel panel-shell">
-                <summary>Instructions</summary>
+                <summary>Chart Instructions</summary>
                 <div class="instructions-list">
-                  <p>Use the chart menu bar to switch time ranges, from the last 10 years to All.</p>
-                  <p>Use the Data export button in the chart menu bar to open the data table in a new window with CSV export.</p>
-                  <p>Log scale and rebase toggles are also available in the chart menu bar.</p>
+                  <p>Drag on the chart to zoom into a specific period or value range, then double-click anywhere in the plot to zoom back out.</p>
+                  <p>Use the chart menu bar to switch quick time ranges (10Y to All), plus log scale and rebase toggles.</p>
+                  <p>Use the Data ↗ button in the chart menu bar to open the yearly data table and export CSV.</p>
+                  <p>Click legend entries to hide/show individual series and isolate comparisons.</p>
                 </div>
               </details>
               <section class="data-table-panel summary-table-panel">

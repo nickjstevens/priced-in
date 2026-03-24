@@ -34,7 +34,7 @@ createApp({
       items: [],
       isLoading: true,
       error: '',
-      allDenominator: 'fiat',
+      allDenominator: 'context:fiat',
       selectedRange: 'full',
       rebased: false,
       selectedKeys: [],
@@ -61,12 +61,14 @@ createApp({
     },
     seriesMap() {
       if (this.mode === 'single') {
-        return this.itemKey ? { [this.itemKey]: this.visiblePairSeries(this.itemKey, `context:${this.allDenominator}`, this.costRebaseForcedStartYear([this.itemKey], this.allDenominator)) } : {};
+        return this.itemKey
+          ? { [this.itemKey]: this.visiblePairSeries(this.itemKey, this.denominatorSeriesRef(), this.costRebaseForcedStartYear([this.itemKey], this.denominatorType() === 'context' ? this.denominatorKey() : null)) }
+          : {};
       }
       if (this.mode === 'ratio') {
         return { ratio: this.visiblePairSeries(this.numeratorKey, this.denominatorKey, this.costRebaseForcedStartYear([this.numeratorKey, this.denominatorKey])) };
       }
-      return Object.fromEntries(this.selectedKeys.map((key) => [key, this.visiblePairSeries(key, `context:${this.allDenominator}`, this.costRebaseForcedStartYear(this.selectedKeys, this.allDenominator))]));
+      return Object.fromEntries(this.selectedKeys.map((key) => [key, this.visiblePairSeries(key, this.denominatorSeriesRef(), this.costRebaseForcedStartYear(this.selectedKeys, this.denominatorType() === 'context' ? this.denominatorKey() : null))]));
     },
     ratioLabel() {
       return `${this.seriesName(this.numeratorKey)} / ${this.seriesName(this.denominatorKey)}`;
@@ -77,7 +79,7 @@ createApp({
       return 'Yearly data table';
     },
     descriptionText() {
-      const denominatorLabel = this.contextSeries[this.allDenominator]?.label || this.allDenominator;
+      const denominatorLabel = this.denominatorLabel();
       const rebaseLabel = this.rebased ? 'rebased to 100 at the first shared visible year' : 'shown in raw priced-in terms';
       const bitcoinLabel = 'with bitcoin history truncated before 2017';
       if (this.mode === 'single') return `Yearly values for ${this.seriesName(this.itemKey)} priced in ${denominatorLabel}, ${rebaseLabel}, across the ${this.selectedRange} range, and ${bitcoinLabel}.`;
@@ -95,9 +97,9 @@ createApp({
         return `single.html?${params.toString()}`;
       }
       if (this.mode === 'ratio') {
-        if (this.numeratorKey) params.set('itemA', this.numeratorKey);
-        if (this.denominatorKey) params.set('itemB', this.denominatorKey);
-        return `ratio.html?${params.toString()}`;
+        params.set('item', this.numeratorKey || 'house');
+        params.set('denom', this.denominatorKey || 'context:fiat');
+        return `single.html?${params.toString()}`;
       }
       params.set('denom', this.allDenominator);
       if (this.selectedKeys.length) params.set('items', this.selectedKeys.join(','));
@@ -107,8 +109,21 @@ createApp({
   methods: {
     isBitcoinQuotedColumn(columnKey) {
       if (this.rebased) return false;
-      if (this.mode === 'single' || this.mode === 'compare') return this.allDenominator === 'bitcoin';
+      if (this.mode === 'single' || this.mode === 'compare') return this.denominatorType() === 'context' && this.denominatorKey() === 'bitcoin';
       return this.mode === 'ratio' && this.denominatorKey === 'context:bitcoin' && columnKey === 'ratio';
+    },
+    denominatorType() {
+      return this.allDenominator.startsWith('item:') ? 'item' : 'context';
+    },
+    denominatorKey() {
+      return this.allDenominator.replace(/^(context:|item:)/, '');
+    },
+    denominatorSeriesRef() {
+      return this.denominatorType() === 'item' ? `item:${this.denominatorKey()}` : `context:${this.denominatorKey()}`;
+    },
+    denominatorLabel() {
+      if (this.denominatorType() === 'item') return this.items.find((item) => item.key === this.denominatorKey())?.name || this.denominatorKey();
+      return this.contextSeries[this.denominatorKey()]?.label || this.denominatorKey();
     },
     formatTableValue(value, columnKey) {
       if (this.isBitcoinQuotedColumn(columnKey)) return formatBitcoinHuman(value);
@@ -121,7 +136,8 @@ createApp({
     },
     readParams() {
       const p = new URLSearchParams(window.location.search);
-      this.allDenominator = p.get('denom') || 'fiat';
+      const denom = p.get('denom') || 'context:fiat';
+      this.allDenominator = denom.includes(':') ? denom : `context:${denom}`;
       this.selectedRange = p.get('range') || 'full';
       this.rebased = p.get('rebased') === '1';
       this.selectedKeys = (p.get('items') || '').split(',').filter(Boolean);

@@ -236,7 +236,7 @@ createApp({
       items: [],
       denominators: [],
       itemKey: '',
-      denominator: 'fiat',
+      denominator: 'context:fiat',
       selectedRange: 'full',
       rebased: false,
       useLogScale: false,
@@ -252,7 +252,10 @@ createApp({
   },
   computed: {
     canShowGbpOverlay() {
-      return this.denominator !== 'fiat';
+      return this.denominatorSeriesType() === 'context' && this.denominatorSeriesKey() !== 'fiat';
+    },
+    canSwapPair() {
+      return this.denominatorSeriesType() === 'item';
     },
     currentItem() {
       return this.items.find((item) => item.key === this.itemKey) || null;
@@ -263,23 +266,14 @@ createApp({
     singleItemMenuUrl() {
       const params = new URLSearchParams();
       params.set('item', 'house');
-      params.set('denom', 'fiat');
+      params.set('denom', 'context:fiat');
       params.set('theme', this.isDarkMode ? 'dark' : 'light');
       return `single.html?${params.toString()}`;
-    },
-    ratioPageUrl() {
-      const params = new URLSearchParams();
-      params.set('theme', this.isDarkMode ? 'dark' : 'light');
-      return `ratio.html?${params.toString()}`;
     },
   },
   methods: {
     categoryLabel(category) {
       return category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Uncategorised';
-    },
-    confidenceTagLabel() {
-      const confidence = this.currentItem?.metadata?.source_confidence;
-      return `Confidence: ${confidence ? confidence.charAt(0).toUpperCase() + confidence.slice(1) : 'Unknown'}`;
     },
     rebasedBadgeStyle() {
       const hue = this.isDarkMode ? 178 : 192;
@@ -323,7 +317,8 @@ createApp({
     fromParams() {
       const p = new URLSearchParams(window.location.search);
       this.itemKey = p.get('item') || '';
-      this.denominator = p.get('denom') || 'fiat';
+      const denom = p.get('denom') || 'fiat';
+      this.denominator = denom.includes(':') ? denom : `context:${denom}`;
       this.selectedRange = p.get('range') || 'full';
       this.rebased = p.get('rebased') === '1';
       this.useLogScale = p.get('log') === '1';
@@ -373,18 +368,33 @@ createApp({
       }
       return this.items.find((item) => item.key === seriesKey)?.values?.[annualIndex] ?? null;
     },
+    denominatorSeriesType() {
+      return this.denominator.startsWith('item:') ? 'item' : 'context';
+    },
+    denominatorSeriesKey() {
+      return this.denominator.replace(/^(context:|item:)/, '');
+    },
+    denominatorSeriesLabel() {
+      if (this.denominatorSeriesType() === 'item') return this.items.find((item) => item.key === this.denominatorSeriesKey())?.name || this.denominatorSeriesKey();
+      return this.contextSeries[this.denominatorSeriesKey()]?.label || this.denominatorSeriesKey();
+    },
+    denominatorAnnualValues() {
+      if (this.denominatorSeriesType() === 'item') return this.items.find((item) => item.key === this.denominatorSeriesKey())?.values || [];
+      return this.contextSeries[this.denominatorSeriesKey()]?.values || [];
+    },
     visiblePairSeries(numeratorKey, denominatorKey) {
       const item = this.items.find((x) => x.key === numeratorKey);
       if (!item) return [];
       const [from, to] = this.rangeBounds();
+      const denominatorAnnual = this.denominatorAnnualValues();
       let points = this.years
         .map((year, idx) => {
-          const denominatorValue = this.contextSeries[this.denominator]?.values?.[idx];
+          const denominatorValue = denominatorAnnual[idx];
           if (item.values[idx] == null || denominatorValue == null || denominatorValue === 0) return { year, value: null };
           return { year, value: item.values[idx] / denominatorValue };
         })
         .filter((point) => point.year >= from && point.year <= to && point.value != null);
-      if (this.denominator === 'bitcoin') points = points.filter((point) => Number(point.year) >= 2017);
+      if (this.denominatorSeriesType() === 'context' && this.denominatorSeriesKey() === 'bitcoin') points = points.filter((point) => Number(point.year) >= 2017);
       return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })));
     },
     visibleOverlaySeries(seriesKey) {
@@ -392,7 +402,7 @@ createApp({
       let points = this.years
         .map((year) => ({ year, value: this.pointValueForSeries(seriesKey, year) }))
         .filter((point) => point.year >= from && point.year <= to && point.value != null);
-      if (this.denominator === 'bitcoin') points = points.filter((point) => Number(point.year) >= 2017);
+      if (this.denominatorSeriesType() === 'context' && this.denominatorSeriesKey() === 'bitcoin') points = points.filter((point) => Number(point.year) >= 2017);
       return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })));
     },
     applySeriesTransforms(points) {
@@ -425,12 +435,15 @@ createApp({
       return plotlyLayoutBase(this.isDarkMode, this.useLogScale, extra);
     },
     formatHoverValueLine(pricedValue, gbpValue) {
-      if (this.denominator === 'fiat') return formatHoverGbp(pricedValue);
-      if (this.denominator === 'real_fiat') return `${formatHoverGbp(pricedValue)} (CPI-adjusted)`;
-      if (this.denominator === 'gold') return `${formatUnitValue(pricedValue)} oz gold (${formatHoverGbp(gbpValue)})`;
-      if (this.denominator === 'hours') return `${formatUnitValue(pricedValue)} hours at median wage (${formatHoverGbp(gbpValue)})`;
-      if (this.denominator === 'bitcoin') return `${formatBitcoinHuman(pricedValue)} (${formatHoverGbp(gbpValue)})`;
-      return `${formatUnitValue(pricedValue)} ${this.contextSeries[this.denominator]?.label || this.denominator} (${formatHoverGbp(gbpValue)})`;
+      const denominatorType = this.denominatorSeriesType();
+      const denominatorKey = this.denominatorSeriesKey();
+      if (denominatorType === 'item') return `${formatUnitValue(pricedValue)}× ${this.denominatorSeriesLabel()} (${formatHoverGbp(gbpValue)})`;
+      if (denominatorKey === 'fiat') return formatHoverGbp(pricedValue);
+      if (denominatorKey === 'real_fiat') return `${formatHoverGbp(pricedValue)} (CPI-adjusted)`;
+      if (denominatorKey === 'gold') return `${formatUnitValue(pricedValue)} oz gold (${formatHoverGbp(gbpValue)})`;
+      if (denominatorKey === 'hours') return `${formatUnitValue(pricedValue)} hours at median wage (${formatHoverGbp(gbpValue)})`;
+      if (denominatorKey === 'bitcoin') return `${formatBitcoinHuman(pricedValue)} (${formatHoverGbp(gbpValue)})`;
+      return `${formatUnitValue(pricedValue)} ${this.denominatorSeriesLabel()} (${formatHoverGbp(gbpValue)})`;
     },
     buildHoverLabel(point, hoverStats = null) {
       const gbpValue = this.pointValueForSeries(this.currentItem.key, point.year);
@@ -448,7 +461,7 @@ createApp({
       const traces = [{
         type: 'scatter',
         mode: 'lines',
-        name: `${this.currentItem.name} priced in ${this.contextSeries[this.denominator]?.label || this.denominator} (annual)`,
+        name: `${this.currentItem.name} priced in ${this.denominatorSeriesLabel()} (annual)`,
         x: points.map((point) => point.year),
         y: points.map((point) => point.value),
         line: { color: '#1f6feb', width: 2.5 },
@@ -457,7 +470,7 @@ createApp({
         ])),
         hovertemplate: '%{customdata[0]}<extra></extra>',
       }];
-      if (this.showUsdOverlay && this.denominator !== 'fiat') {
+      if (this.showUsdOverlay && this.canShowGbpOverlay) {
         traces.push({
           type: 'scatter',
           mode: 'lines',
@@ -474,7 +487,7 @@ createApp({
         shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
         yaxis: {
           ...plotlyAxisBase(this.isDarkMode),
-          title: this.rebasedYAxisTitle(this.contextSeries[this.denominator]?.label || this.denominator),
+          title: this.rebasedYAxisTitle(this.denominatorSeriesLabel()),
           type: this.useLogScale ? 'log' : 'linear',
           rangemode: this.useLogScale ? undefined : 'tozero',
         },
@@ -495,7 +508,7 @@ createApp({
           cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—', latestValue: '—',
         };
       }
-      const pts = this.visiblePairSeries(item.key, `context:${this.denominator}`).filter((point) => point.value != null);
+      const pts = this.visiblePairSeries(item.key).filter((point) => point.value != null);
       if (pts.length < 2) {
         return {
           cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—', latestValue: '—',
@@ -531,7 +544,7 @@ createApp({
     rollingVolatility() {
       const item = this.currentItem;
       if (!item) return { latest: null, series: [] };
-      const pts = this.visiblePairSeries(item.key, `context:${this.denominator}`).filter((point) => point.value != null);
+      const pts = this.visiblePairSeries(item.key).filter((point) => point.value != null);
       if (pts.length < 6) return { latest: null, series: [] };
       const returns = [];
       for (let i = 1; i < pts.length; i += 1) {
@@ -564,19 +577,61 @@ createApp({
     insightText() {
       const item = this.currentItem;
       if (!item) return '';
-      const pts = this.visiblePairSeries(item.key, `context:${this.denominator}`).filter((point) => point.value != null);
+      const pts = this.visiblePairSeries(item.key).filter((point) => point.value != null);
       if (pts.length < 2) return 'Not enough data in this range for an insight.';
       const change = ((pts[pts.length - 1].value - pts[0].value) / pts[0].value) * 100;
+      const yearSpan = pts[pts.length - 1].year - pts[0].year;
+      const cagr = yearSpan > 0 ? ((((pts[pts.length - 1].value / pts[0].value) ** (1 / yearSpan)) - 1) * 100) : null;
       return change >= 0
-        ? `${item.name} rose ${change.toFixed(1)}% over this selected period.`
-        : `${item.name} fell ${Math.abs(change).toFixed(1)}% over this selected period.`;
+        ? `${item.name} rose ${change.toFixed(1)}% over this selected period, with a CAGR of ${formatPercent(cagr)}.`
+        : `${item.name} fell ${Math.abs(change).toFixed(1)}% over this selected period, with a CAGR of ${formatPercent(cagr)}.`;
+    },
+    purchasingPowerText() {
+      const denominatorType = this.denominatorSeriesType();
+      const label = this.denominatorSeriesLabel();
+      if (denominatorType === 'item') return `A rising line means ${this.currentItem?.name || 'the numerator series'} is becoming more expensive relative to ${label}.`;
+      return `A rising line means ${this.currentItem?.name || 'the priced-in series'} is losing purchasing power when measured in ${label}.`;
+    },
+    goldAlternativeText() {
+      if (this.denominatorSeriesType() !== 'context') return '';
+      const denominatorKey = this.denominatorSeriesKey();
+      if (!['fiat', 'real_fiat'].includes(denominatorKey)) return '';
+      const item = this.currentItem;
+      if (!item || !this.contextSeries.gold?.values?.length) return '';
+      const [from, to] = this.rangeBounds();
+      const points = this.years.map((year, idx) => {
+        const itemValue = item.values[idx];
+        const goldValue = this.contextSeries.gold.values[idx];
+        if (itemValue == null || goldValue == null || goldValue === 0) return null;
+        return { year, value: itemValue / goldValue };
+      }).filter((point) => point && point.year >= from && point.year <= to);
+      if (points.length < 2) return '';
+      const first = points[0];
+      const last = points[points.length - 1];
+      const totalChange = ((last.value / first.value) - 1) * 100;
+      const yearSpan = last.year - first.year;
+      const cagr = yearSpan > 0 ? (((last.value / first.value) ** (1 / yearSpan) - 1) * 100) : null;
+      const direction = totalChange >= 0 ? 'rose' : 'fell';
+      return `If you had measured this against gold instead, ${item.name} ${direction} ${Math.abs(totalChange).toFixed(1)}% over the same period, with a CAGR of ${formatPercent(cagr)}.`;
     },
     sourceSet() {
-      return [...(this.currentItem?.sources || []), ...(this.contextSeries[this.denominator]?.sources || [])];
+      const denominatorSources = this.denominatorSeriesType() === 'item'
+        ? (this.items.find((item) => item.key === this.denominatorSeriesKey())?.sources || [])
+        : (this.contextSeries[this.denominatorSeriesKey()]?.sources || []);
+      return [...(this.currentItem?.sources || []), ...denominatorSources];
     },
     dataLineage() {
-      const lineage = this.contextSeries[this.denominator]?.lineage || [];
+      const lineage = this.denominatorSeriesType() === 'item'
+        ? []
+        : (this.contextSeries[this.denominatorSeriesKey()]?.lineage || []);
       return lineage.length ? `Lineage: ${lineage.join(' → ')}` : '';
+    },
+    swapPair() {
+      if (!this.canSwapPair) return;
+      const denominatorItemKey = this.denominatorSeriesKey();
+      this.denominator = `item:${this.itemKey}`;
+      this.itemKey = denominatorItemKey;
+      this.syncUrlAndRender();
     },
     toggleTheme() {
       this.isDarkMode = !this.isDarkMode;
@@ -686,9 +741,18 @@ createApp({
         this.years = payload.years;
         this.contextSeries = payload.contextSeries;
         this.items = payload.items;
-        this.denominators = Object.entries(this.contextSeries).map(([value, d]) => ({ value, label: d.label }));
+        this.denominators = [
+          ...Object.entries(this.contextSeries).map(([value, d]) => ({ value: `context:${value}`, label: d.label })),
+          ...this.items.map((item) => ({ value: `item:${item.key}`, label: `${item.name} (series)` })),
+        ];
         if (!this.itemKey || !this.items.some((item) => item.key === this.itemKey)) this.itemKey = this.items[0]?.key || '';
-        if (!this.contextSeries[this.denominator]) this.denominator = this.denominators[0]?.value || 'fiat';
+        if (!this.denominators.some((denominator) => denominator.value === this.denominator)) this.denominator = this.denominators[0]?.value || 'context:fiat';
+        if (this.denominator === `item:${this.itemKey}`) {
+          const fallbackContext = this.denominators.find((denominator) => denominator.value.startsWith('context:fiat'))?.value
+            || this.denominators.find((denominator) => denominator.value.startsWith('context:'))?.value
+            || 'context:fiat';
+          this.denominator = fallbackContext;
+        }
       } catch (err) {
         this.error = `Unable to load pricing data: ${err.message}`;
       } finally {
