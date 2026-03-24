@@ -57,7 +57,7 @@
           <span class="swap-button-icon">⇅</span>
           <span class="swap-button-text">Swap pair</span>
         </button>
-        <button @click="copyShareLink">Copy share link</button>
+        <button class="copy-link-button" @click="copyShareLink">Copy share link</button>
       </section>
       <p class="share-feedback" v-if="shareFeedback">{{ shareFeedback }}</p>
 
@@ -70,7 +70,6 @@
             <h2>{{ currentItem.name }}</h2>
             <div class="chart-header-tags">
               <span class="category-badge" :style="categoryBadgeStyle(currentItem.category, currentItem.key)">{{ categoryLabel(currentItem.category) }}</span>
-              <span v-if="rebased" class="category-badge rebased-badge rebase-tag-end" :style="rebasedBadgeStyle()">Rebased</span>
             </div>
           </div>
         </header>
@@ -87,6 +86,9 @@
           <div class="stat"><dt>From historical peak</dt><dd>{{ chartStats().fromPeak }}</dd></div>
           <div class="stat"><dt>Latest value</dt><dd>{{ chartStats().latestValue }}</dd></div>
         </dl>
+        <div class="chart-header-tags" v-if="rebased">
+          <span class="category-badge rebased-badge" :style="rebasedBadgeStyle()">Rebased</span>
+        </div>
         <p v-if="chartZoomed" class="notice">Double-click the chart to zoom back out.</p>
         <div class="chart-wrap"><div id="single-chart" class="plotly-chart"></div></div>
         <details class="instructions-panel panel-shell meta-panel"><summary>What is being measured?</summary>
@@ -104,7 +106,7 @@
           </ul>
           <p v-if="dataLineage()" class="lineage">{{ dataLineage() }}</p>
         </details>
-        <details class="instructions-panel panel-shell"><summary>Chart Instructions</summary><div class="instructions-list"><p>Drag on the chart to zoom into a specific period or value range, then double-click anywhere in the plot to zoom back out to the full visible range.</p><p>Use the chart menu bar to switch quick time ranges (10Y to All), toggle log scale, and toggle rebasing from the first visible year.</p><p>Use the “Data ↗” menu button to open the yearly data table and export CSV for deeper analysis.</p><p>Hover any point to see the exact yearly value, total change, and CAGR context in the tooltip.</p></div></details>
+        <details class="instructions-panel panel-shell"><summary>Chart Instructions</summary><div class="instructions-list"><p>Drag on the chart to zoom into a specific period or value range, then double-click anywhere in the plot to zoom back out to the full visible range.</p><p>Use the chart menu bar to switch quick time ranges (10Y to All), toggle log scale, and toggle rebasing from the first visible year.</p><p>Use the “Data ↗” menu button to open the yearly data table and export CSV for deeper analysis.</p></div></details>
       </article>
       </div>
     </main>
