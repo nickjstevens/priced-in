@@ -110,6 +110,7 @@ function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [], onO
     displayModeBar: true,
     displaylogo: false,
     scrollZoom: false,
+    showTips: false,
     modeBarButtonsToAdd,
     modeBarButtonsToRemove: ['zoom2d','pan2d','select2d','lasso2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toggleSpikelines','hoverClosestCartesian','hoverCompareCartesian','toImage'],
   };
@@ -239,6 +240,7 @@ createApp({
       selectedRange: 'full',
       rebased: false,
       useLogScale: false,
+      chartZoomed: false,
       showUsdOverlay: false,
       isDarkMode: true,
       isMobileMenuOpen: false,
@@ -434,6 +436,7 @@ createApp({
     },
     renderChart() {
       if (!this.currentItem) return;
+      this.chartZoomed = false;
       const points = this.visiblePairSeries(this.currentItem.key, `context:${this.denominator}`);
       const hoverStatsByPoint = this.rebasedHoverStats(points);
       const chartEl = document.getElementById('single-chart');
@@ -478,6 +481,7 @@ createApp({
         rangeButtons: this.rangeModeBarButtons(),
         onOpenYearlyData: () => this.openYearlyDataPage(),
       })).then(() => this.applyRangeButtonLabels(chartEl));
+      this.bindZoomNoticeHandlers(chartEl);
       this.chart = chartEl;
     },
     chartStats() {
@@ -594,7 +598,7 @@ createApp({
         name: `Range: ${option.label}`,
         title: `${this.selectedRange === option.value ? 'Active: ' : ''}Show ${option.label.toLowerCase()}`,
         icon: PLOTLY_MODEBAR_ICON.range,
-        text: option.value === 'full' ? 'Full' : option.label.replace(/^Last\s+/i, '').replace(/Y$/i, ''),
+        text: option.value === 'full' ? 'All' : option.label.replace(/^Last\s+/i, '').toLowerCase(),
         click: () => this.setSelectedRange(option.value),
       }));
     },
@@ -603,11 +607,37 @@ createApp({
       chartEl.querySelectorAll('.modebar-btn').forEach((button) => {
         const title = button.getAttribute('data-title') || button.getAttribute('title') || '';
         const rangeButton = RANGE_OPTIONS.find((option) => title.includes(`Show ${option.label.toLowerCase()}`));
-        if (!rangeButton) return;
-        const label = rangeButton.value === 'full' ? 'Full' : rangeButton.label.replace(/^Last\s+/i, '').replace(/Y$/i, '');
+        const customButtonLabels = [
+          { match: 'Toggle log scale', label: 'log' },
+          { match: 'Toggle rebase to 100', label: 'Rebase' },
+          { match: 'Open yearly data table in a dedicated page', label: 'Data' },
+        ];
+        const mappedButton = customButtonLabels.find((entry) => title.includes(entry.match));
+        const label = rangeButton
+          ? (rangeButton.value === 'full' ? 'All' : rangeButton.label.replace(/^Last\s+/i, '').toLowerCase())
+          : mappedButton?.label;
+        if (!label) return;
         button.classList.add('modebar-text-button');
         button.textContent = label;
         button.setAttribute('aria-label', title);
+      });
+    },
+    bindZoomNoticeHandlers(chartEl) {
+      if (!chartEl?.on || chartEl.dataset.zoomNoticeBound === '1') return;
+      chartEl.dataset.zoomNoticeBound = '1';
+      chartEl.on('plotly_relayout', (eventData) => {
+        if (!eventData) return;
+        const eventKeys = Object.keys(eventData);
+        const hasManualRange = eventKeys.some((key) => key.includes('.range[') || key.endsWith('.range'));
+        if (hasManualRange) {
+          this.chartZoomed = true;
+          return;
+        }
+        const hasAutoRangeReset = eventKeys.some((key) => key.endsWith('.autorange') && eventData[key] === true);
+        if (hasAutoRangeReset) this.chartZoomed = false;
+      });
+      chartEl.on('plotly_doubleclick', () => {
+        this.chartZoomed = false;
       });
     },
 
