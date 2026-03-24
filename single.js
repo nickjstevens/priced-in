@@ -379,7 +379,7 @@ createApp({
         })
         .filter((point) => point.year >= from && point.year <= to && point.value != null);
       if (this.denominator === 'bitcoin') points = points.filter((point) => Number(point.year) >= 2017);
-      return this.applySeriesTransforms(points);
+      return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })));
     },
     visibleOverlaySeries(seriesKey) {
       const [from, to] = this.rangeBounds();
@@ -387,13 +387,30 @@ createApp({
         .map((year) => ({ year, value: this.pointValueForSeries(seriesKey, year) }))
         .filter((point) => point.year >= from && point.year <= to && point.value != null);
       if (this.denominator === 'bitcoin') points = points.filter((point) => Number(point.year) >= 2017);
-      return this.applySeriesTransforms(points);
+      return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })));
     },
     applySeriesTransforms(points) {
       if (!this.rebased) return points;
       const first = points[0]?.value;
       if (!first) return points;
-      return points.map((point) => ({ ...point, value: (point.value / first) * 100 }));
+      return points.map((point) => ({ ...point, rawValue: point.rawValue ?? point.value, value: (point.value / first) * 100 }));
+    },
+    rebasedHoverStats(points) {
+      if (!Array.isArray(points) || !points.length) return [];
+      const firstPoint = points.find((point) => (point?.rawValue ?? point?.value) != null);
+      if (!firstPoint) return points.map(() => ({ totalChange: null, cagr: null }));
+      const firstRaw = firstPoint.rawValue ?? firstPoint.value;
+      const firstYear = Number(firstPoint.year);
+      if (!firstRaw || !Number.isFinite(firstYear)) return points.map(() => ({ totalChange: null, cagr: null }));
+      return points.map((point) => {
+        const rawValue = point.rawValue ?? point.value;
+        const year = Number(point.year);
+        if (rawValue == null || !Number.isFinite(rawValue)) return { totalChange: null, cagr: null };
+        const totalChange = ((rawValue / firstRaw) - 1) * 100;
+        const yearsElapsed = Number.isFinite(year) ? (year - firstYear) : null;
+        const cagr = yearsElapsed && yearsElapsed > 0 ? (((rawValue / firstRaw) ** (1 / yearsElapsed) - 1) * 100) : null;
+        return { totalChange, cagr };
+      });
     },
     toChartPoints(points) {
       return points.map((point) => ({ x: pointLabelToDecimalYear(point.year), y: point.value }));
@@ -409,13 +426,16 @@ createApp({
       if (this.denominator === 'bitcoin') return `${formatBitcoinHuman(pricedValue)} (${formatHoverGbp(gbpValue)})`;
       return `${formatUnitValue(pricedValue)} ${this.contextSeries[this.denominator]?.label || this.denominator} (${formatHoverGbp(gbpValue)})`;
     },
-    buildHoverLabel(point) {
+    buildHoverLabel(point, hoverStats = null) {
       const gbpValue = this.pointValueForSeries(this.currentItem.key, point.year);
-      return `${this.currentItem.name} in ${Math.round(Number(point.year))}<br>${this.formatHoverValueLine(point.value, gbpValue)}`;
+      const yearLabel = Math.round(Number(point.year));
+      if (this.rebased) return `${this.currentItem.name} in ${yearLabel}<br>${formatPercent(hoverStats?.totalChange)} total change, ${formatPercent(hoverStats?.cagr)} CAGR (${formatHoverGbp(gbpValue)})`;
+      return `${this.currentItem.name} in ${yearLabel}<br>${this.formatHoverValueLine(point.value, gbpValue)}`;
     },
     renderChart() {
       if (!this.currentItem) return;
       const points = this.visiblePairSeries(this.currentItem.key, `context:${this.denominator}`);
+      const hoverStatsByPoint = this.rebasedHoverStats(points);
       const chartEl = document.getElementById('single-chart');
       if (!chartEl) return;
       const traces = [{
@@ -425,8 +445,8 @@ createApp({
         x: points.map((point) => point.year),
         y: points.map((point) => point.value),
         line: { color: '#1f6feb', width: 2.5 },
-        customdata: points.map((point) => ([
-          this.buildHoverLabel(point),
+        customdata: points.map((point, idx) => ([
+          this.buildHoverLabel(point, hoverStatsByPoint[idx]),
         ])),
         hovertemplate: '%{customdata[0]}<extra></extra>',
       }];

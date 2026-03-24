@@ -528,8 +528,30 @@ createApp({
       if (denominatorKey === 'bitcoin') return `${formatBitcoinHuman(pricedValue)} (${formatHoverGbp(gbpValue)})`;
       return `${formatUnitValue(pricedValue)} ${denominatorLabel || 'units'} (${formatHoverGbp(gbpValue)})`;
     },
-    buildHoverLabel({ itemName, year, denominatorSeriesKey, pricedValue, gbpValue, denominatorLabel }) {
+    rebasedHoverStats(points) {
+      if (!Array.isArray(points) || !points.length) return [];
+      const firstPoint = points.find((point) => (point?.rawValue ?? point?.value) != null);
+      if (!firstPoint) return points.map(() => ({ totalChange: null, cagr: null }));
+      const firstRaw = firstPoint.rawValue ?? firstPoint.value;
+      const firstYear = Number(firstPoint.year);
+      if (!firstRaw || !Number.isFinite(firstYear)) return points.map(() => ({ totalChange: null, cagr: null }));
+      return points.map((point) => {
+        const rawValue = point.rawValue ?? point.value;
+        const year = Number(point.year);
+        if (rawValue == null || !Number.isFinite(rawValue)) return { totalChange: null, cagr: null };
+        const totalChange = ((rawValue / firstRaw) - 1) * 100;
+        const yearsElapsed = Number.isFinite(year) ? (year - firstYear) : null;
+        const cagr = yearsElapsed && yearsElapsed > 0 ? (((rawValue / firstRaw) ** (1 / yearsElapsed) - 1) * 100) : null;
+        return { totalChange, cagr };
+      });
+    },
+    buildHoverLabel({ itemName, year, denominatorSeriesKey, pricedValue, gbpValue, denominatorLabel, hoverStats = null }) {
       const yearLabel = Number.isFinite(Number(year)) ? Math.round(Number(year)) : year;
+      if (this.rebased) {
+        const totalChange = formatPercent(hoverStats?.totalChange);
+        const cagr = formatPercent(hoverStats?.cagr);
+        return `${itemName} in ${yearLabel}<br>${totalChange} total change, ${cagr} CAGR (${formatHoverGbp(gbpValue)})`;
+      }
       const valueLine = this.formatHoverValueLine({
         denominatorSeriesKey,
         pricedValue,
@@ -650,7 +672,7 @@ createApp({
       if (!rebasingPoint?.value) return points.filter((point) => point.year >= startYear);
       return points
         .filter((point) => point.year >= rebasingPoint.year)
-        .map((point) => ({ ...point, value: (point.value / rebasingPoint.value) * 100 }));
+        .map((point) => ({ ...point, rawValue: point.rawValue ?? point.value, value: (point.value / rebasingPoint.value) * 100 }));
     },
     visiblePairSeries(numeratorKey, denominatorKey, forcedStartYear = null) {
       if (!numeratorKey || !denominatorKey) return [];
@@ -669,7 +691,7 @@ createApp({
       if (denominatorKey === 'context:bitcoin') points = points.filter((point) => point.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([numeratorKey, denominatorKey]);
       const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
-      return this.applySeriesTransforms(points, forcedStart);
+      return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })), forcedStart);
     },
     visibleOverlaySeries(seriesKey, denominator, forcedStartYear = null) {
       if (!seriesKey) return [];
@@ -681,7 +703,7 @@ createApp({
       if (denominator === 'bitcoin') points = points.filter((point) => point.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([seriesKey]);
       const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
-      return this.applySeriesTransforms(points, forcedStart);
+      return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })), forcedStart);
     },
     visibleSeries(item, denominator, forcedStartYear = null) {
       if (!item) return [];
@@ -694,7 +716,7 @@ createApp({
       if (denominator === 'bitcoin') points = points.filter((p) => p.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([item.key], denominator);
       const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
-      return this.applySeriesTransforms(points, forcedStart);
+      return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })), forcedStart);
     },
     toChartPoints(points) {
       return points.map((point) => ({ x: pointLabelToDecimalYear(point.year), y: point.value }));
@@ -931,11 +953,12 @@ createApp({
       const denominatorLabel = this.contextSeries[denominator]?.label || denominator;
       const chartEl = document.getElementById(`chart-${itemKey}`);
       if (!chartEl) return;
+      const hoverStatsByPoint = this.rebasedHoverStats(pts);
       const traces = [this.plotlyLineTrace({
         name: `${item.name} (annual)`,
         points: displayPts,
         color: PALETTE[0],
-        customdata: pts.map((point) => ([
+        customdata: pts.map((point, idx) => ([
           this.buildHoverLabel({
             itemName: item.name,
             year: point.year,
@@ -943,6 +966,7 @@ createApp({
             pricedValue: point.value,
             gbpValue: this.pointValueForSeries(itemKey, point.year),
             denominatorLabel,
+            hoverStats: hoverStatsByPoint[idx],
           }),
         ])),
       })];
@@ -1035,12 +1059,13 @@ createApp({
       const useSatsAxis = this.allDenominator === 'bitcoin' && this.shouldUseSatsAxis([...rawSeriesByItemKey.values()]);
       const traces = sortLegendTraces(entries.map(({ item, color }) => {
         const points = rawSeriesByItemKey.get(item.key) || [];
+        const hoverStatsByPoint = this.rebasedHoverStats(points);
         const displayPoints = this.scalePointsForDisplay(points, { useSatsAxis });
         const trace = this.plotlyLineTrace({
           name: `${item.name} (annual)`,
           points: displayPoints,
           color,
-          customdata: points.map((point) => ([
+          customdata: points.map((point, idx) => ([
             this.buildHoverLabel({
               itemName: item.name,
               year: point.year,
@@ -1048,6 +1073,7 @@ createApp({
               pricedValue: point.value,
               gbpValue: this.pointValueForSeries(item.key, point.year),
               denominatorLabel: this.contextSeries[this.allDenominator]?.label || this.allDenominator,
+              hoverStats: hoverStatsByPoint[idx],
             }),
           ])),
           hovertemplate: '%{customdata[0]}<extra></extra>',
@@ -1129,11 +1155,12 @@ createApp({
       const denominatorKey = this.spreadDenominatorItemKey;
       const useSatsAxis = denominatorKey === 'context:bitcoin' && this.shouldUseSatsAxis([pts]);
       const displayPts = this.scalePointsForDisplay(pts, { useSatsAxis });
+      const hoverStatsByPoint = this.rebasedHoverStats(pts);
       const traces = [this.plotlyLineTrace({
         name: this.ratioSeriesLabel,
         points: displayPts,
         color: '#7c3aed',
-        customdata: pts.map((point) => ([
+        customdata: pts.map((point, idx) => ([
           this.buildHoverLabel({
             itemName: this.seriesName(numeratorKey),
             year: point.year,
@@ -1141,6 +1168,7 @@ createApp({
             pricedValue: point.value,
             gbpValue: this.pointValueForSeries(numeratorKey, point.year),
             denominatorLabel: this.seriesName(denominatorKey),
+            hoverStats: hoverStatsByPoint[idx],
           }),
         ])),
       })];
