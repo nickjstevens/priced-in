@@ -79,8 +79,8 @@
   ],
   "contextSeries": {
     "fiat": {
-      "label": "GBP (£)",
-      "unit": "£",
+      "label": "GBP (\u00a3)",
+      "unit": "\u00a3",
       "values": [
         1,
         1,
@@ -174,82 +174,82 @@
       "label": "Gold (GBP/oz)",
       "unit": "oz",
       "values": [
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        27.65,
-        31.055,
-        32.477,
-        28.408,
-        32.232,
-        45.946,
-        76.725,
-        125.815,
-        127.206,
-        98.624,
-        116.691,
-        152.786,
-        242.277,
-        485.653,
-        362.736,
-        296.779,
-        334.755,
-        284.779,
-        250.635,
-        290.878,
-        353.004,
-        345.056,
-        301.203,
-        303.147,
-        286.249,
-        271.547,
-        284.218,
-        303.36,
-        303.415,
-        306.417,
-        261.719,
-        232.331,
-        220.315,
-        220.497,
-        214.122,
-        244.687,
-        287.07,
-        323.679,
-        351.542,
-        477.429,
-        549.358,
-        688.848,
-        768.157,
-        967.75,
-        1241.88,
-        1318.51,
-        1114.69,
-        1000.14,
-        916.4,
-        988.29,
-        993.03,
-        1001.72,
-        1100.47,
-        1398.3,
-        1421.21,
-        1422.79,
-        1534.97,
-        1885.098,
-        2710.885
+        12.5,
+        12.5,
+        12.5,
+        12.5,
+        12.5,
+        12.5,
+        12.5,
+        12.529,
+        12.456,
+        12.461,
+        12.466,
+        12.49,
+        12.465,
+        12.499,
+        12.534,
+        12.517,
+        12.53,
+        12.766,
+        16.423,
+        17.198,
+        15.008,
+        16.697,
+        23.287,
+        39.65,
+        68.093,
+        72.744,
+        69.496,
+        84.679,
+        100.84,
+        144.782,
+        264.488,
+        228.546,
+        215.12,
+        279.579,
+        270.928,
+        247.248,
+        251.183,
+        273.298,
+        245.537,
+        233.113,
+        216.052,
+        205.409,
+        195.834,
+        239.62,
+        250.854,
+        243.384,
+        248.554,
+        202.253,
+        177.498,
+        172.372,
+        184.372,
+        188.18,
+        206.448,
+        222.49,
+        223.604,
+        244.79,
+        328.388,
+        347.52,
+        475.825,
+        623.582,
+        793.141,
+        980.628,
+        1053.267,
+        902.681,
+        768.923,
+        759.215,
+        926.932,
+        976.141,
+        950.675,
+        1091.567,
+        1380.101,
+        1307.818,
+        1461.008,
+        1563.185,
+        1867.694,
+        2604.65
       ],
       "sources": [
         {
@@ -257,7 +257,7 @@
           "url": "https://www.gold.org/goldhub/research/gold-demand-trends/gold-demand-trends-full-year-2025",
           "type": "market",
           "date": "2026-01-29",
-          "note": "Reports annual average LBMA (PM) gold price of about US$3,431/oz in 2025 and US$2,386.20 in 2024; values in this dataset are converted to GBP/oz using a constant 0.79 USD→GBP factor."
+          "note": "Reports annual average LBMA (PM) gold price in USD. In this dataset, USD gold is converted to GBP/oz using annual USD\u2192GBP averages (GBP per USD) instead of a constant FX factor."
         },
         {
           "name": "Gold price averages dataset",
@@ -265,11 +265,20 @@
           "type": "market",
           "date": "2026-03-15",
           "note": "Gold price averages over monthly, quarterly and annual timeframes are referenced to the LBMA benchmark."
+        },
+        {
+          "name": "FRED (OECD MEI): CCUSMA02GBA618N annual USD exchange rate for UK (GBP per USD)",
+          "url": "https://fred.stlouisfed.org/data/CCUSMA02GBA618N",
+          "type": "official",
+          "date": "2026-02-16",
+          "note": "Annual GBP-per-USD averages used for USD\u2192GBP conversion from 1957 onward (series frequency: annual)."
         }
       ],
       "series_basis": "calendar_year_average",
       "lineage": [
-        "Gold denominator represented as LBMA annual average GBP per troy ounce, converted from USD source series using a constant 0.79 USD→GBP factor for denominator consistency."
+        "Gold denominator represented as LBMA annual average GBP per troy ounce.",
+        "USD gold benchmarks are converted to GBP using annual USD\u2192GBP averages (FRED/OECD CCUSMA02GBA618N, GBP per USD).",
+        "For 1950\u20131956, FX uses the Bretton Woods sterling parity approximation (1 GBP \u2248 2.80 USD; 0.3571 GBP per USD) to backfill years before the OECD annual series starts in 1957."
       ]
     },
     "bitcoin": {
@@ -365,8 +374,8 @@
       "series_basis": "calendar_year_average"
     },
     "real_fiat": {
-      "label": "GBP, CPI-adjusted (£)",
-      "unit": "real £ (2025)",
+      "label": "GBP, CPI-adjusted (\u00a3)",
+      "unit": "real \u00a3 (2025)",
       "values": [
         0.1384,
         0.142,
@@ -551,7 +560,7 @@
         }
       ],
       "lineage": [
-        "Hours per £1 of earnings = implied annual hours / benchmark annual earnings. Recent years move with the updated full-time earnings benchmark."
+        "Hours per \u00a31 of earnings = implied annual hours / benchmark annual earnings. Recent years move with the updated full-time earnings benchmark."
       ],
       "series_basis": "calendar_year_average"
     }
@@ -655,7 +664,7 @@
         "frequency": "Annual",
         "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "1950–2023 remain historical/interpolated anchors; 2024 and 2025 endpoints updated to UK average house prices from UK HPI rather than England-only figures.",
+        "notes": "1950\u20132023 remain historical/interpolated anchors; 2024 and 2025 endpoints updated to UK average house prices from UK HPI rather than England-only figures.",
         "series_basis": "calendar_year_average"
       }
     },
@@ -1975,7 +1984,7 @@
         }
       ],
       "metadata": {
-        "unit_basis": "Annual bill (£ per year)",
+        "unit_basis": "Annual bill (\u00a3 per year)",
         "geography": "England",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
@@ -2277,7 +2286,7 @@
           "url": "https://www.gov.uk/government/statistics/quarterly-energy-prices",
           "type": "official",
           "date": "2026-03-10",
-          "note": "Domestic electricity unit rates converted to £/kWh annual anchors."
+          "note": "Domestic electricity unit rates converted to \u00a3/kWh annual anchors."
         },
         {
           "name": "Ofgem default tariff cap levels",
@@ -2288,7 +2297,7 @@
         }
       ],
       "metadata": {
-        "unit_basis": "£ per kWh",
+        "unit_basis": "\u00a3 per kWh",
         "geography": "United Kingdom",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
@@ -2601,7 +2610,7 @@
         }
       ],
       "metadata": {
-        "unit_basis": "Annual licence fee (£ per year)",
+        "unit_basis": "Annual licence fee (\u00a3 per year)",
         "geography": "United Kingdom",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
@@ -2699,24 +2708,24 @@
           "url": "https://www.southwestwater.co.uk/household/help-support/faqs/customer-services",
           "type": "official",
           "date": "2026-03-15",
-          "note": "States average annual household bill is £686 from 1 April 2025, compared with £545 11 years earlier."
+          "note": "States average annual household bill is \u00a3686 from 1 April 2025, compared with \u00a3545 11 years earlier."
         },
         {
           "name": "Water UK annual average bill changes 2025-2026",
           "url": "https://www.water.org.uk/annual-average-bill-changes-2025-2026",
           "type": "official",
           "date": "2025-01-29",
-          "note": "Shows South West Water 2024-25 average bill £520 and 2025-26 £686."
+          "note": "Shows South West Water 2024-25 average bill \u00a3520 and 2025-26 \u00a3686."
         }
       ],
       "metadata": {
-        "unit_basis": "Average annual household bill (£ per year)",
+        "unit_basis": "Average annual household bill (\u00a3 per year)",
         "geography": "South West Water region (England)",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
         "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "2024 and 2025 use direct published bill figures; 2014 is anchored from South West Water’s statement that 2025 is £686 compared with £545 eleven years earlier; surrounding years are interpolated/back-cast for continuity.",
+        "notes": "2024 and 2025 use direct published bill figures; 2014 is anchored from South West Water\u2019s statement that 2025 is \u00a3686 compared with \u00a3545 eleven years earlier; surrounding years are interpolated/back-cast for continuity.",
         "series_basis": "regulated_tariff"
       }
     },
@@ -3023,13 +3032,13 @@
         }
       ],
       "metadata": {
-        "unit_basis": "£ per litre",
+        "unit_basis": "\u00a3 per litre",
         "geography": "United Kingdom",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
         "last_updated": "2026-03-15",
         "source_confidence": "medium",
-        "notes": "2003–2024 are exact calendar-year averages from DESNZ weekly UK road fuel price statistics; 2025 is set to RAC Fuel Watch's published full-year average of 142.96p/litre; earlier years remain reconstructed historical anchors.",
+        "notes": "2003\u20132024 are exact calendar-year averages from DESNZ weekly UK road fuel price statistics; 2025 is set to RAC Fuel Watch's published full-year average of 142.96p/litre; earlier years remain reconstructed historical anchors.",
         "series_basis": "calendar_year_average"
       }
     },
@@ -4050,7 +4059,7 @@
         }
       ],
       "metadata": {
-        "unit_basis": "£ per hour (adult rate)",
+        "unit_basis": "\u00a3 per hour (adult rate)",
         "geography": "United Kingdom",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
@@ -4147,14 +4156,14 @@
           "url": "https://commonslibrary.parliament.uk/research-briefings/cbp-9175/",
           "type": "official",
           "date": "2024-12-18",
-          "note": "Confirms £1,000 upfront fees introduced from 1998 and later reforms to £3,000 and £9,000 fee caps."
+          "note": "Confirms \u00a31,000 upfront fees introduced from 1998 and later reforms to \u00a33,000 and \u00a39,000 fee caps."
         },
         {
           "name": "DfE changes to tuition fees: 2025 to 2026 academic year",
           "url": "https://www.gov.uk/government/publications/tuition-fees-and-student-support-2025-to-2026-academic-year/changes-to-tuition-fees-2025-to-2026-academic-year",
           "type": "official",
           "date": "2025-11-26",
-          "note": "Maximum standard full-time fee cap increased to £9,275 for 2025-26."
+          "note": "Maximum standard full-time fee cap increased to \u00a39,275 for 2025-26."
         }
       ],
       "category": "education",
@@ -4366,11 +4375,11 @@
           "url": "https://www.bankofengland.co.uk/boeapps/database/",
           "type": "official",
           "date": "2025-01-01",
-          "note": "Used for USD→GBP conversion and continuity before modern benchmark series."
+          "note": "Used for USD\u2192GBP conversion and continuity before modern benchmark series."
         }
       ],
       "metadata": {
-        "unit_basis": "Brent crude (£/barrel)",
+        "unit_basis": "Brent crude (\u00a3/barrel)",
         "geography": "United Kingdom pricing convention",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
@@ -4475,11 +4484,11 @@
           "url": "https://www.bankofengland.co.uk/boeapps/database/",
           "type": "official",
           "date": "2025-01-01",
-          "note": "Used for USD→GBP conversion and continuity before modern benchmark series."
+          "note": "Used for USD\u2192GBP conversion and continuity before modern benchmark series."
         }
       ],
       "metadata": {
-        "unit_basis": "Refined copper (£/metric tonne)",
+        "unit_basis": "Refined copper (\u00a3/metric tonne)",
         "geography": "United Kingdom pricing convention",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
@@ -4584,11 +4593,11 @@
           "url": "https://www.bankofengland.co.uk/boeapps/database/",
           "type": "official",
           "date": "2025-01-01",
-          "note": "Used for USD→GBP conversion and continuity before modern benchmark series."
+          "note": "Used for USD\u2192GBP conversion and continuity before modern benchmark series."
         }
       ],
       "metadata": {
-        "unit_basis": "Silver (£/troy oz)",
+        "unit_basis": "Silver (\u00a3/troy oz)",
         "geography": "United Kingdom pricing convention",
         "price_basis": "Nominal GBP",
         "frequency": "Annual",
@@ -4602,7 +4611,7 @@
   "methodology": {
     "2025": "2025 values are provisional annual estimates based on year-to-date published market and official releases where full-year figures are not yet finalized.",
     "house": "House-price series combines long-run historical anchor points (1950s onward) with modern UK HPI annual averages. For missing annual points between historical anchors, geometric interpolation is used to create a continuous annual series.",
-    "coverage": "All denominators now run annually from 1950–2025. For series that start later in official publications, earlier years are reconstructed using CPI-deflated back-casting anchored on the first observed datapoint and conservative item-specific real-trend assumptions.",
+    "coverage": "All denominators now run annually from 1950\u20132025. For series that start later in official publications, earlier years are reconstructed using CPI-deflated back-casting anchored on the first observed datapoint and conservative item-specific real-trend assumptions.",
     "confidence": "Point colours represent source-confidence tiers from metadata: high (official/statutory), medium (market benchmark + standard transformations), low (proxy reconstruction from adjacent series).",
     "commodities": "Copper, silver and Brent series are assembled from commodity benchmark datasets (Pink Sheet / exchange benchmarks) with USDGBP conversion and pre-benchmark splicing using nearest liquid proxy contracts.",
     "series_basis": "Each item/context series now includes series_basis: calendar_year_average or regulated_tariff.",

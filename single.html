@@ -70,6 +70,7 @@
             <h2>{{ currentItem.name }}</h2>
             <div class="chart-header-tags">
               <span class="category-badge" :style="categoryBadgeStyle(currentItem.category, currentItem.key)">{{ categoryLabel(currentItem.category) }}</span>
+              <span class="category-badge power-badge" :class="purchasingPowerTag().className">{{ purchasingPowerTag().icon }} {{ purchasingPowerTag().label }}</span>
             </div>
           </div>
         </header>

@@ -634,6 +634,13 @@ createApp({
       }
       return this.items.find((x) => x.key === seriesKey)?.values || [];
     },
+    isBitcoinSeriesRef(seriesKey = '') {
+      const normalized = String(seriesKey || '').toLowerCase();
+      return normalized.includes('bitcoin') || normalized === 'btc' || normalized.endsWith('_btc') || normalized.endsWith(':btc') || normalized.endsWith('_bitcoin') || normalized.includes('context_bitcoin');
+    },
+    pairUsesBitcoin(numeratorKey, denominatorKey) {
+      return this.isBitcoinSeriesRef(numeratorKey) || this.isBitcoinSeriesRef(denominatorKey);
+    },
     pointValueForSeries(seriesKey, pointKey) {
       if (!seriesKey || pointKey == null) return null;
       const annualIndex = this.years.indexOf(Number(pointKey));
@@ -694,7 +701,7 @@ createApp({
         return { year, value: numeratorValue / denominatorValue, observed: true };
       }).filter((point) => point.year >= fromYear && point.year <= toYear && point.observed);
 
-      if (denominatorKey === 'context:bitcoin') points = points.filter((point) => point.year >= 2017);
+      if (this.pairUsesBitcoin(numeratorKey, denominatorKey)) points = points.filter((point) => point.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([numeratorKey, denominatorKey]);
       const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
       return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })), forcedStart);
@@ -706,7 +713,7 @@ createApp({
         const value = this.pointValueForSeries(seriesKey, year);
         return { year, value, observed: value != null };
       }).filter((point) => point.year >= fromYear && point.year <= toYear && point.observed);
-      if (denominator === 'bitcoin') points = points.filter((point) => point.year >= 2017);
+      if (this.pairUsesBitcoin(seriesKey, `context:${denominator}`)) points = points.filter((point) => point.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([seriesKey]);
       const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
       return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })), forcedStart);
@@ -719,7 +726,7 @@ createApp({
         value: this.convertSeries(item, denominator)[idx],
         observed: item.values[idx] != null && this.contextSeries[denominator]?.values?.[idx] != null,
       })).filter((p) => p.year >= from && p.year <= to && p.observed);
-      if (denominator === 'bitcoin') points = points.filter((p) => p.year >= 2017);
+      if (this.pairUsesBitcoin(item.key, `context:${denominator}`)) points = points.filter((p) => p.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([item.key], denominator);
       const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
       return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })), forcedStart);

@@ -368,6 +368,15 @@ createApp({
       }
       return this.items.find((item) => item.key === seriesKey)?.values?.[annualIndex] ?? null;
     },
+    isBitcoinSeriesRef(seriesRef = '') {
+      const normalized = String(seriesRef || '').toLowerCase();
+      return normalized.includes('bitcoin') || normalized === 'btc' || normalized.endsWith('_btc') || normalized.endsWith(':btc') || normalized.endsWith('_bitcoin') || normalized.includes('context_bitcoin');
+    },
+    pairUsesBitcoin({ numeratorKey = this.itemKey, denominatorType = this.denominatorSeriesType(), denominatorKey = this.denominatorSeriesKey() } = {}) {
+      const numeratorSeriesRef = numeratorKey?.startsWith('context:') ? numeratorKey : `item:${numeratorKey || ''}`;
+      const denominatorSeriesRef = `${denominatorType}:${denominatorKey}`;
+      return this.isBitcoinSeriesRef(numeratorSeriesRef) || this.isBitcoinSeriesRef(denominatorSeriesRef);
+    },
     denominatorSeriesType() {
       return this.denominator.startsWith('item:') ? 'item' : 'context';
     },
@@ -394,7 +403,9 @@ createApp({
           return { year, value: item.values[idx] / denominatorValue };
         })
         .filter((point) => point.year >= from && point.year <= to && point.value != null);
-      if (this.denominatorSeriesType() === 'context' && this.denominatorSeriesKey() === 'bitcoin') points = points.filter((point) => Number(point.year) >= 2017);
+      if (this.pairUsesBitcoin({ numeratorKey, denominatorType: this.denominatorSeriesType(), denominatorKey: this.denominatorSeriesKey() })) {
+        points = points.filter((point) => Number(point.year) >= 2017);
+      }
       return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })));
     },
     visibleOverlaySeries(seriesKey) {
@@ -402,7 +413,9 @@ createApp({
       let points = this.years
         .map((year) => ({ year, value: this.pointValueForSeries(seriesKey, year) }))
         .filter((point) => point.year >= from && point.year <= to && point.value != null);
-      if (this.denominatorSeriesType() === 'context' && this.denominatorSeriesKey() === 'bitcoin') points = points.filter((point) => Number(point.year) >= 2017);
+      if (this.pairUsesBitcoin({ numeratorKey: seriesKey, denominatorType: this.denominatorSeriesType(), denominatorKey: this.denominatorSeriesKey() }) || this.isBitcoinSeriesRef(seriesKey)) {
+        points = points.filter((point) => Number(point.year) >= 2017);
+      }
       return this.applySeriesTransforms(points.map((point) => ({ ...point, rawValue: point.value })));
     },
     applySeriesTransforms(points) {
@@ -596,12 +609,17 @@ createApp({
       return ((pts[pts.length - 1].value / pts[0].value) - 1) * 100;
     },
     bitcoinSparseWarningApplies() {
-      const numeratorKey = String(this.itemKey || '').toLowerCase();
-      const denominatorType = this.denominatorSeriesType();
-      const denominatorKey = String(this.denominatorSeriesKey() || '').toLowerCase();
-      const numeratorIsBitcoin = numeratorKey.includes('bitcoin') || numeratorKey === 'btc' || numeratorKey.endsWith('_btc');
-      const denominatorIsBitcoin = denominatorKey.includes('bitcoin') || denominatorKey === 'btc' || denominatorKey.endsWith('_btc');
-      return numeratorIsBitcoin || denominatorIsBitcoin || (denominatorType === 'context' && denominatorKey === 'bitcoin');
+      return this.pairUsesBitcoin();
+    },
+    purchasingPowerTag() {
+      const totalChange = this.totalChangeValue();
+      if (totalChange == null) {
+        return { icon: '•', label: 'Power: not enough data', className: '' };
+      }
+      const purchasingPowerRising = totalChange < 0;
+      return purchasingPowerRising
+        ? { icon: '▲', label: 'Power: rising', className: 'power-badge-rising' }
+        : { icon: '▼', label: 'Power: falling', className: 'power-badge-falling' };
     },
     purchasingPowerText() {
       const denominatorType = this.denominatorSeriesType();

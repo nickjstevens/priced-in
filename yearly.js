@@ -82,9 +82,17 @@ createApp({
       const denominatorLabel = this.denominatorLabel();
       const rebaseLabel = this.rebased ? 'rebased to 100 at the first shared visible year' : 'shown in raw priced-in terms';
       const bitcoinLabel = 'with bitcoin history truncated before 2017';
-      if (this.mode === 'single') return `Yearly values for ${this.seriesName(this.itemKey)} priced in ${denominatorLabel}, ${rebaseLabel}, across the ${this.selectedRange} range, and ${bitcoinLabel}.`;
-      if (this.mode === 'ratio') return `Yearly values for ${this.ratioLabel}, ${rebaseLabel}, across the ${this.selectedRange} range, and ${bitcoinLabel}.`;
-      return `Yearly values for the selected items priced in ${denominatorLabel}, ${rebaseLabel}, across the ${this.selectedRange} range, and ${bitcoinLabel}.`;
+      if (this.mode === 'single') {
+        const suffix = this.pairUsesBitcoin(this.itemKey, this.denominatorSeriesRef()) ? `, and ${bitcoinLabel}` : '';
+        return `Yearly values for ${this.seriesName(this.itemKey)} priced in ${denominatorLabel}, ${rebaseLabel}, across the ${this.selectedRange} range${suffix}.`;
+      }
+      if (this.mode === 'ratio') {
+        const suffix = this.pairUsesBitcoin(this.numeratorKey, this.denominatorKey) ? `, and ${bitcoinLabel}` : '';
+        return `Yearly values for ${this.ratioLabel}, ${rebaseLabel}, across the ${this.selectedRange} range${suffix}.`;
+      }
+      const compareUsesBitcoin = this.selectedKeys.some((key) => this.pairUsesBitcoin(key, this.denominatorSeriesRef()));
+      const suffix = compareUsesBitcoin ? `, and ${bitcoinLabel}` : '';
+      return `Yearly values for the selected items priced in ${denominatorLabel}, ${rebaseLabel}, across the ${this.selectedRange} range${suffix}.`;
     },
     backUrl() {
       const params = new URLSearchParams();
@@ -107,10 +115,18 @@ createApp({
     },
   },
   methods: {
+    isBitcoinSeriesRef(seriesRef = '') {
+      const normalized = String(seriesRef || '').toLowerCase();
+      return normalized.includes('bitcoin') || normalized === 'btc' || normalized.endsWith('_btc') || normalized.endsWith(':btc') || normalized.endsWith('_bitcoin') || normalized.includes('context_bitcoin');
+    },
+    pairUsesBitcoin(numeratorKey, denominatorKey) {
+      return this.isBitcoinSeriesRef(numeratorKey) || this.isBitcoinSeriesRef(denominatorKey);
+    },
     isBitcoinQuotedColumn(columnKey) {
       if (this.rebased) return false;
-      if (this.mode === 'single' || this.mode === 'compare') return this.denominatorType() === 'context' && this.denominatorKey() === 'bitcoin';
-      return this.mode === 'ratio' && this.denominatorKey === 'context:bitcoin' && columnKey === 'ratio';
+      if (this.mode === 'single') return this.pairUsesBitcoin(this.itemKey, this.denominatorSeriesRef());
+      if (this.mode === 'compare') return this.pairUsesBitcoin(columnKey, this.denominatorSeriesRef());
+      return this.mode === 'ratio' && this.pairUsesBitcoin(this.numeratorKey, this.denominatorKey) && columnKey === 'ratio';
     },
     denominatorType() {
       return this.allDenominator.startsWith('item:') ? 'item' : 'context';
@@ -200,7 +216,7 @@ createApp({
         if (numeratorValue == null || denominatorValue == null || denominatorValue === 0) return { year, value: null, observed: false };
         return { year, value: numeratorValue / denominatorValue, observed: true };
       }).filter((point) => point.year >= fromYear && point.year <= toYear && point.observed);
-      if (denominatorKey === 'context:bitcoin' || numeratorKey === 'context:bitcoin') points = points.filter((point) => point.year >= 2017);
+      if (this.pairUsesBitcoin(numeratorKey, denominatorKey)) points = points.filter((point) => point.year >= 2017);
       return this.applySeriesTransforms(points, forcedStartYear);
     },
     downloadCsv() {
