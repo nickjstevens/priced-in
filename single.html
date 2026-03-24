@@ -55,7 +55,6 @@
           </select>
         </label>
         <label v-if="canShowGbpOverlay"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
-        <label><input type="checkbox" v-model="showFullBitcoin" @change="syncUrlAndRender" /> Show full bitcoin history</label>
         <button @click="copyShareLink">Copy share link</button>
       </section>
       <p class="share-feedback" v-if="shareFeedback">{{ shareFeedback }}</p>

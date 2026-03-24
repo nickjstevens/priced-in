@@ -37,7 +37,6 @@ createApp({
       allDenominator: 'fiat',
       selectedRange: 'full',
       rebased: false,
-      showFullBitcoin: false,
       selectedKeys: [],
       itemKey: '',
       mode: 'compare',
@@ -80,7 +79,7 @@ createApp({
     descriptionText() {
       const denominatorLabel = this.contextSeries[this.allDenominator]?.label || this.allDenominator;
       const rebaseLabel = this.rebased ? 'rebased to 100 at the first shared visible year' : 'shown in raw priced-in terms';
-      const bitcoinLabel = this.showFullBitcoin ? 'includes full bitcoin history' : 'uses the default bitcoin history window';
+      const bitcoinLabel = 'with bitcoin history truncated before 2017';
       if (this.mode === 'single') return `Yearly values for ${this.seriesName(this.itemKey)} priced in ${denominatorLabel}, ${rebaseLabel}, across the ${this.selectedRange} range, and ${bitcoinLabel}.`;
       if (this.mode === 'ratio') return `Yearly values for ${this.ratioLabel}, ${rebaseLabel}, across the ${this.selectedRange} range, and ${bitcoinLabel}.`;
       return `Yearly values for the selected items priced in ${denominatorLabel}, ${rebaseLabel}, across the ${this.selectedRange} range, and ${bitcoinLabel}.`;
@@ -89,7 +88,6 @@ createApp({
       const params = new URLSearchParams();
       params.set('range', this.selectedRange);
       if (this.rebased) params.set('rebased', '1');
-      if (this.showFullBitcoin) params.set('btcFull', '1');
       params.set('theme', this.theme);
       if (this.mode === 'single') {
         params.set('denom', this.allDenominator);
@@ -126,7 +124,6 @@ createApp({
       this.allDenominator = p.get('denom') || 'fiat';
       this.selectedRange = p.get('range') || 'full';
       this.rebased = p.get('rebased') === '1';
-      this.showFullBitcoin = p.get('btcFull') === '1';
       this.selectedKeys = (p.get('items') || '').split(',').filter(Boolean);
       this.itemKey = p.get('item') || '';
       this.mode = p.get('mode') || 'compare';
@@ -187,7 +184,7 @@ createApp({
         if (numeratorValue == null || denominatorValue == null || denominatorValue === 0) return { year, value: null, observed: false };
         return { year, value: numeratorValue / denominatorValue, observed: true };
       }).filter((point) => point.year >= fromYear && point.year <= toYear && point.observed);
-      if ((denominatorKey === 'context:bitcoin' || numeratorKey === 'context:bitcoin') && !this.showFullBitcoin) points = points.filter((point) => point.year >= 2017);
+      if (denominatorKey === 'context:bitcoin' || numeratorKey === 'context:bitcoin') points = points.filter((point) => point.year >= 2017);
       return this.applySeriesTransforms(points, forcedStartYear);
     },
     downloadCsv() {
