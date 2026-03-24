@@ -15,7 +15,6 @@
           <a class="brand-panel" href="index.html" aria-label="Go to homepage">
             <span class="brand-kicker">Single series focus</span>
             <h1>{{ currentItem?.name || 'Single chart view' }}</h1>
-            <p>Shareable view for one item with all chart settings in the URL.</p>
           </a>
           <div class="header-actions">
             <button
@@ -31,8 +30,7 @@
             <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" href="index.html">Cost of Living</a>
-                <a class="page-link" :href="singleItemMenuUrl">Single Item</a>
-                <a class="page-link" :href="ratioPageUrl">Relative Ratio</a>
+                <a class="page-link" :href="singleItemMenuUrl">Single Series</a>
                 <a class="page-link" href="assumptions.html">Assumptions & Caveats</a>
               </nav>
               <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
@@ -55,6 +53,10 @@
           </select>
         </label>
         <label v-if="canShowGbpOverlay"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
+        <button type="button" class="swap-button" @click="swapPair" :disabled="!canSwapPair">
+          <span class="swap-button-icon">⇅</span>
+          <span class="swap-button-text">Swap pair</span>
+        </button>
         <button @click="copyShareLink">Copy share link</button>
       </section>
       <p class="share-feedback" v-if="shareFeedback">{{ shareFeedback }}</p>
@@ -68,12 +70,13 @@
             <h2>{{ currentItem.name }}</h2>
             <div class="chart-header-tags">
               <span class="category-badge" :style="categoryBadgeStyle(currentItem.category, currentItem.key)">{{ categoryLabel(currentItem.category) }}</span>
-              <span class="category-badge confidence-badge">{{ confidenceTagLabel() }}</span>
               <span v-if="rebased" class="category-badge rebased-badge rebase-tag-end" :style="rebasedBadgeStyle()">Rebased</span>
             </div>
           </div>
         </header>
         <p class="lineage prominent-insight">{{ insightText() }}</p>
+        <p class="lineage">{{ purchasingPowerText() }}</p>
+        <p v-if="goldAlternativeText()" class="lineage">{{ goldAlternativeText() }}</p>
         <dl class="stats-strip">
           <div class="stat"><dt>CAGR</dt><dd>{{ chartStats().cagrSelected }}</dd></div>
           <div class="stat"><dt>Total change</dt><dd>{{ chartStats().totalChange }}</dd></div>
@@ -86,7 +89,6 @@
         </dl>
         <p v-if="chartZoomed" class="notice">Double-click the chart to zoom back out.</p>
         <div class="chart-wrap"><div id="single-chart" class="plotly-chart"></div></div>
-        <details class="instructions-panel panel-shell"><summary>Instructions</summary><div class="instructions-list"><p>Use the chart menu bar to switch time ranges, from the last 10 years to All.</p><p>Use the Data export button in the chart menu bar to open the data table in a new window with CSV export.</p><p>Log scale and rebase toggles are also available in the chart menu bar.</p></div></details>
         <details class="instructions-panel panel-shell meta-panel"><summary>What is being measured?</summary>
           <ul>
             <li>Unit basis: {{ currentItem.metadata?.unit_basis }}</li>
@@ -94,7 +96,6 @@
             <li>Nominal/real: {{ currentItem.metadata?.price_basis }}</li>
             <li>Frequency: {{ currentItem.metadata?.frequency }}</li>
             <li>Last updated: {{ currentItem.metadata?.last_updated }}</li>
-            <li>Confidence: {{ currentItem.metadata?.source_confidence }}</li>
           </ul>
         </details>
         <details class="instructions-panel panel-shell sources-panel"><summary>Sources & lineage</summary>
@@ -103,6 +104,7 @@
           </ul>
           <p v-if="dataLineage()" class="lineage">{{ dataLineage() }}</p>
         </details>
+        <details class="instructions-panel panel-shell"><summary>Chart Instructions</summary><div class="instructions-list"><p>Drag on the chart to zoom into a specific period or value range, then double-click anywhere in the plot to zoom back out to the full visible range.</p><p>Use the chart menu bar to switch quick time ranges (10Y to All), toggle log scale, and toggle rebasing from the first visible year.</p><p>Use the “Data ↗” menu button to open the yearly data table and export CSV for deeper analysis.</p><p>Hover any point to see the exact yearly value, total change, and CAGR context in the tooltip.</p></div></details>
       </article>
       </div>
     </main>

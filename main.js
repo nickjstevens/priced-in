@@ -1362,15 +1362,14 @@ createApp({
     },
     ratioPageUrl() {
       const params = new URLSearchParams();
+      params.set('item', this.selectedItemKey === 'all' ? 'house' : this.selectedItemKey);
+      params.set('denom', `context:${this.allDenominator}`);
       params.set('range', this.selectedRange);
       if (this.rebased) params.set('rebased', '1');
       if (this.useLogScale) params.set('log', '1');
       if (this.showUsdOverlay) params.set('overlayUsd', '1');
-      if (this.canShowSpreadRollingCorrelation && this.showSpreadRollingCorrelation) params.set('overlayCorr', '1');
-      if (this.spreadNumeratorItemKey) params.set('itemA', this.spreadNumeratorItemKey);
-      if (this.spreadDenominatorItemKey) params.set('itemB', this.spreadDenominatorItemKey);
       params.set('theme', this.isDarkMode ? 'dark' : 'light');
-      return `ratio.html?${params.toString()}`;
+      return `single.html?${params.toString()}`;
     },
     singleChartUrl(itemKey) {
       const params = new URLSearchParams();

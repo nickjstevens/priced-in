@@ -30,8 +30,7 @@
             <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" href="index.html">Cost of Living</a>
-                <a class="page-link" :href="mode === 'single' ? backUrl : 'single.html?item=house&denom=fiat&theme=' + theme">Single Item</a>
-                <a class="page-link" :href="mode === 'ratio' ? backUrl : 'ratio.html?theme=' + theme">Relative Ratio</a>
+                <a class="page-link" :href="mode === 'single' ? backUrl : 'single.html?item=house&denom=context:fiat&theme=' + theme">Single Series</a>
                 <a class="page-link" href="assumptions.html">Assumptions & Caveats</a>
               </nav>
               <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`">
