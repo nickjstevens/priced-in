@@ -208,6 +208,11 @@ summary { cursor: pointer; }
 .item-title-link { text-decoration: none; color: inherit; }
 .item-title-link:hover { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 0.16em; }
 .category-badge { display: inline-flex; align-items: center; width: fit-content; padding: 0.28rem 0.7rem; border-radius: 999px; border: 1px solid var(--border); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.confidence-badge {
+  background: var(--surface-soft);
+  border-color: var(--input-border);
+  color: var(--text-muted);
+}
 .card-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .compare-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
 .data-table-panel { margin-top: 0.85rem; }
@@ -315,6 +320,10 @@ summary { cursor: pointer; }
   gap: 0.45rem;
   align-items: center;
   margin: 0 0 0.65rem;
+}
+
+.rebase-tag-end {
+  margin-left: auto;
 }
 
 .rebased-badge {
@@ -425,6 +434,23 @@ summary { cursor: pointer; }
   color: var(--text) !important;
 }
 
+.quote-callout {
+  padding: 0.85rem 1rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.16), rgba(168, 85, 247, 0.15));
+}
+.quote-callout p {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.quote-callout span {
+  display: inline-block;
+  margin-top: 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
 
 
 
@@ -456,6 +482,10 @@ summary { cursor: pointer; }
 @media (max-width: 640px) {
   .summary-row-sparkline {
     width: min(140px, 100%);
+  }
+
+  .modebar-text-button {
+    font-size: 0.7rem !important;
   }
 }
 

@@ -43,6 +43,11 @@
           </div>
         </header>
 
+        <section class="quote-callout panel-shell">
+          <p>“The natural state of the free market is deflation.”</p>
+          <span>— Geoff Booth</span>
+        </section>
+
         <section v-if="isLoading" class="status-card">Loading pricing data from API… <span class="skeleton"></span></section>
         <section v-else-if="error" class="status-card error">{{ error }}</section>
 
@@ -84,9 +89,9 @@
               <details class="instructions-panel panel-shell">
                 <summary>Instructions</summary>
                 <div class="instructions-list">
-                  <p>Use the chart modebar to switch time scales.</p>
-                  <p>Use the new yearly data button in the modebar to open a detailed annual table view with CSV export.</p>
-                  <p>Log scale and rebase toggles are also available in the modebar for faster comparisons.</p>
+                  <p>Use the chart menu bar to switch time ranges, from the last 10 years to All.</p>
+                  <p>Use the Data export button in the chart menu bar to open the data table in a new window with CSV export.</p>
+                  <p>Log scale and rebase toggles are also available in the chart menu bar.</p>
                 </div>
               </details>
               <section class="data-table-panel summary-table-panel">

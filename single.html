@@ -66,26 +66,27 @@
         <header>
           <div class="card-title-block">
             <h2>{{ currentItem.name }}</h2>
-            <span class="category-badge" :style="categoryBadgeStyle(currentItem.category, currentItem.key)">{{ categoryLabel(currentItem.category) }}</span>
+            <div class="chart-header-tags">
+              <span class="category-badge" :style="categoryBadgeStyle(currentItem.category, currentItem.key)">{{ categoryLabel(currentItem.category) }}</span>
+              <span class="category-badge confidence-badge">{{ confidenceTagLabel() }}</span>
+              <span v-if="rebased" class="category-badge rebased-badge rebase-tag-end" :style="rebasedBadgeStyle()">Rebased</span>
+            </div>
           </div>
         </header>
         <p class="lineage prominent-insight">{{ insightText() }}</p>
         <dl class="stats-strip">
-          <div class="stat"><dt>CAGR (selected)</dt><dd>{{ chartStats().cagrSelected }}</dd></div>
+          <div class="stat"><dt>CAGR</dt><dd>{{ chartStats().cagrSelected }}</dd></div>
           <div class="stat"><dt>Total change</dt><dd>{{ chartStats().totalChange }}</dd></div>
           <div class="stat"><dt>Best year</dt><dd>{{ chartStats().bestYear }}</dd></div>
           <div class="stat"><dt>Worst year</dt><dd>{{ chartStats().worstYear }}</dd></div>
           <div class="stat"><dt>Volatility (5Y log-return)</dt><dd>{{ chartStats().vol5y }}</dd></div>
           <div class="stat"><dt>Max drawdown</dt><dd>{{ chartStats().maxDrawdown }}</dd></div>
           <div class="stat"><dt>From historical peak</dt><dd>{{ chartStats().fromPeak }}</dd></div>
-          <div class="stat"><dt>Corr. vs priced-in asset</dt><dd>{{ chartStats().correlationToDenominator }}</dd></div>
+          <div class="stat"><dt>Latest value</dt><dd>{{ chartStats().latestValue }}</dd></div>
         </dl>
-        <div class="chart-header-tags" v-if="rebased">
-          <span class="category-badge rebased-badge" :style="rebasedBadgeStyle()">Rebased</span>
-        </div>
         <p v-if="chartZoomed" class="notice">Double-click the chart to zoom back out.</p>
         <div class="chart-wrap"><div id="single-chart" class="plotly-chart"></div></div>
-        <details class="instructions-panel panel-shell"><summary>Instructions</summary><div class="instructions-list"><p>Use the chart modebar to switch time scales.</p><p>Use the yearly data button in the modebar to open the annual table view with CSV export.</p><p>Log scale and rebase toggles are also available in the modebar for faster comparisons.</p></div></details>
+        <details class="instructions-panel panel-shell"><summary>Instructions</summary><div class="instructions-list"><p>Use the chart menu bar to switch time ranges, from the last 10 years to All.</p><p>Use the Data export button in the chart menu bar to open the data table in a new window with CSV export.</p><p>Log scale and rebase toggles are also available in the chart menu bar.</p></div></details>
         <details class="instructions-panel panel-shell meta-panel"><summary>What is being measured?</summary>
           <ul>
             <li>Unit basis: {{ currentItem.metadata?.unit_basis }}</li>
@@ -100,7 +101,7 @@
           <ul>
             <li v-for="source in sourceSet()" :key="`${currentItem.key}-${source.url}`"><span class="badge">{{ source.type || 'source' }}</span> <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a> ({{ source.date }}) — {{ source.note }}</li>
           </ul>
-          <p class="lineage">{{ dataLineage() }}</p>
+          <p v-if="dataLineage()" class="lineage">{{ dataLineage() }}</p>
         </details>
       </article>
       </div>

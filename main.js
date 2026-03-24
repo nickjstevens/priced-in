@@ -823,7 +823,7 @@ createApp({
     dataLineage(itemKey) {
       const d = this.perChartDenominator[itemKey] || this.allDenominator;
       const lineage = this.contextSeries[d]?.lineage || [];
-      return lineage.length ? `Lineage: ${lineage.join(' → ')}` : 'Lineage: Item price divided by selected denominator series.';
+      return lineage.length ? `Lineage: ${lineage.join(' → ')}` : '';
     },
     applyTheme() {
       document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
