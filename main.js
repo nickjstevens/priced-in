@@ -21,6 +21,19 @@ function formatPercent(value) {
   return `${sign}${value.toFixed(1)}%`;
 }
 
+function formatNumber(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  const abs = Math.abs(value);
+  if (abs !== 0 && abs < 0.001) return value.toExponential(2);
+  if (abs >= 1000) {
+    return new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(Math.round(value));
+  }
+  return new Intl.NumberFormat('en-GB', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  }).format(value);
+}
+
 function formatGbp(value) {
   if (value == null || Number.isNaN(value)) return '—';
   const fractionDigits = 1;
@@ -473,7 +486,7 @@ createApp({
       return this.items.find((item) => item.key === seriesKey)?.name || seriesKey;
     },
     formatTableValue(value) {
-      return value == null ? '—' : value.toFixed(1);
+      return formatNumber(value);
     },
     readUrlState() {
       const p = new URLSearchParams(location.search);
@@ -709,12 +722,13 @@ createApp({
         vol5y: formatPercent(volatility),
         maxDrawdown: formatPercent(maxDrawdown(pts)),
         fromPeak: formatPercent(distanceFromPeak(pts)),
-        correlationToDenominator: corr == null ? '—' : corr.toFixed(1),
+        correlationToDenominator: formatNumber(corr),
         raw: {
           cagrSelected: cagr,
           totalChange: total,
           bestYear: Number.isFinite(best.c) ? best.c : null,
           worstYear: Number.isFinite(worst.c) ? worst.c : null,
+          correlationToDenominator: corr,
         },
       };
     },
@@ -1124,7 +1138,9 @@ createApp({
       const currentHidden = [...this.hiddenCompareSeriesKeys].sort();
       if (JSON.stringify(nextHidden) === JSON.stringify(currentHidden)) return;
       this.hiddenCompareSeriesKeys = nextHidden;
-      this.renderMiniSingleCharts(this.compareChartEntries(), this.costRebaseForcedStartYear());
+      nextTick(() => {
+        this.renderSummaryTableSparklines(this.compareChartEntries(), this.costRebaseForcedStartYear());
+      });
     },
     attachCompareLegendHandlers(chartEl) {
       if (!chartEl?.on) return;

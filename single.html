@@ -66,7 +66,7 @@
       <article v-else-if="currentItem" class="chart-card single-page-chart panel-shell">
         <header>
           <div class="card-title-block">
-            <div class="heading-with-link"><h2><a class="item-title-link" :href="shareUrl">{{ currentItem.name }}</a></h2><a class="open-link-icon" :href="shareUrl" aria-label="Open this single chart in a new page" title="Open this chart" target="_blank" rel="noopener noreferrer">↗</a></div>
+            <h2>{{ currentItem.name }}</h2>
             <span class="category-badge" :style="categoryBadgeStyle(currentItem.category, currentItem.key)">{{ categoryLabel(currentItem.category) }}</span>
           </div>
         </header>
