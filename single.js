@@ -277,6 +277,10 @@ createApp({
     categoryLabel(category) {
       return category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Uncategorised';
     },
+    confidenceTagLabel() {
+      const confidence = this.currentItem?.metadata?.source_confidence;
+      return `Confidence: ${confidence ? confidence.charAt(0).toUpperCase() + confidence.slice(1) : 'Unknown'}`;
+    },
     rebasedBadgeStyle() {
       const hue = this.isDarkMode ? 178 : 192;
       const bgAlpha = this.isDarkMode ? 0.22 : 0.16;
@@ -488,13 +492,13 @@ createApp({
       const item = this.currentItem;
       if (!item) {
         return {
-          cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—',
+          cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—', latestValue: '—',
         };
       }
       const pts = this.visiblePairSeries(item.key, `context:${this.denominator}`).filter((point) => point.value != null);
       if (pts.length < 2) {
         return {
-          cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—',
+          cagrSelected: '—', totalChange: '—', bestYear: '—', worstYear: '—', vol5y: '—', maxDrawdown: '—', fromPeak: '—', latestValue: '—',
         };
       }
       const first = pts[0];
@@ -512,9 +516,7 @@ createApp({
         if (c < worst.c) worst = { y: pts[i].year, c };
       }
       const volatility = this.rollingVolatility().latest;
-      const pricedInFiat = this.visiblePairSeries(item.key, 'context:fiat').filter((point) => point.value != null);
-      const denominatorFiat = this.visiblePairSeries(`context:${this.denominator}`, 'context:fiat').filter((point) => point.value != null);
-      const corr = this.pairCorrelation(pricedInFiat, denominatorFiat);
+      const latestValue = this.formatHoverValueLine(last.value, item.values[this.years.indexOf(last.year)]);
       return {
         cagrSelected: formatPercent(cagr),
         totalChange: formatPercent(total),
@@ -523,7 +525,7 @@ createApp({
         vol5y: formatPercent(volatility),
         maxDrawdown: formatPercent(maxDrawdown(pts)),
         fromPeak: formatPercent(distanceFromPeak(pts)),
-        correlationToDenominator: formatNumber(corr),
+        latestValue,
       };
     },
     rollingVolatility() {
@@ -574,7 +576,7 @@ createApp({
     },
     dataLineage() {
       const lineage = this.contextSeries[this.denominator]?.lineage || [];
-      return lineage.length ? `Lineage: ${lineage.join(' → ')}` : 'Lineage: Item price divided by selected denominator series.';
+      return lineage.length ? `Lineage: ${lineage.join(' → ')}` : '';
     },
     toggleTheme() {
       this.isDarkMode = !this.isDarkMode;
