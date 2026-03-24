@@ -234,6 +234,7 @@ function plotlyConfig({ onToggleLogScale, onToggleRebase, rangeButtons = [], onO
     displayModeBar: true,
     displaylogo: false,
     scrollZoom: false,
+    showTips: false,
     modeBarButtonsToAdd,
     modeBarButtonsToRemove: ['zoom2d','pan2d','select2d','lasso2d','zoomIn2d','zoomOut2d','autoScale2d','resetScale2d','toggleSpikelines','hoverClosestCartesian','hoverCompareCartesian','toImage'],
   };
@@ -264,6 +265,8 @@ createApp({
       isMobileMenuOpen: false,
       compareHoveredYear: null,
       spreadHoveredYear: null,
+      compareChartZoomed: false,
+      spreadChartZoomed: false,
       hiddenCompareSeriesKeys: [],
       summarySortKey: 'totalChange',
       summarySortDirection: 'desc',
@@ -845,7 +848,7 @@ createApp({
         name: `Range: ${option.label}`,
         title: `${this.selectedRange === option.value ? 'Active: ' : ''}Show ${option.label.toLowerCase()}`,
         icon: PLOTLY_MODEBAR_ICON.range,
-        text: option.value === 'full' ? 'Full' : option.label.replace(/^Last\s+/i, '').replace(/Y$/i, ''),
+        text: option.value === 'full' ? 'All' : option.label.replace(/^Last\s+/i, '').toLowerCase(),
         click: () => this.setSelectedRange(option.value),
       }));
     },
@@ -854,11 +857,41 @@ createApp({
       chartEl.querySelectorAll('.modebar-btn').forEach((button) => {
         const title = button.getAttribute('data-title') || button.getAttribute('title') || '';
         const rangeButton = RANGE_OPTIONS.find((option) => title.includes(`Show ${option.label.toLowerCase()}`));
-        if (!rangeButton) return;
-        const label = rangeButton.value === 'full' ? 'Full' : rangeButton.label.replace(/^Last\s+/i, '').replace(/Y$/i, '');
+        const customButtonLabels = [
+          { match: 'Toggle log scale', label: 'log' },
+          { match: 'Toggle rebase to 100', label: 'Rebase' },
+          { match: 'Open yearly data table in a dedicated page', label: 'Data' },
+        ];
+        const mappedButton = customButtonLabels.find((entry) => title.includes(entry.match));
+        const label = rangeButton
+          ? (rangeButton.value === 'full' ? 'All' : rangeButton.label.replace(/^Last\s+/i, '').toLowerCase())
+          : mappedButton?.label;
+        if (!label) return;
         button.classList.add('modebar-text-button');
         button.textContent = label;
         button.setAttribute('aria-label', title);
+      });
+    },
+    setChartZoomed(chartKey, zoomed) {
+      if (chartKey === 'compare') this.compareChartZoomed = zoomed;
+      if (chartKey === 'spread') this.spreadChartZoomed = zoomed;
+    },
+    bindZoomNoticeHandlers(chartEl, chartKey) {
+      if (!chartEl?.on || chartEl.dataset.zoomNoticeBound === '1') return;
+      chartEl.dataset.zoomNoticeBound = '1';
+      chartEl.on('plotly_relayout', (eventData) => {
+        if (!eventData) return;
+        const eventKeys = Object.keys(eventData);
+        const hasManualRange = eventKeys.some((key) => key.includes('.range[') || key.endsWith('.range'));
+        if (hasManualRange) {
+          this.setChartZoomed(chartKey, true);
+          return;
+        }
+        const hasAutoRangeReset = eventKeys.some((key) => key.endsWith('.autorange') && eventData[key] === true);
+        if (hasAutoRangeReset) this.setChartZoomed(chartKey, false);
+      });
+      chartEl.on('plotly_doubleclick', () => {
+        this.setChartZoomed(chartKey, false);
       });
     },
     compareChartLayout() {
@@ -1000,6 +1033,7 @@ createApp({
         onToggleRebase: () => this.toggleRebase(),
         rangeButtons: this.rangeModeBarButtons(),
       })).then(() => this.applyRangeButtonLabels(chartEl));
+      this.bindZoomNoticeHandlers(chartEl, 'compare');
       this.charts[itemKey] = chartEl;
     },
     updateHoveredYear(chartKey, activeElements) {
@@ -1050,6 +1084,7 @@ createApp({
     renderCompareChart() {
       const chartEl = document.getElementById('chart-compare');
       if (!chartEl) return;
+      this.compareChartZoomed = false;
       const entries = this.compareChartEntries();
       const forcedStartYear = this.costRebaseForcedStartYear();
       const rawSeriesByItemKey = new Map(entries.map(({ item }) => [
@@ -1094,6 +1129,7 @@ createApp({
         this.applyRangeButtonLabels(chartEl);
         this.syncCompareLegendState(chartEl);
       });
+      this.bindZoomNoticeHandlers(chartEl, 'compare');
       this.attachCompareLegendHandlers(chartEl);
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.compareHoveredYear = event?.points?.[0]?.x ?? null; },
@@ -1150,6 +1186,7 @@ createApp({
     renderSpreadChart() {
       const chartEl = document.getElementById('chart-spread');
       if (!chartEl) return;
+      this.spreadChartZoomed = false;
       const pts = this.spreadSeries;
       const numeratorKey = this.spreadNumeratorItemKey;
       const denominatorKey = this.spreadDenominatorItemKey;
@@ -1217,6 +1254,7 @@ createApp({
         rangeButtons: this.rangeModeBarButtons(),
         onOpenYearlyData: () => this.openRatioYearlyDataPage(),
       })).then(() => this.applyRangeButtonLabels(chartEl));
+      this.bindZoomNoticeHandlers(chartEl, 'spread');
       attachPlotlyHoverHandlers(chartEl, {
         onHover: (event) => { this.spreadHoveredYear = event?.points?.[0]?.x ?? null; },
         onUnhover: () => { this.spreadHoveredYear = null; },

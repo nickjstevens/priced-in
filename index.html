@@ -79,6 +79,7 @@
               <div class="chart-header-tags" v-if="rebased">
                 <span class="category-badge rebased-badge" :style="rebasedTagStyle()">Rebased</span>
               </div>
+              <p v-if="compareChartZoomed" class="notice">Double-click the chart to zoom back out.</p>
               <div class="chart-wrap chart-wrap-lg"><div id="chart-compare" class="plotly-chart"></div></div>
               <details class="instructions-panel panel-shell">
                 <summary>Instructions</summary>
