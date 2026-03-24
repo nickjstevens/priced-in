@@ -470,7 +470,7 @@ createApp({
         shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
         yaxis: {
           ...plotlyAxisBase(this.isDarkMode),
-          title: this.contextSeries[this.denominator]?.label || this.denominator,
+          title: this.rebasedYAxisTitle(this.contextSeries[this.denominator]?.label || this.denominator),
           type: this.useLogScale ? 'log' : 'linear',
           rangemode: this.useLogScale ? undefined : 'tozero',
         },
@@ -610,7 +610,7 @@ createApp({
         const customButtonLabels = [
           { match: 'Toggle log scale', label: 'log' },
           { match: 'Toggle rebase to 100', label: 'Rebase' },
-          { match: 'Open yearly data table in a dedicated page', label: 'Data' },
+          { match: 'Open yearly data table in a dedicated page', label: 'Data ↗' },
         ];
         const mappedButton = customButtonLabels.find((entry) => title.includes(entry.match));
         const label = rangeButton
@@ -641,6 +641,9 @@ createApp({
       });
     },
 
+    rebasedYAxisTitle(defaultTitle = '') {
+      return this.rebased ? 'Rebased to start from 100' : defaultTitle;
+    },
     openYearlyDataPage() {
       window.open(`yearly.html?${this.buildYearlyDataParams().toString()}`, '_blank', 'noopener');
     },
