@@ -138,6 +138,33 @@ function formatGbp(value) {
   }).format(value);
 }
 
+function formatHoverGbp(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatUnitValue(value, { minimumFractionDigits = 0, maximumFractionDigits = 4 } = {}) {
+  if (value == null || Number.isNaN(value)) return '—';
+  return new Intl.NumberFormat('en-GB', {
+    minimumFractionDigits,
+    maximumFractionDigits,
+  }).format(value);
+}
+
+function formatBitcoinHuman(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  if (Math.abs(value) < 0.001) {
+    const sats = Math.round(value * 100000000);
+    return `${new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(sats)} sats`;
+  }
+  return `${formatUnitValue(value, { maximumFractionDigits: 6 })} bitcoin`;
+}
+
 function formatPercent(value) {
   if (value == null || Number.isNaN(value)) return '—';
   const sign = value > 0 ? '+' : '';
@@ -377,6 +404,18 @@ createApp({
     plotlyLayout(extra = {}) {
       return plotlyLayoutBase(this.isDarkMode, this.useLogScale, extra);
     },
+    formatHoverValueLine(pricedValue, gbpValue) {
+      if (this.denominator === 'fiat') return formatHoverGbp(pricedValue);
+      if (this.denominator === 'real_fiat') return `${formatHoverGbp(pricedValue)} (CPI-adjusted)`;
+      if (this.denominator === 'gold') return `${formatUnitValue(pricedValue)} oz gold (${formatHoverGbp(gbpValue)})`;
+      if (this.denominator === 'hours') return `${formatUnitValue(pricedValue)} hours at median wage (${formatHoverGbp(gbpValue)})`;
+      if (this.denominator === 'bitcoin') return `${formatBitcoinHuman(pricedValue)} (${formatHoverGbp(gbpValue)})`;
+      return `${formatUnitValue(pricedValue)} ${this.contextSeries[this.denominator]?.label || this.denominator} (${formatHoverGbp(gbpValue)})`;
+    },
+    buildHoverLabel(point) {
+      const gbpValue = this.pointValueForSeries(this.currentItem.key, point.year);
+      return `${this.currentItem.name} in ${Math.round(Number(point.year))}<br>${this.formatHoverValueLine(point.value, gbpValue)}`;
+    },
     renderChart() {
       if (!this.currentItem) return;
       const points = this.visiblePairSeries(this.currentItem.key, `context:${this.denominator}`);
@@ -390,13 +429,9 @@ createApp({
         y: points.map((point) => point.value),
         line: { color: '#1f6feb', width: 2.5 },
         customdata: points.map((point) => ([
-          point.value,
-          this.pointValueForSeries(this.currentItem.key, point.year),
-          this.pointValueForSeries(`context:${this.denominator}`, point.year),
-          this.currentItem.name,
-          this.contextSeries[this.denominator]?.label || this.denominator,
+          this.buildHoverLabel(point),
         ])),
-        hovertemplate: '%{fullData.name}: %{y:.1f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.1f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.1f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.1f}<extra></extra>',
+        hovertemplate: '%{customdata[0]}<extra></extra>',
       }];
       if (this.showUsdOverlay && this.denominator !== 'fiat') {
         traces.push({

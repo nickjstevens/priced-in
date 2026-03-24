@@ -45,6 +45,33 @@ function formatGbp(value) {
   }).format(value);
 }
 
+function formatHoverGbp(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatUnitValue(value, { minimumFractionDigits = 0, maximumFractionDigits = 4 } = {}) {
+  if (value == null || Number.isNaN(value)) return '—';
+  return new Intl.NumberFormat('en-GB', {
+    minimumFractionDigits,
+    maximumFractionDigits,
+  }).format(value);
+}
+
+function formatBitcoinHuman(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  if (Math.abs(value) < 0.001) {
+    const sats = Math.round(value * 100000000);
+    return `${new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(sats)} sats`;
+  }
+  return `${formatUnitValue(value, { maximumFractionDigits: 6 })} bitcoin`;
+}
+
 function pointLabelToDecimalYear(value) {
   const parsed = Number(value);
   return Number.isNaN(parsed) ? null : parsed;
@@ -488,6 +515,27 @@ createApp({
     formatTableValue(value) {
       return formatNumber(value);
     },
+    formatHoverValueLine({ denominatorSeriesKey, pricedValue, gbpValue, denominatorLabel }) {
+      const denominatorKey = denominatorSeriesKey?.startsWith('context:')
+        ? denominatorSeriesKey.replace('context:', '')
+        : denominatorSeriesKey;
+      if (denominatorKey === 'fiat') return formatHoverGbp(pricedValue);
+      if (denominatorKey === 'real_fiat') return `${formatHoverGbp(pricedValue)} (CPI-adjusted)`;
+      if (denominatorKey === 'gold') return `${formatUnitValue(pricedValue)} oz gold (${formatHoverGbp(gbpValue)})`;
+      if (denominatorKey === 'hours') return `${formatUnitValue(pricedValue)} hours at median wage (${formatHoverGbp(gbpValue)})`;
+      if (denominatorKey === 'bitcoin') return `${formatBitcoinHuman(pricedValue)} (${formatHoverGbp(gbpValue)})`;
+      return `${formatUnitValue(pricedValue)} ${denominatorLabel || 'units'} (${formatHoverGbp(gbpValue)})`;
+    },
+    buildHoverLabel({ itemName, year, denominatorSeriesKey, pricedValue, gbpValue, denominatorLabel }) {
+      const yearLabel = Number.isFinite(Number(year)) ? Math.round(Number(year)) : year;
+      const valueLine = this.formatHoverValueLine({
+        denominatorSeriesKey,
+        pricedValue,
+        gbpValue,
+        denominatorLabel,
+      });
+      return `${itemName} in ${yearLabel}<br>${valueLine}`;
+    },
     readUrlState() {
       const p = new URLSearchParams(location.search);
       this.allDenominator = p.get('denom') || 'fiat';
@@ -870,14 +918,17 @@ createApp({
         points: pts,
         color: PALETTE[0],
         customdata: pts.map((point) => ([
-          point.value,
-          this.pointValueForSeries(itemKey, point.year),
-          this.pointValueForSeries(denominatorKey, point.year),
-          item.name,
-          denominatorLabel,
+          this.buildHoverLabel({
+            itemName: item.name,
+            year: point.year,
+            denominatorSeriesKey: denominatorKey,
+            pricedValue: point.value,
+            gbpValue: this.pointValueForSeries(itemKey, point.year),
+            denominatorLabel,
+          }),
         ])),
       })];
-      traces[0].hovertemplate = '%{fullData.name}: %{y:.1f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.1f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.1f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.1f}<extra></extra>';
+      traces[0].hovertemplate = '%{customdata[0]}<extra></extra>';
       if (this.showUsdOverlay && denominator !== 'fiat') {
         const overlayPoints = this.visibleOverlaySeries(itemKey, denominator, forcedStartYear);
         const overlayTrace = this.plotlyLineTrace({
@@ -953,10 +1004,22 @@ createApp({
       const entries = this.compareChartEntries();
       const forcedStartYear = this.costRebaseForcedStartYear();
       const traces = sortLegendTraces(entries.map(({ item, color }) => {
+        const points = this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear);
         const trace = this.plotlyLineTrace({
           name: `${item.name} (annual)`,
-          points: this.visiblePairSeries(item.key, `context:${this.allDenominator}`, forcedStartYear),
+          points,
           color,
+          customdata: points.map((point) => ([
+            this.buildHoverLabel({
+              itemName: item.name,
+              year: point.year,
+              denominatorSeriesKey: `context:${this.allDenominator}`,
+              pricedValue: point.value,
+              gbpValue: this.pointValueForSeries(item.key, point.year),
+              denominatorLabel: this.contextSeries[this.allDenominator]?.label || this.allDenominator,
+            }),
+          ])),
+          hovertemplate: '%{customdata[0]}<extra></extra>',
         });
         trace.meta = { itemKey: item.key };
         if (this.hiddenCompareSeriesKeys.includes(item.key)) trace.visible = 'legendonly';
@@ -1037,14 +1100,17 @@ createApp({
         points: pts,
         color: '#7c3aed',
         customdata: pts.map((point) => ([
-          point.value,
-          this.pointValueForSeries(numeratorKey, point.year),
-          this.pointValueForSeries(denominatorKey, point.year),
-          this.seriesName(numeratorKey),
-          this.seriesName(denominatorKey),
+          this.buildHoverLabel({
+            itemName: this.seriesName(numeratorKey),
+            year: point.year,
+            denominatorSeriesKey: denominatorKey,
+            pricedValue: point.value,
+            gbpValue: this.pointValueForSeries(numeratorKey, point.year),
+            denominatorLabel: this.seriesName(denominatorKey),
+          }),
         ])),
       })];
-      traces[0].hovertemplate = '%{fullData.name}: %{y:.1f}<br>Year: %{x}<br>Priced-in value: %{customdata[0]:.1f}<br>%{customdata[3]} (GBP): %{customdata[1]:,.1f}<br>%{customdata[4]} (GBP): %{customdata[2]:,.1f}<extra></extra>';
+      traces[0].hovertemplate = '%{customdata[0]}<extra></extra>';
       const rollingCorrelation = this.spreadRollingCorrelation || [];
       if (this.showSpreadRollingCorrelation && rollingCorrelation.length) {
         const corrTrace = this.plotlyLineTrace({

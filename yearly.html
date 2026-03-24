@@ -67,7 +67,7 @@
               <tbody>
                 <tr v-for="row in compareTableRows" :key="row.year">
                   <th>{{ row.year }}</th>
-                  <td v-for="column in compareTableColumns" :key="`${row.year}-${column.key}`">{{ formatTableValue(row.values[column.key]) }}</td>
+                  <td v-for="column in compareTableColumns" :key="`${row.year}-${column.key}`">{{ formatTableValue(row.values[column.key], column.key) }}</td>
                 </tr>
               </tbody>
             </table>

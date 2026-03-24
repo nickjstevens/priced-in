@@ -17,6 +17,15 @@ function formatNumber(value) {
   }).format(value);
 }
 
+function formatBitcoinHuman(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  if (Math.abs(value) < 0.001) {
+    const sats = Math.round(value * 100000000);
+    return `${new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(sats)} sats`;
+  }
+  return `${new Intl.NumberFormat('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 6 }).format(value)} bitcoin`;
+}
+
 createApp({
   data() {
     return {
@@ -98,7 +107,13 @@ createApp({
     },
   },
   methods: {
-    formatTableValue(value) {
+    isBitcoinQuotedColumn(columnKey) {
+      if (this.rebased) return false;
+      if (this.mode === 'single' || this.mode === 'compare') return this.allDenominator === 'bitcoin';
+      return this.mode === 'ratio' && this.denominatorKey === 'context:bitcoin' && columnKey === 'ratio';
+    },
+    formatTableValue(value, columnKey) {
+      if (this.isBitcoinQuotedColumn(columnKey)) return formatBitcoinHuman(value);
       return formatNumber(value);
     },
     seriesName(seriesKey) {
