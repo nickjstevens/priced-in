@@ -68,13 +68,9 @@
               <option v-for="item in itemOptions" :key="item.key" :value="item.key">{{ item.name }}</option>
             </select>
           </label>
-          <label v-if="canShowCompareGbpOverlay"><input type="checkbox" v-model="showUsdOverlay" @change="syncUrlAndRender" /> Overlay GBP price (faded)</label>
-          <button @click="showFullBitcoin = !showFullBitcoin; syncUrlAndRender()" v-if="allDenominator==='bitcoin'">
-            {{ showFullBitcoin ? 'Hide sparse early history' : 'Show full available history' }}
-          </button>
         </section>
 
-        <p v-if="allDenominator==='bitcoin' && !showFullBitcoin" class="notice">Bitcoin is hidden before 2017 by default because early annual averages are sparse and highly volatile. Use “Show full available history” to include all years.</p>
+        <p v-if="allDenominator==='bitcoin'" class="notice">Bitcoin is hidden before 2017 because early annual averages are sparse and highly volatile.</p>
         <p v-if="costRebaseNotice" class="notice">{{ costRebaseNotice }}</p>
 
         <article class="chart-card panel-shell">

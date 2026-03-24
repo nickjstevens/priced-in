@@ -257,7 +257,7 @@ createApp({
       perChartDenominator: {}, allDenominator: 'fiat',
       viewMode: 'compare', selectedRange: 'full', rebased: false,
       useLogScale: false, showUsdOverlay: false, showSpreadRollingCorrelation: false,
-      showFullBitcoin: false, compareKeys: [], search: '', selectedCategory: 'all', selectedItemKey: 'all',
+      compareKeys: [], search: '', selectedCategory: 'all', selectedItemKey: 'all',
       isLoading: true, error: '',
       spreadNumeratorItemKey: '', spreadDenominatorItemKey: '',
       isDarkMode: true,
@@ -420,9 +420,6 @@ createApp({
       }
       return rolling;
     },
-    canShowCompareGbpOverlay() {
-      return this.allDenominator !== 'fiat';
-    },
     canShowSpreadGbpOverlay() {
       return !this.isGbpSeries(this.spreadNumeratorItemKey) && !this.isGbpSeries(this.spreadDenominatorItemKey);
     },
@@ -550,7 +547,6 @@ createApp({
       this.useLogScale = p.get('log') === '1';
       this.showUsdOverlay = p.get('overlayUsd') === '1';
       this.showSpreadRollingCorrelation = p.get('overlayCorr') === '1';
-      this.showFullBitcoin = p.get('btcFull') === '1';
       this.compareKeys = (p.get('items') || '').split(',').filter(Boolean);
       this.selectedCategory = p.get('category') || 'all';
       this.selectedItemKey = p.get('item') || 'all';
@@ -561,11 +557,10 @@ createApp({
       }
       const theme = p.get('theme');
       if (theme === 'dark' || theme === 'light') this.isDarkMode = theme === 'dark';
+      if (this.currentPage === 'cost') this.showUsdOverlay = false;
     },
     async syncUrlAndRender() {
-      if (this.currentPage === 'cost' && !this.canShowCompareGbpOverlay) {
-        this.showUsdOverlay = false;
-      }
+      if (this.currentPage === 'cost') this.showUsdOverlay = false;
       if (this.currentPage === 'ratio') {
         if (!this.canShowSpreadGbpOverlay) this.showUsdOverlay = false;
         if (!this.canShowSpreadRollingCorrelation) this.showSpreadRollingCorrelation = false;
@@ -584,9 +579,8 @@ createApp({
       }
       if (this.rebased) p.set('rebased', '1');
       if (this.useLogScale) p.set('log', '1');
-      if (this.showUsdOverlay && ((this.currentPage === 'cost' && this.canShowCompareGbpOverlay) || (this.currentPage === 'ratio' && this.canShowSpreadGbpOverlay))) p.set('overlayUsd', '1');
+      if (this.showUsdOverlay && this.currentPage === 'ratio' && this.canShowSpreadGbpOverlay) p.set('overlayUsd', '1');
       if (this.showSpreadRollingCorrelation) p.set('overlayCorr', '1');
-      if (this.showFullBitcoin) p.set('btcFull', '1');
       p.set('theme', this.isDarkMode ? 'dark' : 'light');
       const nextUrl = p.toString() ? `${location.pathname}?${p.toString()}` : location.pathname;
       history.replaceState({}, '', nextUrl);
@@ -672,7 +666,7 @@ createApp({
         return { year, value: numeratorValue / denominatorValue, observed: true };
       }).filter((point) => point.year >= fromYear && point.year <= toYear && point.observed);
 
-      if (denominatorKey === 'context:bitcoin' && !this.showFullBitcoin) points = points.filter((point) => point.year >= 2017);
+      if (denominatorKey === 'context:bitcoin') points = points.filter((point) => point.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([numeratorKey, denominatorKey]);
       const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
       return this.applySeriesTransforms(points, forcedStart);
@@ -684,7 +678,7 @@ createApp({
         const value = this.pointValueForSeries(seriesKey, year);
         return { year, value, observed: value != null };
       }).filter((point) => point.year >= fromYear && point.year <= toYear && point.observed);
-      if (denominator === 'bitcoin' && !this.showFullBitcoin) points = points.filter((point) => point.year >= 2017);
+      if (denominator === 'bitcoin') points = points.filter((point) => point.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([seriesKey]);
       const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
       return this.applySeriesTransforms(points, forcedStart);
@@ -697,7 +691,7 @@ createApp({
         value: this.convertSeries(item, denominator)[idx],
         observed: item.values[idx] != null && this.contextSeries[denominator]?.values?.[idx] != null,
       })).filter((p) => p.year >= from && p.year <= to && p.observed);
-      if (denominator === 'bitcoin' && !this.showFullBitcoin) points = points.filter((p) => p.year >= 2017);
+      if (denominator === 'bitcoin') points = points.filter((p) => p.year >= 2017);
       const rebaseStarts = this.rebaseStartYears([item.key], denominator);
       const forcedStart = forcedStartYear ?? (this.rebased && rebaseStarts.length ? Math.max(...rebaseStarts) : null);
       return this.applySeriesTransforms(points, forcedStart);
@@ -864,7 +858,6 @@ createApp({
       params.set('range', this.selectedRange);
       if (this.compareSelectionKeys.length) params.set('items', this.compareSelectionKeys.join(','));
       if (this.rebased) params.set('rebased', '1');
-      if (this.showFullBitcoin) params.set('btcFull', '1');
       params.set('theme', this.isDarkMode ? 'dark' : 'light');
       return params;
     },
@@ -875,7 +868,6 @@ createApp({
       if (this.spreadNumeratorItemKey) params.set('itemA', this.spreadNumeratorItemKey);
       if (this.spreadDenominatorItemKey) params.set('itemB', this.spreadDenominatorItemKey);
       if (this.rebased) params.set('rebased', '1');
-      if (this.showFullBitcoin) params.set('btcFull', '1');
       params.set('theme', this.isDarkMode ? 'dark' : 'light');
       return params;
     },
@@ -1220,6 +1212,7 @@ createApp({
       });
       this.charts = {};
       if (this.currentPage === 'cost') {
+        this.showUsdOverlay = false;
         this.renderCompareChart();
       }
       if (this.currentPage === 'ratio') {
@@ -1305,7 +1298,6 @@ createApp({
       if (this.useLogScale) params.set('log', '1');
       if (this.showUsdOverlay) params.set('overlayUsd', '1');
       if (this.canShowSpreadRollingCorrelation && this.showSpreadRollingCorrelation) params.set('overlayCorr', '1');
-      if (this.showFullBitcoin) params.set('btcFull', '1');
       if (this.spreadNumeratorItemKey) params.set('itemA', this.spreadNumeratorItemKey);
       if (this.spreadDenominatorItemKey) params.set('itemB', this.spreadDenominatorItemKey);
       params.set('theme', this.isDarkMode ? 'dark' : 'light');
@@ -1319,7 +1311,6 @@ createApp({
       if (this.rebased) params.set('rebased', '1');
       if (this.useLogScale) params.set('log', '1');
       if (this.showUsdOverlay) params.set('overlayUsd', '1');
-      if (this.showFullBitcoin) params.set('btcFull', '1');
       params.set('theme', this.isDarkMode ? 'dark' : 'light');
       return `single.html?${params.toString()}`;
     },

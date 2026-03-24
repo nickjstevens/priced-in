@@ -240,7 +240,6 @@ createApp({
       rebased: false,
       useLogScale: false,
       showUsdOverlay: false,
-      showFullBitcoin: false,
       isDarkMode: true,
       isMobileMenuOpen: false,
       isLoading: true,
@@ -323,7 +322,6 @@ createApp({
       this.rebased = p.get('rebased') === '1';
       this.useLogScale = p.get('log') === '1';
       this.showUsdOverlay = p.get('overlayUsd') === '1';
-      this.showFullBitcoin = p.get('btcFull') === '1';
       const theme = p.get('theme');
       if (theme === 'dark' || theme === 'light') this.isDarkMode = theme === 'dark';
     },
@@ -335,7 +333,6 @@ createApp({
       if (this.rebased) p.set('rebased', '1');
       if (this.useLogScale) p.set('log', '1');
       if (this.showUsdOverlay && this.canShowGbpOverlay) p.set('overlayUsd', '1');
-      if (this.showFullBitcoin) p.set('btcFull', '1');
       p.set('theme', this.isDarkMode ? 'dark' : 'light');
       return p;
     },
@@ -381,7 +378,7 @@ createApp({
           return { year, value: item.values[idx] / denominatorValue };
         })
         .filter((point) => point.year >= from && point.year <= to && point.value != null);
-      if (this.denominator === 'bitcoin' && !this.showFullBitcoin) points = points.filter((point) => Number(point.year) >= 2017);
+      if (this.denominator === 'bitcoin') points = points.filter((point) => Number(point.year) >= 2017);
       return this.applySeriesTransforms(points);
     },
     visibleOverlaySeries(seriesKey) {
@@ -389,7 +386,7 @@ createApp({
       let points = this.years
         .map((year) => ({ year, value: this.pointValueForSeries(seriesKey, year) }))
         .filter((point) => point.year >= from && point.year <= to && point.value != null);
-      if (this.denominator === 'bitcoin' && !this.showFullBitcoin) points = points.filter((point) => Number(point.year) >= 2017);
+      if (this.denominator === 'bitcoin') points = points.filter((point) => Number(point.year) >= 2017);
       return this.applySeriesTransforms(points);
     },
     applySeriesTransforms(points) {
@@ -440,8 +437,9 @@ createApp({
           name: `${this.currentItem.name} (GBP overlay)`,
           x: this.visibleOverlaySeries(this.currentItem.key).map((point) => point.year),
           y: this.visibleOverlaySeries(this.currentItem.key).map((point) => point.value),
-          line: { color: 'rgba(249, 115, 22, 0.6)', width: 2, dash: 'dash' },
+          line: { color: 'rgba(100, 116, 139, 0.65)', width: 2, dash: 'dash' },
           yaxis: 'y2',
+          opacity: 0.7,
           hovertemplate: '%{fullData.name}: %{y:,.1f}<br>Year: %{x}<extra></extra>',
         });
       }
@@ -603,7 +601,6 @@ createApp({
       params.set('denom', this.denominator);
       params.set('range', this.selectedRange);
       if (this.rebased) params.set('rebased', '1');
-      if (this.showFullBitcoin) params.set('btcFull', '1');
       params.set('theme', this.isDarkMode ? 'dark' : 'light');
       return params;
     },
