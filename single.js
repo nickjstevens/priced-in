@@ -255,7 +255,7 @@ createApp({
       return this.denominatorSeriesType() === 'context' && this.denominatorSeriesKey() !== 'fiat';
     },
     canSwapPair() {
-      return this.denominatorSeriesType() === 'item' && this.denominatorSeriesKey() !== this.itemKey;
+      return !!this.currentItem && this.denominatorSeriesKey() !== this.itemKey;
     },
     currentItem() {
       return this.items.find((item) => item.key === this.itemKey) || null;
@@ -588,11 +588,30 @@ createApp({
         ? `${item.name} rose ${change.toFixed(1)}% over this selected period, with a CAGR of ${formatPercent(cagr)}.`
         : `${item.name} fell ${Math.abs(change).toFixed(1)}% over this selected period, with a CAGR of ${formatPercent(cagr)}.`;
     },
+    totalChangeValue() {
+      const item = this.currentItem;
+      if (!item) return null;
+      const pts = this.visiblePairSeries(item.key).filter((point) => point.value != null);
+      if (pts.length < 2 || !pts[0].value) return null;
+      return ((pts[pts.length - 1].value / pts[0].value) - 1) * 100;
+    },
+    bitcoinSparseWarningApplies() {
+      const numeratorKey = String(this.itemKey || '').toLowerCase();
+      const denominatorType = this.denominatorSeriesType();
+      const denominatorKey = String(this.denominatorSeriesKey() || '').toLowerCase();
+      const numeratorIsBitcoin = numeratorKey.includes('bitcoin') || numeratorKey === 'btc' || numeratorKey.endsWith('_btc');
+      const denominatorIsBitcoin = denominatorKey.includes('bitcoin') || denominatorKey === 'btc' || denominatorKey.endsWith('_btc');
+      return numeratorIsBitcoin || denominatorIsBitcoin || (denominatorType === 'context' && denominatorKey === 'bitcoin');
+    },
     purchasingPowerText() {
       const denominatorType = this.denominatorSeriesType();
       const label = this.denominatorSeriesLabel();
-      if (denominatorType === 'item') return `A rising line means ${this.currentItem?.name || 'the numerator series'} is becoming more expensive relative to ${label}.`;
-      return `A rising line means the ${label} purchasing power of ${this.currentItem?.name || 'the priced-in series'} is falling.`;
+      const lineDirection = (this.totalChangeValue() ?? 0) >= 0 ? 'rising' : 'falling';
+      const purchasingPowerDirection = (this.totalChangeValue() ?? 0) >= 0 ? 'falling' : 'increasing';
+      if (denominatorType === 'item') {
+        return `A ${lineDirection} line means ${this.currentItem?.name || 'the numerator series'} is ${purchasingPowerDirection === 'falling' ? 'becoming more expensive' : 'becoming less expensive'} relative to ${label}.`;
+      }
+      return `A ${lineDirection} line means the ${label} purchasing power of ${this.currentItem?.name || 'the priced-in series'} is ${purchasingPowerDirection}.`;
     },
     goldAlternativeText() {
       if (this.denominatorSeriesType() !== 'context') return '';
@@ -628,9 +647,33 @@ createApp({
         : (this.contextSeries[this.denominatorSeriesKey()]?.lineage || []);
       return lineage.length ? `Lineage: ${lineage.join(' → ')}` : '';
     },
+    ensureContextAsSwappableItem(contextKey) {
+      const syntheticKey = `context_${contextKey}`;
+      if (this.items.some((item) => item.key === syntheticKey)) return syntheticKey;
+      const context = this.contextSeries[contextKey];
+      if (!context) return null;
+      this.items.push({
+        key: syntheticKey,
+        name: context.label,
+        category: 'reference',
+        values: context.values || [],
+        sources: context.sources || [],
+        metadata: {
+          unit_basis: 'Reference denominator series',
+          geography: 'United Kingdom',
+          price_basis: 'Nominal annual average',
+          frequency: 'Annual',
+          last_updated: context?.metadata?.last_updated || 'See sources',
+        },
+      });
+      this.denominators.push({ value: `item:${syntheticKey}`, label: `${context.label} (series)` });
+      return syntheticKey;
+    },
     swapPair() {
-      if (this.denominatorSeriesType() !== 'item') return;
-      const denominatorItemKey = this.denominatorSeriesKey();
+      let denominatorItemKey = this.denominatorSeriesKey();
+      if (this.denominatorSeriesType() === 'context') {
+        denominatorItemKey = this.ensureContextAsSwappableItem(denominatorItemKey);
+      }
       if (!denominatorItemKey || denominatorItemKey === this.itemKey) return;
       const previousItemKey = this.itemKey;
       this.itemKey = denominatorItemKey;
