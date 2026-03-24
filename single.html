@@ -75,6 +75,7 @@
         </header>
         <p class="lineage prominent-insight">{{ insightText() }}</p>
         <p class="lineage">{{ purchasingPowerText() }}</p>
+        <p v-if="bitcoinSparseWarningApplies()" class="notice">Bitcoin is hidden before 2017 because early annual averages are sparse and highly volatile.</p>
         <p v-if="goldAlternativeText()" class="lineage">{{ goldAlternativeText() }}</p>
         <dl class="stats-strip">
           <div class="stat"><dt>CAGR</dt><dd>{{ chartStats().cagrSelected }}</dd></div>
