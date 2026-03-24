@@ -449,10 +449,13 @@ createApp({
     },
   },
   methods: {
+    rebasedYAxisTitle(defaultTitle = '') {
+      return this.rebased ? 'Rebased to start from 100' : defaultTitle;
+    },
     yAxisTitleForSeries(seriesKey) {
-      if (!seriesKey) return '';
-      if (seriesKey.startsWith('context:')) return this.seriesName(seriesKey);
-      return `Units of ${this.seriesName(seriesKey)}`;
+      if (!seriesKey) return this.rebasedYAxisTitle('');
+      if (seriesKey.startsWith('context:')) return this.rebasedYAxisTitle(this.seriesName(seriesKey));
+      return this.rebasedYAxisTitle(`Units of ${this.seriesName(seriesKey)}`);
     },
     toggleSummarySort(columnKey) {
       if (this.summarySortKey === columnKey) {
@@ -860,7 +863,7 @@ createApp({
         const customButtonLabels = [
           { match: 'Toggle log scale', label: 'log' },
           { match: 'Toggle rebase to 100', label: 'Rebase' },
-          { match: 'Open yearly data table in a dedicated page', label: 'Data' },
+          { match: 'Open yearly data table in a dedicated page', label: 'Data ↗' },
         ];
         const mappedButton = customButtonLabels.find((entry) => title.includes(entry.match));
         const label = rangeButton
@@ -897,7 +900,7 @@ createApp({
     compareChartLayout() {
       return this.plotlyLayout({
         xaxis: { ...plotlyAxisBase(this.isDarkMode), title: 'Year', tickmode: 'auto', nticks: 8, tickformat: 'd' },
-        yaxis: { ...plotlyAxisBase(this.isDarkMode), title: this.contextSeries[this.allDenominator]?.label || this.allDenominator, type: this.useLogScale ? 'log' : 'linear', rangemode: this.useLogScale ? undefined : 'tozero' },
+        yaxis: { ...plotlyAxisBase(this.isDarkMode), title: this.rebasedYAxisTitle(this.contextSeries[this.allDenominator]?.label || this.allDenominator), type: this.useLogScale ? 'log' : 'linear', rangemode: this.useLogScale ? undefined : 'tozero' },
       });
     },
     openYearlyDataPage() {
@@ -1021,7 +1024,7 @@ createApp({
         shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
         yaxis: {
           ...plotlyAxisBase(this.isDarkMode),
-          title: this.contextSeries[denominator]?.label || denominator,
+          title: this.rebasedYAxisTitle(this.contextSeries[denominator]?.label || denominator),
           type: this.useLogScale ? 'log' : 'linear',
           rangemode: this.useLogScale ? undefined : 'tozero',
           ...(useSatsAxis ? this.satsAxisConfig() : {}),
