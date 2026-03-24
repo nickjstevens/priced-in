@@ -4,6 +4,19 @@ function isValidDataset(payload) {
   return payload && Array.isArray(payload.years) && payload.contextSeries && Array.isArray(payload.items);
 }
 
+function formatNumber(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  const abs = Math.abs(value);
+  if (abs !== 0 && abs < 0.001) return value.toExponential(2);
+  if (abs >= 1000) {
+    return new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(Math.round(value));
+  }
+  return new Intl.NumberFormat('en-GB', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  }).format(value);
+}
+
 createApp({
   data() {
     return {
@@ -86,7 +99,7 @@ createApp({
   },
   methods: {
     formatTableValue(value) {
-      return value == null ? '—' : value.toFixed(1);
+      return formatNumber(value);
     },
     seriesName(seriesKey) {
       if (!seriesKey) return '—';

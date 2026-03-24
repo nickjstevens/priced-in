@@ -246,6 +246,10 @@ summary { cursor: pointer; }
   .compare-layout { grid-template-columns: 1fr; }
 }
 
+@media (min-width: 1024px) {
+  .chart-wrap-lg { height: 520px; }
+}
+
 @media (max-width: 820px) {
   #app, .doc { padding: 0.9rem; }
   .app-header { padding: 1rem; }
