@@ -26,8 +26,8 @@ function plotlyLayoutBase(isDarkMode, useLogScale, extra = {}) {
     },
     showlegend: true,
     hovermode: 'closest',
-    xaxis: { ...axisBase, nticks: 8, tickformat: 'd' },
-    yaxis: { ...axisBase, type: useLogScale ? 'log' : 'linear', rangemode: useLogScale ? undefined : 'tozero' },
+    xaxis: { ...axisBase, title: 'Year', nticks: 8, tickformat: 'd' },
+    yaxis: { ...axisBase, title: '', type: useLogScale ? 'log' : 'linear', rangemode: useLogScale ? undefined : 'tozero' },
     ...extra,
   };
 }
@@ -447,6 +447,12 @@ createApp({
       }
       Plotly.react(chartEl, sortLegendTraces(traces), this.plotlyLayout({
         shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
+        yaxis: {
+          ...plotlyAxisBase(this.isDarkMode),
+          title: this.contextSeries[this.denominator]?.label || this.denominator,
+          type: this.useLogScale ? 'log' : 'linear',
+          rangemode: this.useLogScale ? undefined : 'tozero',
+        },
         yaxis2: { ...plotlyAxisBase(this.isDarkMode), overlaying: 'y', side: 'right', showgrid: false },
       }), plotlyConfig({
         onToggleLogScale: () => this.toggleLogScale(),

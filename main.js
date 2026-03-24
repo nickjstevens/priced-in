@@ -145,7 +145,7 @@ function plotlyLayoutBase(isDarkMode, useLogScale, extra = {}) {
     hovermode: 'closest',
     xaxis: {
       ...axisBase,
-      title: '',
+      title: 'Year',
       tickmode: 'auto',
       nticks: 8,
       tickformat: 'd',
@@ -449,6 +449,11 @@ createApp({
     },
   },
   methods: {
+    yAxisTitleForSeries(seriesKey) {
+      if (!seriesKey) return '';
+      if (seriesKey.startsWith('context:')) return this.seriesName(seriesKey);
+      return `Units of ${this.seriesName(seriesKey)}`;
+    },
     toggleSummarySort(columnKey) {
       if (this.summarySortKey === columnKey) {
         this.summarySortDirection = this.summarySortDirection === 'asc' ? 'desc' : 'asc';
@@ -842,8 +847,8 @@ createApp({
     },
     compareChartLayout() {
       return this.plotlyLayout({
-        xaxis: { ...plotlyAxisBase(this.isDarkMode), title: '', tickmode: 'auto', nticks: 8, tickformat: 'd' },
-        yaxis: { ...plotlyAxisBase(this.isDarkMode), title: '', type: this.useLogScale ? 'log' : 'linear', rangemode: this.useLogScale ? undefined : 'tozero' },
+        xaxis: { ...plotlyAxisBase(this.isDarkMode), title: 'Year', tickmode: 'auto', nticks: 8, tickformat: 'd' },
+        yaxis: { ...plotlyAxisBase(this.isDarkMode), title: this.contextSeries[this.allDenominator]?.label || this.allDenominator, type: this.useLogScale ? 'log' : 'linear', rangemode: this.useLogScale ? undefined : 'tozero' },
       });
     },
     openYearlyDataPage() {
@@ -967,7 +972,7 @@ createApp({
         shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
         yaxis: {
           ...plotlyAxisBase(this.isDarkMode),
-          title: '',
+          title: this.contextSeries[denominator]?.label || denominator,
           type: this.useLogScale ? 'log' : 'linear',
           rangemode: this.useLogScale ? undefined : 'tozero',
           ...(useSatsAxis ? this.satsAxisConfig() : {}),
@@ -1178,7 +1183,7 @@ createApp({
         shapes: rebaseReferenceLine(this.isDarkMode, this.rebased),
         yaxis: {
           ...plotlyAxisBase(this.isDarkMode),
-          title: '',
+          title: this.yAxisTitleForSeries(denominatorKey),
           type: this.useLogScale ? 'log' : 'linear',
           rangemode: this.useLogScale ? undefined : 'tozero',
           ...(useSatsAxis ? this.satsAxisConfig() : {}),
