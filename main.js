@@ -270,6 +270,7 @@ createApp({
       hiddenCompareSeriesKeys: [],
       summarySortKey: 'totalChange',
       summarySortDirection: 'desc',
+      buyingPowerOverlayRowKey: '',
     };
   },
   computed: {
@@ -377,6 +378,8 @@ createApp({
           name: item.name,
           category: item.category,
           stats: this.chartStats(item.key),
+          buyingPower: this.buyingPowerTag(item.key),
+          buyingPowerSummary: this.buyingPowerSummary(item.key),
         }))
         .sort((a, b) => {
           const direction = this.summarySortDirection === 'desc' ? -1 : 1;
@@ -477,6 +480,38 @@ createApp({
       if (extremes.max != null && value === extremes.max) classes.push('summary-cell-max');
       if (extremes.min != null && value === extremes.min) classes.push('summary-cell-min');
       return classes.join(' ');
+    },
+    toggleBuyingPowerOverlay(rowKey) {
+      this.buyingPowerOverlayRowKey = this.buyingPowerOverlayRowKey === rowKey ? '' : rowKey;
+    },
+    closeBuyingPowerOverlay() {
+      this.buyingPowerOverlayRowKey = '';
+    },
+    buyingPowerTag(itemKey) {
+      const totalChange = this.chartStats(itemKey).raw?.totalChange;
+      if (!Number.isFinite(totalChange)) {
+        return { icon: '•', label: 'Buying Power', className: '' };
+      }
+      return totalChange < 0
+        ? { icon: '▲', label: 'Buying Power', className: 'power-badge-rising' }
+        : { icon: '▼', label: 'Buying Power', className: 'power-badge-falling' };
+    },
+    buyingPowerSummary(itemKey) {
+      const item = this.items.find((x) => x.key === itemKey);
+      const denominator = this.perChartDenominator[itemKey] || this.allDenominator;
+      const denominatorLabel = this.contextSeries[denominator]?.label || denominator;
+      const totalChange = this.chartStats(itemKey).raw?.totalChange;
+      const points = this.visiblePairSeries(itemKey, `context:${denominator}`, this.costRebaseForcedStartYear()).filter((point) => point.value != null);
+      const first = points[0];
+      const last = points[points.length - 1];
+      const yearSpan = first && last ? Math.max(0, Math.round(last.year - first.year)) : null;
+      if (!item || !Number.isFinite(totalChange) || yearSpan == null) {
+        return 'Not enough data to explain buying power for this series and range.';
+      }
+      const purchasingPowerDirection = totalChange < 0 ? 'rising' : 'falling';
+      const quantityDirection = totalChange < 0 ? 'more' : 'less';
+      const yearsPhrase = yearSpan === 1 ? '1 year ago' : `${yearSpan} years ago`;
+      return `The purchasing power of ${denominatorLabel} is ${purchasingPowerDirection}. Today you can buy ${quantityDirection} ${item.name} than you could ${yearsPhrase}.`;
     },
     formatPercent,
     maxDrawdown,
