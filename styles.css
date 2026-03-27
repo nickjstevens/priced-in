@@ -226,6 +226,10 @@ summary { cursor: pointer; }
   cursor: pointer;
   font: inherit;
   line-height: 1.2;
+  min-height: auto;
+  margin-left: 0;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
 }
 
 .buying-power-badge-wrap {
