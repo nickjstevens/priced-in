@@ -34,7 +34,6 @@
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" href="index.html">Cost of Living</a>
                 <a class="page-link" :href="mode === 'single' ? backUrl : 'single.html?item=house&denom=context:fiat&theme=' + theme">Single Series</a>
-                <a class="page-link" :href="'yoy.html?item=' + (itemKey || 'house') + '&denom=' + allDenominator + '&theme=' + theme">YoY Experiment</a>
                 <a class="page-link" href="assumptions.html">About</a>
               </nav>
             </div>

@@ -650,6 +650,11 @@ createApp({
     closeBuyingPowerOverlay() {
       this.isBuyingPowerOverlayOpen = false;
     },
+    handleDocumentPointerDown(event) {
+      if (!this.isBuyingPowerOverlayOpen) return;
+      if (event.target?.closest?.('.buying-power-badge-wrap')) return;
+      this.closeBuyingPowerOverlay();
+    },
     purchasingPowerText() {
       const denominatorType = this.denominatorSeriesType();
       const label = this.denominatorSeriesLabel();
@@ -862,8 +867,10 @@ createApp({
     await nextTick();
     this.syncUrlAndRender();
     window.addEventListener('resize', this.closeMobileMenu);
+    document.addEventListener('pointerdown', this.handleDocumentPointerDown);
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.closeMobileMenu);
+    document.removeEventListener('pointerdown', this.handleDocumentPointerDown);
   },
 }).mount('#app');
