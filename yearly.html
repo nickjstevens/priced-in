@@ -17,6 +17,9 @@
             <p>Review the selected yearly table in detail and export it to CSV.</p>
           </a>
           <div class="header-actions">
+            <button class="theme-icon-toggle" @click="toggleTheme" :aria-label="`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`">
+              <span class="theme-toggle-icon" aria-hidden="true">{{ theme === 'dark' ? '☀️' : '🌙' }}</span>
+            </button>
             <button
               class="menu-toggle"
               type="button"
@@ -31,12 +34,8 @@
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" href="index.html">Cost of Living</a>
                 <a class="page-link" :href="mode === 'single' ? backUrl : 'single.html?item=house&denom=context:fiat&theme=' + theme">Single Series</a>
-                <a class="page-link" href="assumptions.html">Assumptions & Caveats</a>
+                <a class="page-link" href="assumptions.html">About</a>
               </nav>
-              <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`">
-                <span class="theme-toggle-icon">{{ theme === 'dark' ? '☀️' : '🌙' }}</span>
-                <span>{{ theme === 'dark' ? 'Light mode' : 'Dark mode' }}</span>
-              </button>
             </div>
           </div>
         </header>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Priced In — Assumptions and caveats</title>
+    <title>Priced In — About</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -12,10 +12,13 @@
         <header class="app-header app-header-static">
           <a class="brand-panel" href="index.html" aria-label="Go to homepage">
             <span class="brand-kicker">Methodology notes</span>
-            <h1>Assumptions and caveats</h1>
-            <p>Reference notes on coverage, methodology, and source confidence.</p>
+            <h1>About</h1>
+            <p>Why this app exists, what it aims to show, and the assumptions behind the data.</p>
           </a>
           <div class="header-actions">
+            <button class="theme-icon-toggle" type="button" data-theme-toggle aria-label="Toggle light and dark mode">
+              <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+            </button>
             <button
               class="menu-toggle"
               type="button"
@@ -30,16 +33,13 @@
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" href="index.html">Cost of Living</a>
                 <a class="page-link" href="single.html?item=house&denom=context:fiat&theme=dark">Single Series</a>
-                <a class="page-link active" href="assumptions.html">Assumptions &amp; Caveats</a>
+                <a class="page-link active" href="assumptions.html">About</a>
               </nav>
-              <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle light and dark mode">
-                <span class="theme-toggle-icon">🌙</span>
-                <span data-theme-label>Dark mode</span>
-              </button>
             </div>
           </div>
         </header>
         <section class="chart-card assumptions-card panel-shell">
+          <p>This web app exists to make long-run UK living costs more intuitive by re-pricing everyday goods and services in multiple “money lenses” (nominal pounds, real pounds, gold, hours worked, and bitcoin). The goal is to show how the same item can look very different depending on the unit of account, and to illustrate changes in purchasing power over time rather than just headline prices.</p>
           <ul>
             <li>Coverage is annual 1950–2025 for all items and all denominators except bitcoin, which is intentionally sparse before market launch years.</li>
             <li>Denominators include nominal GBP, CPI-adjusted real GBP, gold, hours worked at median wage, and bitcoin.</li>
@@ -57,13 +57,11 @@
         const root = document.documentElement;
         const storageKey = 'priced-in-theme';
         const toggle = document.querySelector('[data-theme-toggle]');
-        const label = document.querySelector('[data-theme-label]');
         const icon = toggle?.querySelector('.theme-toggle-icon');
         const menuToggle = document.querySelector('[data-menu-toggle]');
         const menuPanel = document.querySelector('[data-menu-panel]');
         const applyTheme = (theme) => {
           root.setAttribute('data-theme', theme);
-          if (label) label.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
           if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
         };
         const savedTheme = localStorage.getItem(storageKey);
