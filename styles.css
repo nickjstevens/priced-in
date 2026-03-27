@@ -252,6 +252,9 @@ summary { cursor: pointer; }
   box-shadow: 0 10px 24px rgba(2, 6, 23, 0.2);
   font-size: 0.82rem;
   line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
   text-transform: none;
   letter-spacing: 0;
   opacity: 0;

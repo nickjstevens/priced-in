@@ -487,6 +487,11 @@ createApp({
     closeBuyingPowerOverlay() {
       this.buyingPowerOverlayRowKey = '';
     },
+    handleDocumentPointerDown(event) {
+      if (!this.buyingPowerOverlayRowKey) return;
+      if (event.target?.closest?.('.buying-power-badge-wrap')) return;
+      this.closeBuyingPowerOverlay();
+    },
     buyingPowerTag(itemKey) {
       const totalChange = this.chartStats(itemKey).raw?.totalChange;
       if (!Number.isFinite(totalChange)) {
@@ -1459,5 +1464,9 @@ createApp({
     await nextTick();
     this.bindDirectionalTablePan();
     this.renderAll();
+    document.addEventListener('pointerdown', this.handleDocumentPointerDown);
+  },
+  beforeUnmount() {
+    document.removeEventListener('pointerdown', this.handleDocumentPointerDown);
   },
 }).mount('#app');
