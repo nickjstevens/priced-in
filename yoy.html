@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Priced In — YoY Step Chart (Experimental)</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  </head>
+  <body data-page="yoy">
+    <main id="app" class="single-layout">
+      <div class="dashboard-shell">
+        <header class="app-header">
+          <a class="brand-panel" href="index.html" aria-label="Go to homepage">
+            <span class="brand-kicker">Experimental view</span>
+            <h1>Year over Year Step Chart</h1>
+            <p>Test YoY moves with step lines using either absolute change or percentage change.</p>
+          </a>
+          <div class="header-actions">
+            <button class="theme-icon-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
+              <span class="theme-toggle-icon" aria-hidden="true">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+            </button>
+            <button
+              class="menu-toggle"
+              type="button"
+              @click="toggleMobileMenu"
+              :aria-expanded="isMobileMenuOpen ? 'true' : 'false'"
+              aria-controls="site-menu"
+              aria-label="Toggle navigation menu"
+            >
+              <span></span><span></span><span></span>
+            </button>
+            <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
+              <nav class="page-nav" aria-label="Main sections">
+                <a class="page-link" href="index.html">Cost of Living</a>
+                <a class="page-link" :href="singleItemMenuUrl">Single Series</a>
+                <a class="page-link active" href="yoy.html">YoY Experiment</a>
+                <a class="page-link" href="assumptions.html">About</a>
+              </nav>
+            </div>
+          </div>
+        </header>
+
+        <section class="single-controls panel-shell" v-if="!isLoading && !error">
+          <label>Item
+            <select v-model="itemKey" @change="syncUrlAndRender">
+              <option v-for="item in items" :key="item.key" :value="item.key">{{ item.name }}</option>
+            </select>
+          </label>
+          <label>Priced In
+            <select v-model="denominator" @change="syncUrlAndRender">
+              <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
+            </select>
+          </label>
+          <label>YoY Metric
+            <select v-model="metric" @change="syncUrlAndRender">
+              <option value="absolute">Absolute yearly change (recommended)</option>
+              <option value="percent">Percent yearly change (%)</option>
+            </select>
+          </label>
+        </section>
+
+        <section v-if="isLoading" class="status-card">Loading pricing data… <span class="skeleton"></span></section>
+        <section v-else-if="error" class="status-card error">{{ error }}</section>
+
+        <article v-else class="chart-card single-page-chart panel-shell">
+          <header>
+            <div class="card-title-block">
+              <h2>{{ chartTitle }}</h2>
+              <p class="lineage">{{ chartSubtitle }}</p>
+            </div>
+          </header>
+          <p class="notice" v-if="metric === 'percent'">Percent YoY can become misleading when a prior-year value is near zero. Absolute changes are often more stable and interpretable.</p>
+          <div class="chart-wrap"><div id="yoy-chart" class="plotly-chart"></div></div>
+        </article>
+      </div>
+    </main>
+
+    <script src="yoy.js"></script>
+  </body>
+</html>

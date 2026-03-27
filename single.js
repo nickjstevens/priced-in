@@ -465,6 +465,10 @@ createApp({
       if (this.rebased) return `${this.currentItem.name} in ${yearLabel}<br>${formatPercent(hoverStats?.totalChange)} total change, ${formatPercent(hoverStats?.cagr)} CAGR (${formatHoverGbp(gbpValue)})`;
       return `${this.currentItem.name} in ${yearLabel}<br>${this.formatHoverValueLine(point.value, gbpValue)}`;
     },
+    buildGbpOverlayHoverLabel(point) {
+      const yearLabel = Math.round(Number(point.year));
+      return `${this.currentItem.name} (GBP overlay) in ${yearLabel}<br>${formatHoverGbp(point.value)}`;
+    },
     renderChart() {
       if (!this.currentItem) return;
       this.chartZoomed = false;
@@ -485,16 +489,18 @@ createApp({
         hovertemplate: '%{customdata[0]}<extra></extra>',
       }];
       if (this.showUsdOverlay && this.canShowGbpOverlay) {
+        const overlayPoints = this.visibleOverlaySeries(this.currentItem.key);
         traces.push({
           type: 'scatter',
           mode: 'lines',
           name: `${this.currentItem.name} (GBP overlay)`,
-          x: this.visibleOverlaySeries(this.currentItem.key).map((point) => point.year),
-          y: this.visibleOverlaySeries(this.currentItem.key).map((point) => point.value),
+          x: overlayPoints.map((point) => point.year),
+          y: overlayPoints.map((point) => point.value),
           line: { color: 'rgba(100, 116, 139, 0.65)', width: 2, dash: 'dash' },
           yaxis: 'y2',
           opacity: 0.7,
-          hovertemplate: '%{fullData.name}: %{y:,.1f}<br>Year: %{x}<extra></extra>',
+          customdata: overlayPoints.map((point) => ([this.buildGbpOverlayHoverLabel(point)])),
+          hovertemplate: '%{customdata[0]}<extra></extra>',
         });
       }
       Plotly.react(chartEl, sortLegendTraces(traces), this.plotlyLayout({
