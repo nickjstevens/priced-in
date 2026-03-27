@@ -684,7 +684,7 @@ createApp({
           last_updated: context?.metadata?.last_updated || 'See sources',
         },
       });
-      this.denominators.push({ value: `item:${syntheticKey}`, label: `${context.label} (series)` });
+      this.denominators.push({ value: `item:${syntheticKey}`, label: context.label });
       return syntheticKey;
     },
     swapPair() {
@@ -808,7 +808,7 @@ createApp({
         this.items = payload.items;
         this.denominators = [
           ...Object.entries(this.contextSeries).map(([value, d]) => ({ value: `context:${value}`, label: d.label })),
-          ...this.items.map((item) => ({ value: `item:${item.key}`, label: `${item.name} (series)` })),
+          ...this.items.map((item) => ({ value: `item:${item.key}`, label: item.name })),
         ];
         if (!this.itemKey || !this.items.some((item) => item.key === this.itemKey)) this.itemKey = this.items[0]?.key || '';
         if (!this.denominators.some((denominator) => denominator.value === this.denominator)) this.denominator = this.denominators[0]?.value || 'context:fiat';
