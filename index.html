@@ -121,6 +121,21 @@
                               <span>{{ row.name }}</span>
                               <a class="open-link-icon" :href="singleChartUrl(row.key)" :aria-label="`Open ${row.name} single chart in a new page`" title="Open single chart" target="_blank" rel="noopener noreferrer">↗</a>
                               <span class="category-badge" :style="categoryTagStyle(row.category)">{{ categoryDisplayLabel(row.category) }}</span>
+                              <div
+                                class="buying-power-badge-wrap buying-power-badge-wrap-summary"
+                                :class="{ 'is-open': buyingPowerOverlayRowKey === row.key }"
+                                @mouseleave="closeBuyingPowerOverlay"
+                              >
+                                <button
+                                  type="button"
+                                  class="category-badge power-badge buying-power-trigger"
+                                  :class="row.buyingPower.className"
+                                  @click="toggleBuyingPowerOverlay(row.key)"
+                                  @focus="buyingPowerOverlayRowKey = row.key"
+                                  @blur="closeBuyingPowerOverlay"
+                                >{{ row.buyingPower.icon }} {{ row.buyingPower.label }}</button>
+                                <div class="buying-power-overlay" role="status">{{ row.buyingPowerSummary }}</div>
+                              </div>
                             </div>
                             <div :id="`summary-sparkline-${row.key}`" class="summary-row-sparkline"></div>
                           </div>

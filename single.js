@@ -248,6 +248,7 @@ createApp({
       error: '',
       chart: null,
       shareFeedback: '',
+      isBuyingPowerOverlayOpen: false,
     };
   },
   computed: {
@@ -614,12 +615,34 @@ createApp({
     purchasingPowerTag() {
       const totalChange = this.totalChangeValue();
       if (totalChange == null) {
-        return { icon: '•', label: 'Power: not enough data', className: '' };
+        return { icon: '•', label: 'Buying Power', className: '' };
       }
       const purchasingPowerRising = totalChange < 0;
       return purchasingPowerRising
-        ? { icon: '▲', label: 'Power: rising', className: 'power-badge-rising' }
-        : { icon: '▼', label: 'Power: falling', className: 'power-badge-falling' };
+        ? { icon: '▲', label: 'Buying Power', className: 'power-badge-rising' }
+        : { icon: '▼', label: 'Buying Power', className: 'power-badge-falling' };
+    },
+    purchasingPowerSummary() {
+      const item = this.currentItem;
+      const totalChange = this.totalChangeValue();
+      const denominatorLabel = this.denominatorSeriesLabel();
+      const pts = item ? this.visiblePairSeries(item.key).filter((point) => point.value != null) : [];
+      const first = pts[0];
+      const last = pts[pts.length - 1];
+      const yearSpan = first && last ? Math.max(0, Math.round(last.year - first.year)) : null;
+      if (totalChange == null || !Number.isFinite(totalChange) || !item || yearSpan == null) {
+        return 'Not enough data to explain buying power for this series and range.';
+      }
+      const purchasingPowerDirection = totalChange < 0 ? 'rising' : 'falling';
+      const quantityDirection = totalChange < 0 ? 'more' : 'less';
+      const yearsPhrase = yearSpan === 1 ? '1 year ago' : `${yearSpan} years ago`;
+      return `The purchasing power of ${denominatorLabel} is ${purchasingPowerDirection}. Today you can buy ${quantityDirection} ${item.name} than you could ${yearsPhrase}.`;
+    },
+    toggleBuyingPowerOverlay() {
+      this.isBuyingPowerOverlayOpen = !this.isBuyingPowerOverlayOpen;
+    },
+    closeBuyingPowerOverlay() {
+      this.isBuyingPowerOverlayOpen = false;
     },
     purchasingPowerText() {
       const denominatorType = this.denominatorSeriesType();
