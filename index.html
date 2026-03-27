@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Priced In — Cost of Living Explorer</title>
+    <title>Priced In — UK Cost of Living Explorer</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -14,10 +14,13 @@
         <header class="app-header">
           <a class="brand-panel" href="index.html" aria-label="Go to homepage">
             <span class="brand-kicker">UK pricing explorer</span>
-            <h1>Priced In — Cost of Living Explorer</h1>
+            <h1>Priced In — UK Cost of Living Explorer</h1>
             <p>Compare UK costs priced in nominal £, real £, gold, hours worked, and bitcoin.</p>
           </a>
           <div class="header-actions">
+            <button class="theme-icon-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
+              <span class="theme-toggle-icon" aria-hidden="true">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+            </button>
             <button
               class="menu-toggle"
               type="button"
@@ -32,12 +35,8 @@
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" :class="{ active: currentPage === 'cost' }" href="index.html">Cost of Living</a>
                 <a class="page-link" :href="singleItemMenuUrl()">Single Series</a>
-                <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">Assumptions & Caveats</a>
+                <a class="page-link" :class="{ active: currentPage === 'assumptions' }" href="assumptions.html">About</a>
               </nav>
-              <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
-                <span class="theme-toggle-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
-                <span>{{ isDarkMode ? 'Light mode' : 'Dark mode' }}</span>
-              </button>
             </div>
           </div>
         </header>

@@ -17,6 +17,9 @@
             <h1>{{ currentItem?.name || 'Single chart view' }}</h1>
           </a>
           <div class="header-actions">
+            <button class="theme-icon-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
+              <span class="theme-toggle-icon" aria-hidden="true">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+            </button>
             <button
               class="menu-toggle"
               type="button"
@@ -31,12 +34,8 @@
               <nav class="page-nav" aria-label="Main sections">
                 <a class="page-link" href="index.html">Cost of Living</a>
                 <a class="page-link" :href="singleItemMenuUrl">Single Series</a>
-                <a class="page-link" href="assumptions.html">Assumptions & Caveats</a>
+                <a class="page-link" href="assumptions.html">About</a>
               </nav>
-              <button class="theme-toggle" @click="toggleTheme" :aria-label="`Switch to ${isDarkMode ? 'light' : 'dark'} mode`">
-                <span class="theme-toggle-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
-                <span>{{ isDarkMode ? 'Light mode' : 'Dark mode' }}</span>
-              </button>
             </div>
           </div>
         </header>
