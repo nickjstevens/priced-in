@@ -21,7 +21,7 @@ Vue + Chart.js app for exploring UK cost-of-living series in multiple denominato
 ## Run locally
 
 ```bash
-npx vercel dev
+python -m http.server 4173
 ```
 
 ## Validate data
@@ -45,4 +45,4 @@ This comes from deployment attribution metadata, not from app code. Fixes:
 2. If you deploy via the Vercel REST API, remove `isBot` from `attribution.gitUser` in your deployment payload.
 3. Re-link the project (`vercel link`) if your local project metadata is stale.
 
-This repository does not set `attribution` fields in `vercel.json`; runtime config is defined only for API functions.
+This repository serves static JSON files directly (`prices-api.json`, `macro-trends.json`) and does not require Vercel Functions.
