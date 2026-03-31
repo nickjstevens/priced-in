@@ -95,7 +95,8 @@ createApp({
       }
     },
     renderChart() {
-      if (!this.currentMetric?.series?.length || !window.Plotly) return;
+      const chartElement = document.getElementById('macro-chart');
+      if (!chartElement || !this.currentMetric?.series?.length || !window.Plotly) return;
       const axisBase = plotlyAxisBase(this.isDarkMode);
       const series = this.transformedSeries;
       const trace = {
@@ -117,7 +118,7 @@ createApp({
         xaxis: { ...axisBase, title: 'Year', tickformat: 'd' },
         yaxis: { ...axisBase, title: this.showRebased ? 'Index (first year = 100)' : this.currentMetric.unit, rangemode: 'tozero' },
       };
-      Plotly.react('macro-chart', [trace], layout, {
+      Plotly.react(chartElement, [trace], layout, {
         responsive: true,
         displayModeBar: true,
         displaylogo: false,
