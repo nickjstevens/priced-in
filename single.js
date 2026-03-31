@@ -836,7 +836,7 @@ createApp({
       this.isLoading = true;
       this.error = '';
       try {
-        const response = await fetch('/api/prices');
+        const response = await fetch('prices-api.json', { cache: 'no-store' });
         if (!response.ok) throw new Error(`API unavailable (${response.status})`);
         const payload = await response.json();
         this.years = payload.years;
