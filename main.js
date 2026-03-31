@@ -991,7 +991,7 @@ createApp({
     plotlyLayout(extra = {}) {
       return plotlyLayoutBase(this.isDarkMode, this.useLogScale, extra);
     },
-    plotlyLineTrace({ name, points, color, dash = 'solid', yaxis = 'y', customdata = [], opacity = 1, mode = 'lines+markers', markerSize = 3.4, lineWidth = 2.5, hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>' }) {
+    plotlyLineTrace({ name, points, color, dash = 'solid', yaxis = 'y', customdata = [], opacity = 1, mode = 'lines+markers', markerSize = 4.6, lineWidth = 2.5, hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>' }) {
       return {
         type: 'scatter',
         mode,

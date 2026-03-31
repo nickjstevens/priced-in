@@ -483,7 +483,7 @@ createApp({
         x: points.map((point) => point.year),
         y: points.map((point) => point.value),
         line: { color: '#1f6feb', width: 2.5 },
-        marker: { size: 3.4, color: '#1f6feb', symbol: 'circle', line: { width: 0 } },
+        marker: { size: 4.6, color: '#1f6feb', symbol: 'circle', line: { width: 0 } },
         customdata: points.map((point, idx) => ([
           this.buildHoverLabel(point, hoverStatsByPoint[idx]),
         ])),
@@ -498,7 +498,7 @@ createApp({
           x: overlayPoints.map((point) => point.year),
           y: overlayPoints.map((point) => point.value),
           line: { color: 'rgba(100, 116, 139, 0.65)', width: 2, dash: 'dash' },
-          marker: { size: 3, color: 'rgba(100, 116, 139, 0.75)', symbol: 'circle', line: { width: 0 } },
+          marker: { size: 3.8, color: 'rgba(100, 116, 139, 0.75)', symbol: 'circle', line: { width: 0 } },
           yaxis: 'y2',
           opacity: 0.7,
           customdata: overlayPoints.map((point) => ([this.buildGbpOverlayHoverLabel(point)])),

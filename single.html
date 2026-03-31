@@ -46,7 +46,7 @@
             <option v-for="item in items" :key="item.key" :value="item.key">{{ item.name }}</option>
           </select>
         </label>
-        <label>Priced In <span class="term-help" role="img" aria-label="Priced In: choose the unit used to express this item's value (like GBP, gold, hours, or bitcoin)." title="Priced In: choose the unit used to express this item's value (like GBP, gold, hours, or bitcoin).">?</span>
+        <label>Priced In <span class="term-help" role="button" tabindex="0" aria-label="Priced In: choose the unit used to express this item's value (like GBP, gold, hours, or bitcoin)." title="Priced In: choose the unit used to express this item's value (like GBP, gold, hours, or bitcoin).">?</span>
           <select v-model="denominator" @change="syncUrlAndRender">
             <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
           </select>
@@ -92,17 +92,17 @@
         <p v-if="bitcoinSparseWarningApplies()" class="notice">Bitcoin is hidden before 2017 because early annual averages are sparse and highly volatile.</p>
         <p v-if="goldAlternativeText()" class="lineage">{{ goldAlternativeText() }}</p>
         <dl class="stats-strip">
-          <div class="stat"><dt>CAGR <span class="term-help" role="img" aria-label="Compound annual growth rate: the average yearly rate of change over the selected period." title="Compound annual growth rate: the average yearly rate of change over the selected period.">?</span></dt><dd>{{ chartStats().cagrSelected }}</dd></div>
+          <div class="stat"><dt>CAGR <span class="term-help" role="button" tabindex="0" aria-label="Compound annual growth rate: the average yearly rate of change over the selected period." title="Compound annual growth rate: the average yearly rate of change over the selected period.">?</span></dt><dd>{{ chartStats().cagrSelected }}</dd></div>
           <div class="stat"><dt>Total change</dt><dd>{{ chartStats().totalChange }}</dd></div>
           <div class="stat"><dt>Best year</dt><dd>{{ chartStats().bestYear }}</dd></div>
           <div class="stat"><dt>Worst year</dt><dd>{{ chartStats().worstYear }}</dd></div>
-          <div class="stat"><dt>Volatility (5Y log-return) <span class="term-help" role="img" aria-label="Volatility: how bumpy the returns have been, using a rolling five-year window." title="Volatility: how bumpy the returns have been, using a rolling five-year window.">?</span></dt><dd>{{ chartStats().vol5y }}</dd></div>
-          <div class="stat"><dt>Max drawdown <span class="term-help" role="img" aria-label="Max drawdown: the largest drop from a previous high point during the selected period." title="Max drawdown: the largest drop from a previous high point during the selected period.">?</span></dt><dd>{{ chartStats().maxDrawdown }}</dd></div>
-          <div class="stat"><dt>From historical peak <span class="term-help" role="img" aria-label="From historical peak: how far the latest value is below its all-time high in the selected range." title="From historical peak: how far the latest value is below its all-time high in the selected range.">?</span></dt><dd>{{ chartStats().fromPeak }}</dd></div>
+          <div class="stat"><dt>Volatility (5Y log-return) <span class="term-help" role="button" tabindex="0" aria-label="Volatility: how bumpy the returns have been, using a rolling five-year window." title="Volatility: how bumpy the returns have been, using a rolling five-year window.">?</span></dt><dd>{{ chartStats().vol5y }}</dd></div>
+          <div class="stat"><dt>Max drawdown <span class="term-help" role="button" tabindex="0" aria-label="Max drawdown: the largest drop from a previous high point during the selected period." title="Max drawdown: the largest drop from a previous high point during the selected period.">?</span></dt><dd>{{ chartStats().maxDrawdown }}</dd></div>
+          <div class="stat"><dt>From historical peak <span class="term-help" role="button" tabindex="0" aria-label="From historical peak: how far the latest value is below its all-time high in the selected range." title="From historical peak: how far the latest value is below its all-time high in the selected range.">?</span></dt><dd>{{ chartStats().fromPeak }}</dd></div>
           <div class="stat"><dt>Latest value</dt><dd>{{ chartStats().latestValue }}</dd></div>
         </dl>
         <div class="chart-header-tags" v-if="rebased">
-          <span class="category-badge rebased-badge" :style="rebasedBadgeStyle()">Rebased <span class="term-help" role="img" aria-label="Rebased means the first visible year is set to 100, so percentage growth can be compared directly." title="Rebased means the first visible year is set to 100, so percentage growth can be compared directly.">?</span></span>
+          <span class="category-badge rebased-badge" :style="rebasedBadgeStyle()">Rebased <span class="term-help" role="button" tabindex="0" aria-label="Rebased means the first visible year is set to 100, so percentage growth can be compared directly." title="Rebased means the first visible year is set to 100, so percentage growth can be compared directly.">?</span></span>
         </div>
         <p v-if="chartZoomed" class="notice">Double-click the chart to zoom back out.</p>
         <div class="chart-wrap"><div id="single-chart" class="plotly-chart"></div></div>
