@@ -532,6 +532,51 @@ summary { cursor: pointer; }
   font-size: 0.86rem;
 }
 
+.onboarding-callout {
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(99, 102, 241, 0.14));
+}
+
+.onboarding-callout p {
+  margin: 0;
+}
+
+.term-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-left: 0.28rem;
+  border-radius: 999px;
+  border: 1px solid var(--input-border);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-strong);
+  background: var(--surface-soft);
+  cursor: help;
+}
+
+.app-footer {
+  padding: 0.8rem 1rem;
+  font-size: 0.9rem;
+}
+
+.app-footer p {
+  margin: 0;
+}
+
+.app-footer a {
+  color: var(--accent-strong);
+  text-underline-offset: 0.16em;
+}
+
+.footer-sep {
+  display: inline-block;
+  margin: 0 0.35rem;
+  color: var(--text-muted);
+}
 
 
 

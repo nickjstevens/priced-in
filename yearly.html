@@ -48,6 +48,7 @@
             <div class="card-title-block">
               <h2>{{ titleText }}</h2>
               <p class="lineage">{{ descriptionText }}</p>
+              <p class="lineage">Need a refresher? <span class="term-help" role="img" aria-label="Rebased means every series starts at 100 at the same starting point so growth paths are easier to compare." title="Rebased means every series starts at 100 at the same starting point so growth paths are easier to compare.">?</span></p>
             </div>
             <div class="card-actions">
               <a class="page-link" :href="backUrl">← Back to chart</a>
@@ -71,6 +72,15 @@
             </table>
           </div>
         </section>
+        <footer class="app-footer panel-shell">
+          <p>
+            Enjoying this project?
+            <a href="lightning:purehorse8@primal.net">Tip via Lightning</a>
+            <span class="footer-sep">•</span>
+            Find me on Nostr:
+            <a href="https://primal.net/p/npub1ljq0jgmha3xlv90jyqwcel3f0fvhyzcshk3lugk3qmt8ufcm4e7qs2cpnl" target="_blank" rel="noopener noreferrer">npub1...cpnl</a>
+          </p>
+        </footer>
       </div>
     </main>
     <script src="yearly.js"></script>

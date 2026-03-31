@@ -50,8 +50,11 @@
         <section v-else-if="error" class="status-card error">{{ error }}</section>
 
         <section v-else>
+        <section v-if="selectedItemKey === 'all'" class="onboarding-callout panel-shell">
+          <p><strong>Pick a category and select an item to get started.</strong> Use search if you already know what you want to compare.</p>
+        </section>
         <section class="controls panel-shell">
-          <label>Priced In
+          <label>Priced In <span class="term-help" role="img" aria-label="Priced In: choose the unit used to express each item's value (like GBP, gold, hours, or bitcoin)." title="Priced In: choose the unit used to express each item's value (like GBP, gold, hours, or bitcoin).">?</span>
             <select v-model="allDenominator" @change="applyToAll" aria-label="Priced in selector">
               <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
             </select>
@@ -80,7 +83,7 @@
           <div class="compare-layout compare-layout-single">
             <div class="compare-main">
               <div class="chart-header-tags" v-if="rebased">
-                <span class="category-badge rebased-badge" :style="rebasedTagStyle()">Rebased</span>
+                <span class="category-badge rebased-badge" :style="rebasedTagStyle()">Rebased <span class="term-help" role="img" aria-label="Rebased means each series starts at 100 at the same visible starting point, so trend comparisons are easier." title="Rebased means each series starts at 100 at the same visible starting point, so trend comparisons are easier.">?</span></span>
               </div>
               <p v-if="compareChartZoomed" class="notice">Double-click the chart to zoom back out.</p>
               <div class="chart-wrap chart-wrap-lg"><div id="chart-compare" class="plotly-chart"></div></div>
@@ -108,6 +111,13 @@
                         <th v-for="column in summaryTableColumns" :key="column.key">
                           <button type="button" class="summary-sort-button" @click="toggleSummarySort(column.key)">
                             <span>{{ column.label }}</span>
+                            <span
+                              v-if="column.tooltip"
+                              class="term-help"
+                              role="img"
+                              :aria-label="column.tooltip"
+                              :title="column.tooltip"
+                            >?</span>
                             <span class="summary-sort-indicator" aria-hidden="true">{{ summarySortLabel(column.key) }}</span>
                           </button>
                         </th>
@@ -156,6 +166,15 @@
 
 
       </section>
+      <footer class="app-footer panel-shell">
+        <p>
+          Enjoying this project?
+          <a href="lightning:purehorse8@primal.net">Tip via Lightning</a>
+          <span class="footer-sep">•</span>
+          Find me on Nostr:
+          <a href="https://primal.net/p/npub1ljq0jgmha3xlv90jyqwcel3f0fvhyzcshk3lugk3qmt8ufcm4e7qs2cpnl" target="_blank" rel="noopener noreferrer">npub1...cpnl</a>
+        </p>
+      </footer>
       </div>
     </main>
     <script src="main.js"></script>
