@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Priced In — Macro Trends</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  </head>
+  <body data-page="macro">
+    <main id="app">
+      <div class="dashboard-shell">
+        <header class="app-header">
+          <a class="brand-panel" href="index.html" aria-label="Go to homepage">
+            <span class="brand-kicker">Macro dashboard</span>
+            <h1>Macro Trends</h1>
+            <p>Explore long-run UK trends in economy, society, health, and quality-of-life indicators.</p>
+          </a>
+          <div class="header-actions">
+            <button class="theme-icon-toggle" @click="toggleTheme" :aria-label="`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`">
+              <span class="theme-toggle-icon" aria-hidden="true">{{ theme === 'dark' ? '☀️' : '🌙' }}</span>
+            </button>
+            <button class="menu-toggle" type="button" @click="isMobileMenuOpen = !isMobileMenuOpen" :aria-expanded="isMobileMenuOpen ? 'true' : 'false'" aria-controls="site-menu" aria-label="Toggle navigation menu">
+              <span></span><span></span><span></span>
+            </button>
+            <div class="title-actions" :class="{ open: isMobileMenuOpen }" id="site-menu">
+              <nav class="page-nav" aria-label="Main sections">
+                <a class="page-link" href="index.html">Cost of Living</a>
+                <a class="page-link" href="single.html?item=house&denom=context:fiat&theme=dark">Single Series</a>
+                <a class="page-link active" href="macro.html">Macro Trends</a>
+                <a class="page-link" href="assumptions.html">About</a>
+              </nav>
+            </div>
+          </div>
+        </header>
+
+        <section class="controls panel-shell" v-if="!isLoading && !error">
+          <label>Category
+            <select v-model="selectedCategory">
+              <option value="all">All</option>
+              <option v-for="category in categories" :key="category" :value="category">{{ categoryLabel(category) }}</option>
+            </select>
+          </label>
+          <label>Metric
+            <select v-model="selectedMetricKey">
+              <option v-for="metric in filteredMetrics" :key="metric.key" :value="metric.key">{{ metric.name }}</option>
+            </select>
+          </label>
+          <label><input type="checkbox" v-model="showRebased" /> Rebase to 100 from first visible year</label>
+        </section>
+
+        <section v-if="isLoading" class="status-card">Loading macro trend data… <span class="skeleton"></span></section>
+        <section v-else-if="error" class="status-card error">{{ error }}</section>
+
+        <article v-else class="chart-card panel-shell">
+          <header>
+            <div class="card-title-block">
+              <h2>{{ currentMetric.name }}</h2>
+              <span class="category-badge">{{ categoryLabel(currentMetric.category) }}</span>
+              <p class="lineage">{{ currentMetric.description }}</p>
+            </div>
+          </header>
+          <dl class="stats-strip">
+            <div class="stat"><dt>Latest value</dt><dd>{{ latestValue }}</dd></div>
+            <div class="stat"><dt>Since first year</dt><dd>{{ totalChange }}</dd></div>
+            <div class="stat"><dt>Years covered</dt><dd>{{ yearsCovered }}</dd></div>
+          </dl>
+          <div class="chart-wrap chart-wrap-lg"><div id="macro-chart" class="plotly-chart"></div></div>
+          <details class="instructions-panel panel-shell sources-panel" open>
+            <summary>Sources</summary>
+            <ul>
+              <li v-for="source in currentMetric.sources" :key="source.url"><a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a> — {{ source.note }}</li>
+            </ul>
+          </details>
+        </article>
+
+        <section v-if="!isLoading && !error" class="chart-card panel-shell">
+          <h3>All metrics at a glance</h3>
+          <div class="table-wrap yearly-table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Metric</th><th>Category</th><th>Latest</th><th>Total change</th></tr></thead>
+              <tbody>
+                <tr v-for="metric in filteredMetrics" :key="metric.key">
+                  <th><button type="button" class="summary-sort-button" @click="selectedMetricKey = metric.key">{{ metric.name }}</button></th>
+                  <td>{{ categoryLabel(metric.category) }}</td>
+                  <td>{{ formatValue(metric.series.at(-1)?.value, metric.unit) }}</td>
+                  <td>{{ metricChange(metric) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <footer class="app-footer panel-shell">
+          <p>
+            <strong>Enjoying this project?</strong>
+            <a class="footer-link" href="lightning:purehorse8@primal.net"><span class="footer-icon" aria-hidden="true">⚡</span>Tip via Lightning</a>
+            <a class="footer-link" href="https://primal.net/p/npub1ljq0jgmha3xlv90jyqwcel3f0fvhyzcshk3lugk3qmt8ufcm4e7qs2cpnl" target="_blank" rel="noopener noreferrer"><span class="footer-icon" aria-hidden="true">🫧</span>Find me on Nostr</a>
+          </p>
+        </footer>
+      </div>
+    </main>
+    <script src="macro.js"></script>
+  </body>
+</html>
