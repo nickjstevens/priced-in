@@ -691,4 +691,24 @@ summary { cursor: pointer; }
   }
 }
 
-.summary-table-wrap { overscroll-behavior: contain; touch-action: pan-x pan-y; }
+.summary-table-wrap {
+  position: relative;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+}
+
+.summary-table .term-help {
+  z-index: 1400;
+}
+
+.summary-table .term-help::after {
+  top: calc(100% + 0.45rem);
+  bottom: auto;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.summary-table .term-help:hover::after,
+.summary-table .term-help:focus::after,
+.summary-table .term-help:focus-visible::after {
+  transform: translateX(-50%) translateY(0);
+}
