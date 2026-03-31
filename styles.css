@@ -532,6 +532,13 @@ summary { cursor: pointer; }
   font-size: 0.86rem;
 }
 
+.quote-callout-context {
+  margin: 0.6rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
 .onboarding-callout {
   padding: 0.9rem 1rem;
   border-radius: 18px;
@@ -544,6 +551,7 @@ summary { cursor: pointer; }
 
 .term-help {
   display: inline-flex;
+  position: relative;
   align-items: center;
   justify-content: center;
   width: 1.05rem;
@@ -555,16 +563,23 @@ summary { cursor: pointer; }
   font-weight: 700;
   color: var(--accent-strong);
   background: var(--surface-soft);
-  cursor: help;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .app-footer {
-  padding: 0.8rem 1rem;
+  padding: 1rem 1.1rem;
   font-size: 0.9rem;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(168, 85, 247, 0.14));
+  border: 1px solid rgba(96, 165, 250, 0.25);
 }
 
 .app-footer p {
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .app-footer a {
@@ -576,6 +591,38 @@ summary { cursor: pointer; }
   display: inline-block;
   margin: 0 0.35rem;
   color: var(--text-muted);
+}
+
+.term-help::after {
+  content: attr(aria-label);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.45rem);
+  transform: translateX(-50%) translateY(4px);
+  opacity: 0;
+  width: min(18rem, 78vw);
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  background: var(--surface-strong);
+  border: 1px solid var(--input-border);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  z-index: 40;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  box-shadow: var(--shadow);
+}
+
+.term-help:hover::after,
+.term-help:focus::after,
+.term-help:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 

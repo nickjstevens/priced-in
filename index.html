@@ -44,17 +44,15 @@
         <section class="quote-callout panel-shell">
           <p>“The natural state of the free market is deflation.”</p>
           <span>— Geoff Booth</span>
+          <p class="quote-callout-context">Let’s explore which assets show deflation over time — and how that changes depending on what you price them in (for example, gold for commodities and staples).</p>
         </section>
 
         <section v-if="isLoading" class="status-card">Loading pricing data from API… <span class="skeleton"></span></section>
         <section v-else-if="error" class="status-card error">{{ error }}</section>
 
         <section v-else>
-        <section v-if="selectedItemKey === 'all'" class="onboarding-callout panel-shell">
-          <p><strong>Pick a category and select an item to get started.</strong> Use search if you already know what you want to compare.</p>
-        </section>
         <section class="controls panel-shell">
-          <label>Priced In <span class="term-help" role="img" aria-label="Priced In: choose the unit used to express each item's value (like GBP, gold, hours, or bitcoin)." title="Priced In: choose the unit used to express each item's value (like GBP, gold, hours, or bitcoin).">?</span>
+          <label>Priced In <span class="term-help" role="button" tabindex="0" aria-label="Priced In: choose the unit used to express each item's value (like GBP, gold, hours, or bitcoin)." title="Priced In: choose the unit used to express each item's value (like GBP, gold, hours, or bitcoin).">?</span>
             <select v-model="allDenominator" @change="applyToAll" aria-label="Priced in selector">
               <option v-for="denom in denominators" :key="denom.value" :value="denom.value">{{ denom.label }}</option>
             </select>
@@ -83,7 +81,7 @@
           <div class="compare-layout compare-layout-single">
             <div class="compare-main">
               <div class="chart-header-tags" v-if="rebased">
-                <span class="category-badge rebased-badge" :style="rebasedTagStyle()">Rebased <span class="term-help" role="img" aria-label="Rebased means each series starts at 100 at the same visible starting point, so trend comparisons are easier." title="Rebased means each series starts at 100 at the same visible starting point, so trend comparisons are easier.">?</span></span>
+                <span class="category-badge rebased-badge" :style="rebasedTagStyle()">Rebased <span class="term-help" role="button" tabindex="0" aria-label="Rebased means each series starts at 100 at the same visible starting point, so trend comparisons are easier." title="Rebased means each series starts at 100 at the same visible starting point, so trend comparisons are easier.">?</span></span>
               </div>
               <p v-if="compareChartZoomed" class="notice">Double-click the chart to zoom back out.</p>
               <div class="chart-wrap chart-wrap-lg"><div id="chart-compare" class="plotly-chart"></div></div>
@@ -114,7 +112,8 @@
                             <span
                               v-if="column.tooltip"
                               class="term-help"
-                              role="img"
+                              role="button"
+                              tabindex="0"
                               :aria-label="column.tooltip"
                               :title="column.tooltip"
                             >?</span>
