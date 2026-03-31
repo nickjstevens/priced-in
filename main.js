@@ -352,7 +352,7 @@ createApp({
     },
     summaryTableColumns() {
       return [
-        { key: 'cagrSelected', label: 'CAGR' },
+        { key: 'cagrSelected', label: 'CAGR', tooltip: 'Compound annual growth rate: the average yearly rate of change over the selected period.' },
         { key: 'totalChange', label: 'Total change' },
         { key: 'bestYear', label: 'Best year' },
         { key: 'worstYear', label: 'Worst year' },
@@ -991,7 +991,7 @@ createApp({
     plotlyLayout(extra = {}) {
       return plotlyLayoutBase(this.isDarkMode, this.useLogScale, extra);
     },
-    plotlyLineTrace({ name, points, color, dash = 'solid', yaxis = 'y', customdata = [], opacity = 1, mode = 'lines', markerSize = 6, lineWidth = 2.5, hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>' }) {
+    plotlyLineTrace({ name, points, color, dash = 'solid', yaxis = 'y', customdata = [], opacity = 1, mode = 'lines+markers', markerSize = 3.4, lineWidth = 2.5, hovertemplate = '%{fullData.name}: %{y:.3f}<br>Year: %{x}<extra></extra>' }) {
       return {
         type: 'scatter',
         mode,
@@ -999,6 +999,7 @@ createApp({
         x: points.map((point) => point.year),
         y: points.map((point) => point.value),
         line: { color, width: lineWidth, dash, shape: 'linear' },
+        marker: { size: markerSize, color, symbol: 'circle', line: { width: 0 } },
         yaxis,
         customdata,
         hovertemplate,
